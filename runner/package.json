@@ -17,6 +17,7 @@
   "dependencies": {
     "@revhero/qa-shared": "workspace:*",
     "@playwright/test": "^1.49.1",
+    "@axe-core/playwright": "^4.10.1",
     "playwright": "^1.49.1",
     "vitest": "^2.1.8",
     "axios": "^1.7.9",
