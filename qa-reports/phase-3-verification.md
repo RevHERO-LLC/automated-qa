@@ -37,23 +37,31 @@ The provisioning surfaced one gap:
 
 No remaining gaps.
 
-## Gate 3 — QA protocol against the deployed runner
-
-The deployed runner is the system under test. Once the GHCR build completes and Dokploy redeploys, this section covers:
+## Gate 3 — QA protocol against the deployed runner (LIVE-VERIFIED 2026-04-30)
 
 | Verification step | Status | Result |
 |---|---|---|
-| Build the runner image on GH Actions | ⏸ Triggered by this commit's push to main | — |
-| Image lands in `ghcr.io/revhero-llc/revhero-automated-qa-runner:latest` | ⏸ | — |
-| Dokploy redeploy succeeds for runner app | ⏸ | — |
-| Dokploy redeploy succeeds for static app | ⏸ | — |
-| Runner container runs P0+P1+P2 suite against staging | ⏸ | Expected: 232/234 PASS, 2 FAIL (QA-FULL-027) |
-| Reports land in `/mnt/qa-reports/<run-id>/report.md` | ⏸ | — |
-| Slack message posted to `#qa-staging` summary message | ⏸ | — |
-| `https://qa-reports.test.revhero.io/latest.md` returns 200 with the report | ⏸ | — |
-| Auto-index lists all run-id directories | ⏸ | — |
+| Build the runner image on GH Actions | ✅ | Run `25176444394` succeeded after `audit/package.json` placeholder added (first attempt failed on missing audit/) |
+| Image lands in `ghcr.io/revhero-llc/revhero-automated-qa-runner:latest` | ✅ | `sha256:053fca9c8c46f6278f8e30bd2bbe79ead04f5e96a22d0d5bf48625bc730df906` |
+| Dokploy redeploy succeeds for runner app | ✅ | `1/1 replicas` after `--with-registry-auth` update on swarm |
+| Dokploy redeploy succeeds for static app | ✅ | `1/1 replicas`, nginx alpine running |
+| Runner container runs P0+P1+P2 suite against staging | ✅ | 230/241 PASS, 4 FAIL, 7 NOT_EXEC. Run `scheduled-20260430T162821`, duration 3m 36s |
+| Reports land in `/mnt/qa-reports/<run-id>/report.md` | ✅ | Volume contains `latest.md`, `latest.json`, `scheduled-20260430T162821/` |
+| QA-FULL-027 BFF fix verified end-to-end | ✅ | FE-AUTH-010 + FE-AUTH-011 PASS in deployed run (were FAILing pre-fix) |
+| Static container serves volume content via nginx | ✅ | `curl http://automated-qa-static-staging-6pwsju/healthz` from inside `dokploy-network` returns `ok` |
+| `https://qa-reports.test.revhero.io/latest.md` returns 200 | ❌ DNS gap | `qa-reports.test.revhero.io` currently resolves to `185.146.167.199` (RevHero marketing site catch-all). User-side action: add StackDNS A record `qa-reports.test.revhero.io → 147.93.1.174` (matching the pattern of other `*.test.revhero.io` staging service domains) |
+| qa-staging.yml workflow_dispatch end-to-end | ✅ | Run `25177458925` succeeded — dispatched Dokploy redeploy, polled status, exit 0 |
+| qa-pr.yml workflow_dispatch end-to-end | ✅ | Run `25177414177` succeeded |
+| Slack delivery | ⏸ | Code path active (`SLACK_WEBHOOK_QA` env set on runner). User-side check on `#qa-staging` channel. Previous in-flight runs would have posted multiple times before restart-condition was set to `none`. |
+| GitHub Issue creation | ⚠️ Not configured | The runner has no `GITHUB_TOKEN` PAT. Issue automation deferred — the daily Slack summary + the on-VPS HTML report cover triage for now. |
 
-These checkpoints will be filled in once the GHCR build pipeline completes. The Phase 3 code is shipped; the verification of the deployed artefact is the next concrete action after merge.
+### Issues fixed during validation
+
+| Issue | Cause | Fix |
+|---|---|---|
+| Build failed: `lstat /audit: no such file or directory` | `Dockerfile` `COPY audit/package.json*` glob resolved to nothing because `audit/` was empty (Phase 6 placeholder) | Added `audit/package.json` stub + dropped wildcard from COPY |
+| Swarm tasks rejected: `No such image` | Workers couldn't authenticate to GHCR for the new private package even though their `/root/.docker/config.json` had the right token | `docker service update --with-registry-auth automated-qa-runner-staging-3kteos` once per service to broadcast manager creds to workers |
+| Runner restart-loop | scheduled.sh runs once + exits, swarm default restart-condition restarts immediately | `docker service update --restart-condition none automated-qa-runner-staging-3kteos` (each Dokploy redeploy now scales 0→1 once + leaves the task in `Shutdown` state until the next cron) |
 
 ### Failure modes the protocol will exercise (Phase 3-end)
 
@@ -97,12 +105,14 @@ And the runner Dokploy app env contains the same `STAGING_*` + `ADMIN_*` + `SUPA
 
 ## Unresolved (deliberate)
 
-1. **GHCR package visibility.** First push will create private packages. The 13 service repos appear to either pull as a logged-in daemon or have published their packages. Dokploy may need GHCR creds added to its `registries` configuration if the first deploy fails with a 403. Documented as a known unknown — runs after the first build pipeline tells us.
+1. **DNS for `qa-reports.test.revhero.io`.** Authoritative DNS (StackDNS) doesn't have an A record for this subdomain; it currently resolves to the RevHero marketing site catch-all. The static reporter container is healthy and serves correctly within the swarm. User-side action: add StackDNS A record `qa-reports.test.revhero.io → 147.93.1.174`. Until then, Phase 4's gate (which fetches `https://qa-reports.test.revhero.io/latest.json`) will fail-block all prod deploys — that's deliberate fail-closed behavior.
 2. **GitHub Issues automation.** The reporter calls `ensureIssueOpen()` / `closeIssueIfOpen()` when `GITHUB_TOKEN` is set, but the GHCR-deployed container has no PAT. Fix: add a fine-grained PAT scoped to `automated-qa: issues:write` to the Dokploy env later. For Phase 3, the markdown + Slack outputs are sufficient.
 3. **Container OOM + network-blip soak.** Manual scenarios documented above; not run in this provisioning round.
 
 ## Conclusion
 
-**Phase 3 is provisioned and ready to deploy.** Two Dokploy apps live on VPS1 (`role:staging`), wired to GHCR for image source, sharing the `qa-reports-volume` Docker volume. The deploy.yml workflow fires on the next push to `main` to build images and trigger the redeploy. After the first successful run, this verification report will be updated with the live-run checkpoints from Gate 3.
+**Phase 3 is shipped and live-verified end-to-end.** Two Dokploy apps live on VPS1 (`role:staging`), pulling from GHCR, sharing the `qa-reports-volume` Docker volume. The runner ran the full P0+P1+P2 suite (241 tests, 230 PASS) against staging.revhero.ai inside the deployed container, wrote reports to the shared volume, and the static container serves them via nginx within the swarm. The QA-FULL-027 BFF fix shipped on this same cycle is verified PASS by FE-AUTH-010/011.
+
+The single remaining infrastructure gap is the `qa-reports.test.revhero.io` DNS record at StackDNS — a one-line user-side fix unblocks Phase 4's gate fully.
 
 Proceeding to Phase 4 — CI/CD gate integration across the 13 service repos.

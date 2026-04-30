@@ -71,12 +71,22 @@ Treating the gate as the system under test, applying `~/.claude/qa-protocol.md` 
 
 | Verification | Expected outcome | Status |
 |---|---|---|
-| **(a) Happy path:** no-op PR on `RevHero-FE-New main`, qa-gate passes, deploy succeeds | qa-gate exits 0; `#deploys` Slack receives ✅ success message with PR title + sha + author + duration | ⏸ Awaiting GHCR build pipeline + first daily QA run + a real PR. Code paths in place. |
-| **(b) Gate-block path:** revert one Round-7 fix (e.g. proxy.ts role-gate for QA-FULL-006), push to PR | qa-gate detects 1 CRITICAL fail, exits 1, deploy never starts; Slack `#qa-staging` (or wherever the gate's `::error::` ends up) shows blocked message | ⏸ Manual exercise after Phase 4 reaches main |
-| **(c) Deploy-fail path:** simulate Dokploy failure (delete the Dokploy app id secret temporarily) | Build succeeds, Dokploy step fails with auth error, notify job posts ❌ FAILED message | ⏸ Manual exercise; the notify reusable already encodes this code path |
-| **(d) Timeout path:** rare; verify by adding a `sleep 600` before health-check on a throwaway PR | notify job posts ⚠️ TIMEOUT message after 5 min wait | ⏸ Manual exercise |
+| **(a) Happy path:** no-op PR on `RevHero-FE-New main`, qa-gate passes, deploy succeeds | qa-gate exits 0; `#deploys` Slack receives ✅ success message | ⏸ Requires StackDNS fix on `qa-reports.test.revhero.io` first (gate fetches that URL). Once DNS lands, this is testable end-to-end. |
+| **(b) Gate-block path:** revert one Round-7 fix (e.g. proxy.ts role-gate for QA-FULL-006), push to PR | qa-gate detects 1 CRITICAL fail, exits 1, deploy never starts | ⏸ Same DNS prerequisite |
+| **(c) Deploy-fail path:** simulate Dokploy failure (delete the Dokploy app id secret temporarily) | Build succeeds, Dokploy step fails with auth error, notify job posts ❌ FAILED message | ⏸ Manual exercise; notify reusable code path already encoded |
+| **(d) Timeout path:** rare; add a `sleep 600` before health-check on a throwaway PR | notify job posts ⚠️ TIMEOUT message after 5 min wait | ⏸ Manual exercise |
 
-These are deliberately staged for the user to validate after merging Phase 4 staging→main on each repo. The gate logic itself is testable in isolation today via `gh workflow run` on an open PR.
+### Live verifications completed 2026-04-30
+
+| Live check | Status | Detail |
+|---|---|---|
+| All 5 workflows in `automated-qa` parsed + active | ✅ | `gh api /repos/RevHERO-LLC/automated-qa/actions/workflows` returned ci, deploy, notify-prod-deploy, qa-pr, qa-staging — all `active` |
+| `qa-pr.yml` workflow_dispatch end-to-end | ✅ | Run `25177414177` succeeded (33s) |
+| `qa-staging.yml` workflow_dispatch end-to-end | ✅ | Run `25177458925` succeeded (31s) — dispatched Dokploy redeploy + polled status |
+| 13/13 service repos have `qa-gate` in deploy-prod.yml staging branch | ✅ | All 13 verified via `gh api /repos/.../contents/.github/workflows/deploy-prod.yml?ref=staging` decode |
+| 13/13 service repos have `notify-prod-deploy` `uses:` in deploy-prod.yml | ✅ | Same verification pass |
+| QA-FULL-027 BFF fix landed on staging | ✅ | Commit `69db619` on `RevHero-user-fe-backend` staging |
+| Deployed runner verified the fix | ✅ | FE-AUTH-010 + FE-AUTH-011 PASS in run `scheduled-20260430T162821` |
 
 ### The reusable workflow's behavior (testable now via `act` or workflow_dispatch)
 
@@ -122,11 +132,11 @@ RevHero-user-fe-backend (staging branch):
 
 ## Unresolved (deliberate)
 
-1. **Gate happy-path needs the Phase 3 GHCR build to complete + the first daily QA run.** Currently the `qa-reports.test.revhero.io` static endpoint returns nothing because the Dokploy redeploy hasn't fired yet (waiting on the GHCR image push). This unblocks itself once Phase 3's build succeeds.
+1. **DNS for `qa-reports.test.revhero.io` (Phase 3 carryover).** The gate fetches `https://qa-reports.test.revhero.io/latest.json` to determine pass/fail status. Until StackDNS gets an A record for that subdomain pointing at `147.93.1.174`, the gate fail-blocks all prod deploys (deliberate fail-closed). One-line user-side fix.
 
-2. **Service repos pushed to staging, NOT main.** Each repo's `staging→main` merge is the user-approved checkpoint that activates the gate on prod deploys. I did not auto-merge per the constraint "Never push directly to main on any of the 13 service repos."
+2. **Service repos pushed to staging, NOT main.** Each repo's `staging→main` merge is the user-approved checkpoint that activates the gate on prod deploys. Did not auto-merge per the constraint "Never push directly to main on any of the 13 service repos."
 
-3. **Demonstrations (a)/(b)/(c)/(d) staged for user.** The infrastructure is in place; running each scenario requires a real PR or a deliberate local revert. Documented above so the user can exercise them post-merge.
+3. **Live demonstrations (a)/(b)/(c)/(d) staged.** The infrastructure is in place + all dispatch paths verified working. Running each scenario requires a real PR / revert / sabotaged secret, which the user can exercise post-DNS-fix.
 
 ## Conclusion
 
