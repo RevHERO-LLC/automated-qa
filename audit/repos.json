@@ -1,0 +1,17 @@
+{
+  "repos": [
+    { "name": "RevHero-users-service", "url": "https://github.com/RevHERO-LLC/RevHero-users-service.git", "path": "/home/claude-audit/repos/RevHero-users-service" },
+    { "name": "RevHero-user-fe-backend", "url": "https://github.com/RevHERO-LLC/RevHero-user-fe-backend.git", "path": "/home/claude-audit/repos/RevHero-user-fe-backend" },
+    { "name": "RevHero-FE-New", "url": "https://github.com/RevHERO-LLC/RevHero-FE-New.git", "path": "/home/claude-audit/repos/RevHero-FE-New" },
+    { "name": "RevHERO-Super-Admin-Portal", "url": "https://github.com/RevHERO-LLC/RevHERO-Super-Admin-Portal.git", "path": "/home/claude-audit/repos/RevHERO-Super-Admin-Portal" },
+    { "name": "RevHero-campaign-service", "url": "https://github.com/RevHERO-LLC/RevHero-campaign-service.git", "path": "/home/claude-audit/repos/RevHero-campaign-service" },
+    { "name": "RevHero-deals-actions-service", "url": "https://github.com/RevHERO-LLC/RevHero-deals-actions-service.git", "path": "/home/claude-audit/repos/RevHero-deals-actions-service" },
+    { "name": "RevHero-dealmover-v3", "url": "https://github.com/RevHERO-LLC/RevHero-dealmover-v3.git", "path": "/home/claude-audit/repos/RevHero-dealmover-v3" },
+    { "name": "Revhero-Generic-Ai-Agent", "url": "https://github.com/RevHERO-LLC/Revhero-Generic-Ai-Agent.git", "path": "/home/claude-audit/repos/Revhero-Generic-Ai-Agent" },
+    { "name": "RevHero-cloud-documents-service", "url": "https://github.com/RevHERO-LLC/RevHero-cloud-documents-service.git", "path": "/home/claude-audit/repos/RevHero-cloud-documents-service" },
+    { "name": "RevHero-Activity-service", "url": "https://github.com/RevHERO-LLC/RevHero-Activity-service.git", "path": "/home/claude-audit/repos/RevHero-Activity-service" },
+    { "name": "RevHero-pipedrive-v3", "url": "https://github.com/RevHERO-LLC/RevHero-pipedrive-v3.git", "path": "/home/claude-audit/repos/RevHero-pipedrive-v3" },
+    { "name": "RevHero-email-ingress", "url": "https://github.com/RevHERO-LLC/RevHero-email-ingress.git", "path": "/home/claude-audit/repos/RevHero-email-ingress" },
+    { "name": "RevHero-sms-service", "url": "https://github.com/RevHERO-LLC/RevHero-sms-service.git", "path": "/home/claude-audit/repos/RevHero-sms-service" }
+  ]
+}

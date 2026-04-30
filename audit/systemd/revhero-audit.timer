@@ -1,0 +1,13 @@
+[Unit]
+Description=Fire revhero-audit.service every 14 days
+Requires=revhero-audit.service
+
+[Timer]
+OnUnitActiveSec=14d
+# OnBootSec gives the timer a 5-minute warmup after reboot before kicking off.
+OnBootSec=5min
+Unit=revhero-audit.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

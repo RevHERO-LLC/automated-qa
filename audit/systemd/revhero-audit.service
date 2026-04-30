@@ -1,0 +1,23 @@
+[Unit]
+Description=RevHero QA audit agent (Claude Code) — runs coverage + stale-detect prompts every 14 days
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=claude-audit
+Group=claude-audit
+WorkingDirectory=/home/claude-audit/automated-qa/audit
+EnvironmentFile=/home/claude-audit/.env
+ExecStart=/home/claude-audit/automated-qa/audit/audit.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=2h
+
+# Resource caps so the audit can't burn the whole VPS.
+MemoryMax=2G
+CPUQuota=100%
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
