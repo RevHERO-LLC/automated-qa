@@ -72,9 +72,17 @@ export async function bffLogin(email: string, password: string): Promise<LoginRe
     { email, password },
     { withCredentials: true }
   );
-  const setCookie = (res.headers["set-cookie"] ?? []) as string[];
+  const setCookie = splitSetCookieHeader(res.headers["set-cookie"]);
   const cookies = setCookie.map(parseSetCookie);
   return { status: res.status, data: res.data, cookies };
+}
+
+function splitSetCookieHeader(raw: string | string[] | undefined): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  // Some HTTP backends collapse multiple Set-Cookie values into one comma-
+  // joined string. Split on commas that precede a cookie-name= pattern.
+  return String(raw).split(/,(?=\s*[a-zA-Z0-9_-]+=)/);
 }
 
 export async function bffRegister(payload: {
@@ -87,12 +95,23 @@ export async function bffRegister(payload: {
   return bffClient().post("/v1/auth/register", payload);
 }
 
+// QA-FE-NOTE: forgot-password is OTP-based via two endpoints:
+//   POST /v1/auth/forgot-password/generate-otp  { email }   → emails the OTP
+//   POST /v1/auth/forgot-password/reset         { email, otp, new_password }
 export async function bffForgotPassword(email: string): Promise<AxiosResponse> {
-  return bffClient().post("/v1/auth/forgot-password", { email });
+  return bffClient().post("/v1/auth/forgot-password/generate-otp", { email });
 }
 
-export async function bffResetPassword(token: string, password: string): Promise<AxiosResponse> {
-  return bffClient().post("/v1/auth/reset-password", { token, password });
+export async function bffResetPassword(
+  email: string,
+  otp: string,
+  newPassword: string
+): Promise<AxiosResponse> {
+  return bffClient().post("/v1/auth/forgot-password/reset", {
+    email,
+    otp,
+    new_password: newPassword
+  });
 }
 
 export async function bffWhoAmI(token: string): Promise<AxiosResponse> {

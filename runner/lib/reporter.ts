@@ -5,10 +5,13 @@
 // In Phase 3 the reporter additionally posts to Slack and opens GitHub Issues,
 // gated on env.GITHUB_TOKEN / env.SLACK_WEBHOOK_QA being set. Phase 1 only
 // exercises the file-output path.
+//
+// Runs in vitest's main process — .env is NOT loaded there by the test
+// setup file. Load it ourselves so QA_REPORT_DIR + GITHUB/SLACK env vars
+// resolve correctly even if the parent shell didn't export them.
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { Reporter, File, Task } from "vitest";
-import { getReportRoot, getRunId, getReportLatestDir, getEnv } from "./context.js";
+import * as dotenv from "dotenv";
 import {
   buildQaSummaryMessage,
   ensureIssueOpen,
@@ -18,6 +21,30 @@ import {
   type RunSummary,
   type TestResult
 } from "@revhero/qa-shared";
+
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+function reportRoot(): string {
+  const runId = process.env.QA_RUN_ID || `local-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`;
+  const baseDir = process.env.QA_REPORT_DIR || "./reports";
+  const root = path.resolve(baseDir, runId);
+  fs.mkdirSync(root, { recursive: true });
+  fs.mkdirSync(path.join(root, "screenshots"), { recursive: true });
+  fs.mkdirSync(path.join(root, "traces"), { recursive: true });
+  return root;
+}
+
+function reportLatestDir(): string {
+  return path.resolve(process.env.QA_REPORT_DIR || "./reports");
+}
+
+function getRunId(): string {
+  return (
+    process.env.QA_RUN_ID ||
+    `local-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}`
+  );
+}
 
 type CaseRecord = {
   id: string;
@@ -31,7 +58,7 @@ type CaseRecord = {
 
 const TEST_ID_REGEX = /^(FE-[A-Z]+(?:-[A-Z]+)*-\d{3})\b/;
 
-export default class QaReporter implements Reporter {
+export default class QaReporter {
   private startedAt = "";
   private finishedAt = "";
   private results: CaseRecord[] = [];
@@ -40,22 +67,29 @@ export default class QaReporter implements Reporter {
     this.startedAt = new Date().toISOString();
   }
 
-  onFinished(files?: File[]): void {
+  // Vitest 2.x calls onFinished(files, errors). The shape is loosely typed
+  // in different sub-versions, so we treat everything as `any` and walk the
+  // task tree defensively.
+  onFinished(files?: any[], _errors?: any[]): void | Promise<void> {
     this.finishedAt = new Date().toISOString();
-    if (files) {
-      for (const f of files) {
-        this.collect(f, f.filepath ?? f.name ?? "unknown");
+    try {
+      if (Array.isArray(files)) {
+        for (const f of files) {
+          const fp = (f && (f.filepath || f.name)) || "unknown";
+          this.collect(f, fp);
+        }
       }
+    } catch (err) {
+      console.error("[reporter] collect error:", err);
     }
-    void this.write();
+    return this.write();
   }
 
-  private collect(task: Task, filePath: string, parentName: string = ""): void {
-    if (task.type === "suite" && task.tasks) {
-      const fullName = parentName ? `${parentName} > ${task.name}` : task.name;
-      for (const child of task.tasks) {
-        this.collect(child, filePath, fullName);
-      }
+  private collect(task: any, filePath: string, parentName: string = ""): void {
+    if (!task) return;
+    if (task.type === "suite" && Array.isArray(task.tasks)) {
+      const fullName = parentName ? `${parentName} > ${task.name ?? ""}` : (task.name ?? "");
+      for (const child of task.tasks) this.collect(child, filePath, fullName);
       return;
     }
     if (task.type !== "test") return;
@@ -72,7 +106,10 @@ export default class QaReporter implements Reporter {
     else status = "NOT_EXEC";
 
     const duration_ms = task.result?.duration ?? 0;
-    const error = task.result?.errors?.map((e) => e.message ?? String(e)).join("\n");
+    const errors = task.result?.errors;
+    const error = Array.isArray(errors)
+      ? errors.map((e: any) => e?.message ?? String(e)).join("\n")
+      : undefined;
 
     const record: CaseRecord = {
       id,
@@ -82,40 +119,44 @@ export default class QaReporter implements Reporter {
       file_path: filePath,
       test_path: parentName ? `${parentName} > ${name}` : name
     };
-    if (error) {
-      record.error = error;
-    }
+    if (error) record.error = error;
     this.results.push(record);
   }
 
   private async write(): Promise<void> {
-    const root = getReportRoot();
-    const summary = this.buildSummary();
-    const md = this.renderMarkdown(summary);
-    const json = JSON.stringify({ summary, results: this.results }, null, 2);
+    try {
+      const root = reportRoot();
+      const summary = this.buildSummary();
+      const md = this.renderMarkdown(summary);
+      const json = JSON.stringify({ summary, results: this.results }, null, 2);
 
-    fs.writeFileSync(path.join(root, "report.md"), md, "utf8");
-    fs.writeFileSync(path.join(root, "report.json"), json, "utf8");
+      fs.writeFileSync(path.join(root, "report.md"), md, "utf8");
+      fs.writeFileSync(path.join(root, "report.json"), json, "utf8");
 
-    const latestDir = getReportLatestDir();
-    fs.mkdirSync(latestDir, { recursive: true });
-    fs.writeFileSync(path.join(latestDir, "latest.md"), md, "utf8");
-    fs.writeFileSync(path.join(latestDir, "latest.json"), json, "utf8");
+      const latestDir = reportLatestDir();
+      fs.mkdirSync(latestDir, { recursive: true });
+      fs.writeFileSync(path.join(latestDir, "latest.md"), md, "utf8");
+      fs.writeFileSync(path.join(latestDir, "latest.json"), json, "utf8");
 
-    const env = getEnv();
-    if (env.SLACK_WEBHOOK_QA) {
-      try {
-        await postSlack(env.SLACK_WEBHOOK_QA, buildQaSummaryMessage(summary));
-      } catch (err) {
-        console.error("Slack post failed:", err);
+      const slackUrl = process.env.SLACK_WEBHOOK_QA;
+      if (slackUrl) {
+        try {
+          await postSlack(slackUrl, buildQaSummaryMessage(summary));
+        } catch (err) {
+          console.error("[reporter] Slack post failed:", err);
+        }
       }
-    }
-    if (env.GITHUB_TOKEN && env.GITHUB_REPO) {
-      try {
-        await this.postIssues(env.GITHUB_REPO);
-      } catch (err) {
-        console.error("GitHub Issue sync failed:", err);
+      const ghToken = process.env.GITHUB_TOKEN;
+      const ghRepo = process.env.GITHUB_REPO || "RevHERO-LLC/automated-qa";
+      if (ghToken) {
+        try {
+          await this.postIssues(ghRepo);
+        } catch (err) {
+          console.error("[reporter] GitHub Issue sync failed:", err);
+        }
       }
+    } catch (err) {
+      console.error("[reporter] write error:", err);
     }
   }
 
@@ -207,9 +248,9 @@ export default class QaReporter implements Reporter {
     lines.push("|---|---|---|---|");
     const sorted = [...this.results].sort((a, b) => a.id.localeCompare(b.id));
     for (const r of sorted) {
-      const status = r.status === "PASS" ? "✅" : r.status === "FAIL" ? "❌" : r.status === "SKIP" ? "⏭️" : "⏸";
+      const status = r.status === "PASS" ? "PASS" : r.status === "FAIL" ? "FAIL" : r.status === "SKIP" ? "SKIP" : "NOT_EXEC";
       const desc = r.description.length > 90 ? r.description.slice(0, 87) + "..." : r.description;
-      lines.push(`| \`${r.id}\` | ${status} ${r.status} | ${r.duration_ms}ms | ${escapeMd(desc)} |`);
+      lines.push(`| \`${r.id}\` | ${status} | ${r.duration_ms}ms | ${escapeMd(desc)} |`);
     }
     const failures = sorted.filter((r) => r.status === "FAIL");
     if (failures.length > 0) {

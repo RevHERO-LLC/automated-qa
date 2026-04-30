@@ -1,7 +1,16 @@
 // Browser-based auth fixture. loginAs() returns a logged-in BrowserContext that
-// shares cookies + localStorage across tests in the same file. The first call
-// per role per worker performs a real /login round-trip; subsequent calls in
-// the same worker reuse the storageState cached on disk.
+// shares cookies + localStorage across tests in the same file.
+//
+// Implementation note (2026-04-30): the React login form has a hydration race
+// where a button click before hydration falls back to the browser's default
+// GET form submit (URL becomes `/login?email=...&password=...`). To avoid the
+// race entirely, performLogin hits the BFF /v1/auth/login endpoint via
+// BrowserContext.request — Set-Cookie headers from that response land in the
+// context's cookie jar, and we mirror the JWT into localStorage for FE code
+// paths that read from there.
+//
+// Tests that explicitly verify the login UI (FE-AUTH-019 spinner) interact
+// with the form directly and don't go through this helper.
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -32,43 +41,117 @@ export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext
   const b = await getBrowser();
   const sp = sessionPath(role);
   const reuse = fs.existsSync(sp);
+  const baseURL = getAreaUrls().base;
   const context = await b.newContext(
     reuse
-      ? {
-          baseURL: getAreaUrls().base,
-          storageState: sp,
-          viewport: { width: 1440, height: 900 }
-        }
-      : {
-          baseURL: getAreaUrls().base,
-          viewport: { width: 1440, height: 900 }
-        }
+      ? { baseURL, storageState: sp, viewport: { width: 1440, height: 900 } }
+      : { baseURL, viewport: { width: 1440, height: 900 } }
   );
   const page = await context.newPage();
 
-  if (!reuse) {
-    await performLogin(page, role);
-    await context.storageState({ path: sp });
-  } else {
-    // Validate the cached session still works; if not, rebuild it.
+  let needsLogin = !reuse;
+  if (reuse) {
+    // Validate the cached session still works; if not, rebuild.
     await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
-    if (page.url().includes("/login")) {
-      await performLogin(page, role);
-      await context.storageState({ path: sp });
-    }
+    if (page.url().includes("/login")) needsLogin = true;
+  }
+  if (needsLogin) {
+    await performLoginViaApi(context, role);
+    await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+    await context.storageState({ path: sp });
   }
   return { context, page };
 }
 
-async function performLogin(page: Page, role: AuthRole): Promise<void> {
+async function performLoginViaApi(context: BrowserContext, role: AuthRole): Promise<void> {
   const creds = getCredentials(role);
-  await page.goto("/login", { waitUntil: "domcontentloaded" });
-  await page.getByPlaceholder("Email").or(page.locator('input[type="email"]').first()).fill(creds.email);
-  await page.getByPlaceholder(/password/i).or(page.locator('input[type="password"]').first()).fill(creds.password);
-  await Promise.all([
-    page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 30_000 }),
-    page.getByRole("button", { name: /^login$/i }).click()
-  ]);
+  const bff = getAreaUrls().bff;
+  let res = await context.request.post(`${bff}/v1/auth/login`, {
+    data: { email: creds.email, password: creds.password },
+    headers: { "content-type": "application/json", accept: "application/json" }
+  });
+
+  // The BFF rate-limits login attempts per email (LoginMaxAttemptsPerEmail = 10
+  // per 6m20s window). Prior test runs may have polluted the budget. If we hit
+  // 429, wait the server-suggested retry_after and try once more — but cap the
+  // wait at 60s so a rogue test doesn't hang the suite indefinitely.
+  if (res.status() === 429) {
+    let retrySec = 30;
+    try {
+      const body = (await res.json()) as any;
+      const suggested = body?.data?.retry_after_seconds ?? body?.retry_after_seconds;
+      if (typeof suggested === "number" && suggested > 0) retrySec = Math.min(suggested + 2, 60);
+    } catch {
+      /* ignore json parse */
+    }
+    console.log(`[auth] BFF login returned 429 for ${role}; sleeping ${retrySec}s before retry`);
+    await new Promise((r) => setTimeout(r, retrySec * 1000));
+    res = await context.request.post(`${bff}/v1/auth/login`, {
+      data: { email: creds.email, password: creds.password },
+      headers: { "content-type": "application/json", accept: "application/json" }
+    });
+  }
+
+  if (!res.ok()) {
+    const body = await res.text().catch(() => "<unreadable>");
+    throw new Error(`BFF /v1/auth/login returned ${res.status()}: ${body.slice(0, 300)}`);
+  }
+  let body: any = {};
+  try {
+    body = await res.json();
+  } catch {
+    // Non-JSON response — server may rely entirely on cookies. That's fine.
+  }
+  const token = body?.access_token ?? body?.token ?? body?.data?.access_token ?? body?.data?.token;
+  const refreshToken =
+    body?.refresh_token ?? body?.data?.refresh_token ?? body?.refreshToken ?? body?.data?.refreshToken;
+
+  if (token) {
+    // The FE reads `token` and `refresh_token` cookies on its own domain
+    // (staging.revhero.ai) via `getCookie("token")` in apiClient.ts.
+    // Replicate the cookie writes that lib/auth.ts:setAuthCookie does after
+    // a real form-driven login.
+    const stagingHost = new URL(getAreaUrls().base).hostname;
+    const oneDay = Math.floor(Date.now() / 1000) + 86_400;
+    const cookies = [
+      {
+        name: "token",
+        value: token,
+        domain: stagingHost,
+        path: "/",
+        expires: oneDay,
+        httpOnly: false,
+        secure: true,
+        sameSite: "Lax" as const
+      }
+    ];
+    if (refreshToken) {
+      cookies.push({
+        name: "refresh_token",
+        value: refreshToken,
+        domain: stagingHost,
+        path: "/",
+        expires: oneDay,
+        httpOnly: false,
+        secure: true,
+        sameSite: "Lax" as const
+      });
+    }
+    await context.addCookies(cookies);
+
+    // Also mirror to localStorage for any FE code paths that read from there.
+    await context.addInitScript(
+      ({ tokenValue }) => {
+        try {
+          localStorage.setItem("revhero_token", tokenValue);
+          localStorage.setItem("access_token", tokenValue);
+        } catch {
+          // localStorage may be blocked in some contexts — ignore.
+        }
+      },
+      { tokenValue: token }
+    );
+  }
 }
 
 export async function freshContext(): Promise<{ context: BrowserContext; page: Page }> {

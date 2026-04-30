@@ -12,7 +12,7 @@ export default defineConfig({
     maxConcurrency: 4,
     fileParallelism: true,
     isolate: true,
-    retry: 2,
+    retry: 0,
     reporters: ["default"],
     setupFiles: ["./fixtures/setup.ts"],
     globals: false,
