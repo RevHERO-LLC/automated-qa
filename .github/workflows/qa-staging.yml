@@ -1,5 +1,10 @@
 # Daily scheduled QA run + manual workflow_dispatch trigger.
-# Phase 3 wires the Dokploy app deploy.
+#
+# Architecture: this workflow is the issue-management layer for the runner.
+# The runner container only writes report.md/json into the shared volume;
+# this workflow reads the report from the static endpoint after the run
+# completes and uses the auto-scoped GITHUB_TOKEN (issues:write) to open,
+# update, and close issues for each FAIL — no PAT lives in the container.
 name: qa-staging
 
 on:
@@ -17,9 +22,11 @@ permissions:
   issues: write
 
 jobs:
-  trigger-run:
+  trigger-and-report:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Trigger Dokploy QA-runner redeploy (runs the suite)
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -45,12 +52,104 @@ jobs:
               | jq -r '.applicationStatus // "unknown"')
             echo "Dokploy status: $status"
             if [[ "$status" == "done" || "$status" == "idle" ]]; then
-              exit 0
+              break
             fi
             if [[ "$status" == "error" ]]; then
+              echo "::error::Dokploy reported error during QA run"
               exit 1
             fi
             sleep 15
           done
-          echo "::warning::Dokploy run still in-flight after 30m"
-          exit 0
+
+      - name: Fetch latest QA report
+        run: |
+          # The static reporter serves the volume the runner just wrote to.
+          # Allow a few seconds for nginx to see the new files.
+          sleep 10
+          curl -fsSLk https://qa-reports.test.revhero.io/latest.json -o /tmp/latest.json
+          jq '.summary | {run_id, finished_at, total, passed, failed, skipped, not_exec}' /tmp/latest.json
+
+      - name: Sync GitHub Issues for failed tests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          REGISTRY=registry.json
+
+          # 1. For every FAIL: ensure an issue is open titled `[QA-FAIL] <ID>: <desc>`
+          #    If an issue with that exact title is closed, reopen it.
+          # 2. For every PASS that previously had a [QA-FAIL] open: close that issue.
+          jq -c '.summary.results[]' /tmp/latest.json | while read -r row; do
+            id=$(echo "$row" | jq -r '.id')
+            status=$(echo "$row" | jq -r '.status')
+            err=$(echo "$row" | jq -r '.error // ""')
+            duration=$(echo "$row" | jq -r '.duration_ms')
+
+            entry=$(jq -r --arg id "$id" '.entries[] | select(.id == $id)' "$REGISTRY")
+            desc=$(echo "$entry" | jq -r '.description // ""' | head -c 100)
+            sev=$(echo "$entry" | jq -r '.severity // "medium"')
+            area=$(echo "$entry" | jq -r '.area // "unknown"')
+            title="[QA-FAIL] ${id}: ${desc}"
+
+            existing_json=$(gh issue list --repo "$REPO" --state all \
+              --search "in:title \"${title}\"" \
+              --json number,state,title --limit 5 2>/dev/null || echo "[]")
+            existing_number=$(echo "$existing_json" | jq -r --arg t "$title" '[.[] | select(.title == $t)] | .[0].number // ""')
+            existing_state=$(echo "$existing_json" | jq -r --arg t "$title" '[.[] | select(.title == $t)] | .[0].state // ""' | tr '[:upper:]' '[:lower:]')
+
+            run_id=$(jq -r '.summary.run_id' /tmp/latest.json)
+            body="**Test ID:** ${id}
+**Severity:** ${sev}
+**Area:** ${area}
+**Duration:** ${duration}ms
+**Run:** \`${run_id}\`
+
+### Error
+\`\`\`
+${err}
+\`\`\`
+
+_Auto-managed by automated-qa qa-staging.yml._
+[Latest report](https://qa-reports.test.revhero.io/latest.md)"
+
+            if [[ "$status" == "FAIL" ]]; then
+              if [[ -z "$existing_number" ]]; then
+                echo "Opening new issue for $id"
+                gh issue create --repo "$REPO" --title "$title" --body "$body" \
+                  --label "qa-fail,severity:${sev},area:${area}" || \
+                gh issue create --repo "$REPO" --title "$title" --body "$body"
+              elif [[ "$existing_state" == "closed" ]]; then
+                echo "Reopening issue #${existing_number} for $id"
+                gh issue reopen "$existing_number" --repo "$REPO"
+                gh issue comment "$existing_number" --repo "$REPO" --body "Reopened — failure recurred in run \`${run_id}\`.
+
+${body}"
+              else
+                echo "Updating open issue #${existing_number} for $id"
+                gh issue comment "$existing_number" --repo "$REPO" --body "Still failing in run \`${run_id}\`.
+
+${body}"
+              fi
+            elif [[ "$status" == "PASS" && -n "$existing_number" && "$existing_state" == "open" ]]; then
+              echo "Closing issue #${existing_number} for $id (now passing)"
+              gh issue comment "$existing_number" --repo "$REPO" --body "Closed — test now passing in run \`${run_id}\`."
+              gh issue close "$existing_number" --repo "$REPO"
+            fi
+          done
+
+      - name: Fail the workflow on CRITICAL failures
+        run: |
+          set -euo pipefail
+          critical_fails=$(jq -r '
+            [.summary.results[] | select(.status == "FAIL") | .id] as $failed
+            | input.entries
+            | map(select(.id as $i | $failed | index($i)))
+            | map(select(.severity == "critical"))
+            | length
+          ' /tmp/latest.json registry.json)
+          echo "CRITICAL fail count: $critical_fails"
+          if [[ "$critical_fails" -gt 0 ]]; then
+            echo "::error::$critical_fails CRITICAL test(s) failing"
+            exit 1
+          fi
