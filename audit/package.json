@@ -1,0 +1,9 @@
+{
+  "name": "@revhero/qa-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 6 placeholder — Claude Code audit agent. Lands in Phase 6.",
+  "scripts": {
+    "typecheck": "echo 'audit not yet implemented (Phase 6)'"
+  }
+}

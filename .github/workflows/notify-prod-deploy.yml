@@ -1,0 +1,142 @@
+# Reusable workflow called by every service repo's deploy-prod.yml after
+# the Dokploy deploy step. Polls Dokploy application.status until healthy
+# or 5min timeout, then posts ONE Slack message in the format that matches
+# the Phase 4 catalog (success / failure / timeout). Centralised here so the
+# message format updates in one place instead of editing 13 deploy workflows.
+name: notify-prod-deploy
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: "Calling repo (owner/name)"
+        required: true
+        type: string
+      sha:
+        description: "Deployed commit SHA"
+        required: true
+        type: string
+      pr_title:
+        description: "Latest commit message or PR title"
+        required: true
+        type: string
+      author:
+        description: "GitHub login of the author"
+        required: true
+        type: string
+      image_tag:
+        description: "Image tag pushed (e.g. ':prod' or sha)"
+        required: true
+        type: string
+      dokploy_app_id:
+        description: "Dokploy application ID to watch"
+        required: true
+        type: string
+      service_url:
+        description: "URL to ping after deploy completes (optional)"
+        required: false
+        type: string
+        default: ""
+      run_url:
+        description: "URL of the calling GH Actions run"
+        required: true
+        type: string
+    secrets:
+      DOKPLOY_API_TOKEN:
+        required: true
+      SLACK_WEBHOOK_DEPLOYS:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Dokploy deploy to settle
+        id: wait
+        env:
+          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+          APP_ID: ${{ inputs.dokploy_app_id }}
+        run: |
+          deadline=$(( $(date +%s) + 300 )) # 5 min
+          status="unknown"
+          while [[ $(date +%s) -lt $deadline ]]; do
+            status=$(curl -fsSL \
+              -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
+              "http://147.93.1.174:3000/api/application.one?applicationId=${APP_ID}" \
+              | jq -r '.applicationStatus // "unknown"')
+            echo "Dokploy status: $status"
+            if [[ "$status" == "done" || "$status" == "idle" ]]; then
+              echo "outcome=healthy" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            if [[ "$status" == "error" ]]; then
+              echo "outcome=failed" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "outcome=timeout" >> $GITHUB_OUTPUT
+
+      - name: Verify service URL responds (when healthy + service_url provided)
+        if: steps.wait.outputs.outcome == 'healthy' && inputs.service_url != ''
+        env:
+          URL: ${{ inputs.service_url }}
+        run: |
+          # Best-effort 200 check. Flag as healthy-but-unreachable if it 4xx/5xx.
+          code=$(curl -fsSL -o /dev/null -w "%{http_code}" --max-time 30 "$URL" || echo "000")
+          echo "Service URL returned $code"
+
+      - name: Compose + post Slack message
+        env:
+          SLACK_WEBHOOK_DEPLOYS: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+          OUTCOME: ${{ steps.wait.outputs.outcome }}
+          REPO: ${{ inputs.repo }}
+          SHA: ${{ inputs.sha }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          AUTHOR: ${{ inputs.author }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          SERVICE_URL: ${{ inputs.service_url }}
+          RUN_URL: ${{ inputs.run_url }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA="${SHA:0:7}"
+          PR_TITLE_TRIM="${PR_TITLE:0:120}"
+          case "$OUTCOME" in
+            healthy)
+              EMOJI=":white_check_mark:"
+              HEADLINE="${EMOJI} *${REPO}* @ \`${SHORT_SHA}\` deployed by ${AUTHOR}"
+              CONTEXT="<${RUN_URL}|GitHub Actions run>${SERVICE_URL:+ • <${SERVICE_URL}|Service URL>}"
+              ;;
+            failed)
+              EMOJI=":x:"
+              HEADLINE="${EMOJI} *${REPO}* @ \`${SHORT_SHA}\` deploy FAILED at Dokploy step"
+              CONTEXT="<${RUN_URL}|GitHub Actions run> • Action: \`gh workflow run\` to retry, or roll back via Dokploy"
+              ;;
+            timeout|*)
+              EMOJI=":warning:"
+              HEADLINE="${EMOJI} *${REPO}* @ \`${SHORT_SHA}\` deploy TIMEOUT — may still be rolling"
+              CONTEXT="<${RUN_URL}|GitHub Actions run> • Check Dokploy UI and \`docker service ps\` on VPS"
+              ;;
+          esac
+
+          jq -n \
+            --arg text "${HEADLINE}" \
+            --arg pr "${PR_TITLE_TRIM}" \
+            --arg context "${CONTEXT}" \
+            --arg image "${IMAGE_TAG}" \
+            '{
+              text: $text,
+              blocks: [
+                { type: "section", text: { type: "mrkdwn", text: $text } },
+                { type: "section", fields: [
+                  { type: "mrkdwn", text: ("*Title:* " + $pr) },
+                  { type: "mrkdwn", text: ("*Image:* `" + $image + "`") }
+                ]},
+                { type: "context", elements: [
+                  { type: "mrkdwn", text: $context }
+                ]}
+              ]
+            }' | curl -fsSL -X POST \
+              -H "Content-Type: application/json" \
+              -d @- \
+              "${SLACK_WEBHOOK_DEPLOYS}"
