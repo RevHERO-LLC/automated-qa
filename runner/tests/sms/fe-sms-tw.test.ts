@@ -42,16 +42,20 @@ describe("Twilio SMS path (FE-SMS-TW)", () => {
     expect(true).toBe(true);
   });
   test("FE-SMS-TW-011 — Twilio webhook with wrong bears_key → 401", async () => {
-    // sms-service receives Twilio inbound at /v1/messages/webhook/twilio/incoming.
-    // Sending a request without the bears_key (or with a wrong one) should be
-    // rejected. Hit the public endpoint without auth — expect 401/403/404.
-    const url = `${getAreaUrls().smsService}/v1/messages/webhook/twilio/incoming`;
+    // QA-AUDIT-STALE #31: corrected from /webhook/twilio/incoming → /webhook/incoming.
+    // sms-service routes.go:113 registers the Twilio inbound webhook at
+    // POST /v1/messages/webhook/incoming (no /twilio/ segment). The previous
+    // path was 404'ing rather than exercising TwilioWebhookAuth — fake-pass.
+    const url = `${getAreaUrls().smsService}/v1/messages/webhook/incoming`;
     const res = await axios.post(
       url,
       { wrong_payload: true },
       { timeout: 30_000, validateStatus: () => true }
     );
-    expect([401, 403, 404, 405]).toContain(res.status);
+    // Now that we hit the real route, auth middleware should reject with
+    // 401/403; 405 is also acceptable if the handler reads bears_key from
+    // query string rather than body.
+    expect([401, 403, 405]).toContain(res.status);
   });
   test("FE-SMS-TW-012 — Twilio status callback updates messages.status (smoke)", async () => {
     expect(true).toBe(true);
