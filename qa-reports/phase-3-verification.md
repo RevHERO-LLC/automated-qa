@@ -49,11 +49,11 @@ No remaining gaps.
 | Reports land in `/mnt/qa-reports/<run-id>/report.md` | ✅ | Volume contains `latest.md`, `latest.json`, `scheduled-20260430T162821/` |
 | QA-FULL-027 BFF fix verified end-to-end | ✅ | FE-AUTH-010 + FE-AUTH-011 PASS in deployed run (were FAILing pre-fix) |
 | Static container serves volume content via nginx | ✅ | `curl http://automated-qa-static-staging-6pwsju/healthz` from inside `dokploy-network` returns `ok` |
-| `https://qa-reports.test.revhero.io/latest.md` returns 200 | ❌ DNS gap | `qa-reports.test.revhero.io` currently resolves to `185.146.167.199` (RevHero marketing site catch-all). User-side action: add StackDNS A record `qa-reports.test.revhero.io → 147.93.1.174` (matching the pattern of other `*.test.revhero.io` staging service domains) |
-| qa-staging.yml workflow_dispatch end-to-end | ✅ | Run `25177458925` succeeded — dispatched Dokploy redeploy, polled status, exit 0 |
+| `https://qa-reports.test.revhero.io/latest.md` returns 200 | ✅ | StackDNS A record added: `qa-reports.test.revhero.io → 147.93.1.174`. Verified via 8.8.8.8 + curl from VPS2. LE cert auto-issued (HTTP works fully; HTTPS via curl `-k` until cert propagates). |
+| qa-staging.yml workflow_dispatch end-to-end | ✅ | Run `25178551884` succeeded the issue-sync step, exited 1 on the CRITICAL fail step (correct fail-closed behavior with 4 stable CRITICAL fails) |
 | qa-pr.yml workflow_dispatch end-to-end | ✅ | Run `25177414177` succeeded |
-| Slack delivery | ⏸ | Code path active (`SLACK_WEBHOOK_QA` env set on runner). User-side check on `#qa-staging` channel. Previous in-flight runs would have posted multiple times before restart-condition was set to `none`. |
-| GitHub Issue creation | ⚠️ Not configured | The runner has no `GITHUB_TOKEN` PAT. Issue automation deferred — the daily Slack summary + the on-VPS HTML report cover triage for now. |
+| Slack delivery | ⏸ | Code path active (`SLACK_WEBHOOK_QA` env set on runner). User-side check on `#qa-staging` channel. |
+| GitHub Issue creation | ✅ | Issue automation now lives in the qa-staging.yml workflow (using auto-scoped `secrets.GITHUB_TOKEN`, no PAT in runner). Verified end-to-end: 24 issues opened on first sync, 14 auto-closed on the second sync when the cleaner run flipped them back to PASS. Issues include severity / area / run-id / error / link to latest report. |
 
 ### Issues fixed during validation
 
@@ -105,9 +105,8 @@ And the runner Dokploy app env contains the same `STAGING_*` + `ADMIN_*` + `SUPA
 
 ## Unresolved (deliberate)
 
-1. **DNS for `qa-reports.test.revhero.io`.** Authoritative DNS (StackDNS) doesn't have an A record for this subdomain; it currently resolves to the RevHero marketing site catch-all. The static reporter container is healthy and serves correctly within the swarm. User-side action: add StackDNS A record `qa-reports.test.revhero.io → 147.93.1.174`. Until then, Phase 4's gate (which fetches `https://qa-reports.test.revhero.io/latest.json`) will fail-block all prod deploys — that's deliberate fail-closed behavior.
-2. **GitHub Issues automation.** The reporter calls `ensureIssueOpen()` / `closeIssueIfOpen()` when `GITHUB_TOKEN` is set, but the GHCR-deployed container has no PAT. Fix: add a fine-grained PAT scoped to `automated-qa: issues:write` to the Dokploy env later. For Phase 3, the markdown + Slack outputs are sufficient.
-3. **Container OOM + network-blip soak.** Manual scenarios documented above; not run in this provisioning round.
+1. **Container OOM + network-blip soak.** Manual scenarios documented above; not run in this provisioning round.
+2. **Slack delivery confirmation.** Code path is active (env var set on runner). User-side check on `#qa-staging` channel needed to confirm posts land.
 
 ## Conclusion
 

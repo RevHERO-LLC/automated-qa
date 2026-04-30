@@ -132,11 +132,9 @@ RevHero-user-fe-backend (staging branch):
 
 ## Unresolved (deliberate)
 
-1. **DNS for `qa-reports.test.revhero.io` (Phase 3 carryover).** The gate fetches `https://qa-reports.test.revhero.io/latest.json` to determine pass/fail status. Until StackDNS gets an A record for that subdomain pointing at `147.93.1.174`, the gate fail-blocks all prod deploys (deliberate fail-closed). One-line user-side fix.
+1. **Service repos pushed to staging, NOT main.** Each repo's `staging→main` merge is the user-approved checkpoint that activates the gate on prod deploys. Did not auto-merge per the constraint "Never push directly to main on any of the 13 service repos."
 
-2. **Service repos pushed to staging, NOT main.** Each repo's `staging→main` merge is the user-approved checkpoint that activates the gate on prod deploys. Did not auto-merge per the constraint "Never push directly to main on any of the 13 service repos."
-
-3. **Live demonstrations (a)/(b)/(c)/(d) staged.** The infrastructure is in place + all dispatch paths verified working. Running each scenario requires a real PR / revert / sabotaged secret, which the user can exercise post-DNS-fix.
+2. **Live demonstrations (a)/(b)/(c)/(d) staged.** The infrastructure is in place + all dispatch paths verified working. Running each scenario requires a real PR / revert / sabotaged secret, which the user can exercise.
 
 ## Conclusion
 
