@@ -1,0 +1,29 @@
+# Daily scheduled QA run + manual workflow_dispatch trigger.
+# Phase 3 wires the Dokploy deploy. For Phase 1 this workflow only validates
+# that the package installs and typechecks cleanly — no test execution yet.
+name: qa-staging
+
+on:
+  schedule:
+    - cron: '7 7 * * *' # 2 AM ET — avoid the :00 hot-zone
+  workflow_dispatch:
+    inputs:
+      slice:
+        description: "Tag filter to run (p0, p1, smoke, etc). Empty = full suite."
+        required: false
+        default: ""
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck

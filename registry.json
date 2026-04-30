@@ -1,0 +1,6669 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-30T12:18:06.939Z",
+  "source": "test-registry.md",
+  "total": 465,
+  "active": 442,
+  "descoped": 23,
+  "entries": [
+    {
+      "id": "FE-ACT-001",
+      "description": "Outbound SMS send → `activities` row \"SMS Sent\" written by sms-service; visible in the deal's activity panel and in `/notifications`.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-002",
+      "description": "Inbound SMS → \"SMS Received\" activity.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-003",
+      "description": "Email sent (manual or stage-action) → \"Email Sent\" activity.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-004",
+      "description": "Email received → \"Email Received\" activity.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-005",
+      "description": "A2P brand approved → \"Brand Registration Approved\" activity from sms-service.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-006",
+      "description": "Phone number purchased (Twilio) → \"Phone Number Purchased\" activity.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-007",
+      "description": "Toky number imported → \"Phone Number Imported\" activity (verify the message wording for BYOC).",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-008",
+      "description": "Negative-sentiment deal-loss → activity from deals-actions-service \"Deal marked Lost: negative sentiment\".",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-009",
+      "description": "Stage-processing failure (deal-mover) → \"Stage Processing Failed: Stage X\" activity. (Successful moves are silent — known gap.)",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-010",
+      "description": "`PUT /v1/activities/:id/read` and `PUT /v1/activities/read/account/:accountID` mark activities read at row + bulk levels.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-011",
+      "description": "Activity feed scoped to current account_id only — no cross-tenant leakage.",
+      "area": "Activity feed",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-AIC-001",
+      "description": "Add an AI-Call action via `POST /v1/stages/:id/actions/ai-call` with `prompt_template`, `call_script`, `audio_file_link` → row created.",
+      "area": "Stage actions — AI Call",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-AIC-002",
+      "description": "Update via `PUT /v1/stages/:id/actions/ai-call/:action_id` → all three fields persist.",
+      "area": "Stage actions — AI Call",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-AIC-003",
+      "description": "Delete the action → row gone.",
+      "area": "Stage actions — AI Call",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-AIC-004",
+      "description": "Trigger on a deal with a phone number → ai-agent receives the call request; activity records \"AI Call triggered\".",
+      "area": "Stage actions — AI Call",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-AIC-005",
+      "description": "Empty `prompt_template` at save → friendly validation error (don't trigger AI calls without a script).",
+      "area": "Stage actions — AI Call",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-BBS-001",
+      "description": "Add a BizBuySell action with `bizbuysell_username` → row created.",
+      "area": "Stage actions — BizBuySell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-BBS-002",
+      "description": "Update + Delete CRUD verified.",
+      "area": "Stage actions — BizBuySell",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-BBS-003",
+      "description": "Trigger on a deal → bizbuysell integration receives the request (mock OK on staging).",
+      "area": "Stage actions — BizBuySell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-PD-001",
+      "description": "Add a PandaDoc action with `folder_id` + `template_id` → row created.",
+      "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-PD-002",
+      "description": "Editor lists the user's PandaDoc folders/templates (proxied via cloud-documents-service or PandaDoc client).",
+      "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-PD-003",
+      "description": "Update + Delete CRUD verified.",
+      "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-PD-004",
+      "description": "Trigger on a deal → PandaDoc document created and emailed; activity records the doc ID.",
+      "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-PD-005",
+      "description": "Invalid template_id → action fails gracefully, deal NOT advanced.",
+      "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-SF-001",
+      "description": "Add a Siteforge action with `siteforge_api_key` → row created (key encrypted at rest).",
+      "area": "Stage actions — Siteforge",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-SF-002",
+      "description": "Update + Delete CRUD verified.",
+      "area": "Stage actions — Siteforge",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-SF-003",
+      "description": "Invalid API key at save → verify call rejects with friendly error.",
+      "area": "Stage actions — Siteforge",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-SF-004",
+      "description": "Trigger on a deal → Siteforge receives request; activity records the result.",
+      "area": "Stage actions — Siteforge",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-001",
+      "description": "Add a Voicemail action to a stage via `POST /v1/stages/:id/actions/voicemail` → row created with `audio_file_name` + `audio_file` URL.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-002",
+      "description": "Voicemail editor accepts an audio upload (mp3/wav); upload posts to cloud-documents-service; resulting URL is saved to the action.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-003",
+      "description": "Update the action via `PUT /v1/stages/:id/actions/voicemail/:action_id` → field changes persist; older audio URL replaced.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-004",
+      "description": "Delete the action via `DELETE /v1/stages/:id/actions/:action_id` → row gone; campaign builder reflects removal.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-005",
+      "description": "Trigger the stage on a deal → voicemail dispatched (verify in deals-actions-service logs / activity).",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-006",
+      "description": "Reject upload of wrong file type (e.g. `.exe`, `.txt`) with friendly error.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-VM-007",
+      "description": "Reject oversized audio file (e.g. >25 MB) with friendly error.",
+      "area": "Stage actions — Voicemail",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-001",
+      "description": "`/admin/dashboard` renders 5 stat cards (Actions Performed / Hours Saved / Meetings Booked / Revenue Generated / Pending Connections).",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-002",
+      "description": "Sidebar shows: Billing & Accounting / Dashboard / Pricing / Campaigns / LinkedIn Management / User Settings.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-003",
+      "description": "`/admin/billing` redirects to `/admin/billing/clients`.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-004",
+      "description": "`/admin/billing/clients` shows revenue cards: Total / Recurring / Non-recurring with currency formatted to 2 decimals (FE-BUG-10 fix — `$11,036.30`).",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-005",
+      "description": "`/admin/billing/payments` renders payment history.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-006",
+      "description": "`/admin/campaigns` redirects to `/admin/campaigns/analytics`.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-007",
+      "description": "`/admin/campaigns/analytics` shows campaigns by client.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-008",
+      "description": "`/admin/campaigns/templates` lists templates.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-012",
+      "description": "`/admin/pricing/plans` lists plans.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-013",
+      "description": "`/admin/pricing/plans/create` renders plan create form.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-014",
+      "description": "`/admin/pricing/promo-codes` lists promo codes.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-015",
+      "description": "`/admin/pricing/addons` lists addons.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-016",
+      "description": "`/admin/user-settings` renders user mgmt for account.",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-017",
+      "description": "`/admin/*` deep route as MEMBER role → 403 or hidden (privilege check).",
+      "area": "FE Admin sub-app",
+      "role": "MEMBER",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-018",
+      "description": "`/admin/*` direct nav from prod hostname → redirected (regression for FE-BUG-09).",
+      "area": "FE Admin sub-app",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-ADDON-001",
+      "description": "`/admin/pricing/addons` lists add-ons (per-plan + global).",
+      "area": "Admin — Add-ons CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-ADDON-002",
+      "description": "`/admin/pricing/addons/create` requires name + price + scope (plan_id or global).",
+      "area": "Admin — Add-ons CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-ADDON-003",
+      "description": "Create add-on → appears in `GET /v1/subscription-addons` public list.",
+      "area": "Admin — Add-ons CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-ADDON-004",
+      "description": "Update add-on price → reflected on `/settings/manage-plans` for users.",
+      "area": "Admin — Add-ons CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-ADDON-005",
+      "description": "Delete add-on with no active subscribers → row removed; with active subscribers → friendly error.",
+      "area": "Admin — Add-ons CRUD",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-001",
+      "description": "`/admin/pricing/plans` lists every plan with name, price, billing cycle, addon count.",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-002",
+      "description": "`/admin/pricing/plans/create` form validates required fields (name, price, currency, cycle).",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-003",
+      "description": "Submit valid form → `POST /v1/admin/plans` creates plan; appears in list.",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-004",
+      "description": "Edit existing plan → `PUT /v1/admin/plans/:plan_id` updates; price change reflects on `/v1/plans/:plan_id` public endpoint.",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-005",
+      "description": "Delete a plan with active subscribers → friendly blocking error (don't orphan subscriptions).",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PLAN-006",
+      "description": "Delete an unused plan → row removed.",
+      "area": "Admin — Plans CRUD",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PROMO-001",
+      "description": "`/admin/pricing/promo-codes` lists existing codes with discount + expiry + usage count.",
+      "area": "Admin — Promo codes CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PROMO-002",
+      "description": "Create a code with 100% discount + future expiry → `GET /v1/promo-codes/:code` returns valid + applies on signup.",
+      "area": "Admin — Promo codes CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PROMO-003",
+      "description": "Create with past expiry → save succeeds but public lookup returns expired (anti-cheat).",
+      "area": "Admin — Promo codes CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PROMO-004",
+      "description": "Edit usage cap → reflected at apply time (cap = 1 → second redemption blocked).",
+      "area": "Admin — Promo codes CRUD",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ADM-PROMO-005",
+      "description": "Delete an active promo → cleanly removed; in-flight checkouts fall back to no-discount.",
+      "area": "Admin — Promo codes CRUD",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p5"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AH-001",
+      "description": "Set active hours to 9–5 weekdays from `/settings/general` → `PUT /v1/active-hours/:id` saves.",
+      "area": "Active hours behavior",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AH-002",
+      "description": "Stage actions scheduled to fire at 11pm on a Tuesday → deal-mover/deals-actions defer the dispatch until 9am Wednesday.",
+      "area": "Active hours behavior",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AH-003",
+      "description": "Saturday at noon (outside weekday window) → action defers to Monday 9am.",
+      "area": "Active hours behavior",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AH-004",
+      "description": "`PUT /v1/active-hours-preferences` to globally disable active hours → actions fire immediately regardless of time.",
+      "area": "Active hours behavior",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-001",
+      "description": "`/automation-campaign/[id]` shows the AI personalization toggle in the workflow header (`EditWorkflowHeader`). Disabled by default on new campaigns.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-002",
+      "description": "Toggle ON → opens `AiPersonalizationCostModal` showing cost breakdown + impacted stages + deal count → confirm → flag persists (`PUT /v1/campaigns/:id/ai-personalization/enable`); reload retains the new state.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-003",
+      "description": "Toggle OFF → flag flips back; AI cost banner disappears.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-004",
+      "description": "Test-Email button on email stage action is **disabled when AI flag is OFF**; **enabled when ON**.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-005",
+      "description": "Campaign with `ai_personalization_enabled=true` + non-empty campaign goal + AI offering: trigger a stage email action → deals-actions-service calls PersonalizeIQ → recipient gets a personalized subject + body different from the literal template.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-006",
+      "description": "Same campaign but AI flag OFF: stage email action sends the literal template (with merge tags rendered) — NO PersonalizeIQ call.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-007",
+      "description": "Campaign with AI flag ON but **empty campaign goal** → stage email action falls back to un-personalized template silently (known gap; user sees no error).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-008",
+      "description": "Same with empty AI offering → same fallback.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-009",
+      "description": "Stage SMS action with AI flag ON → personalized message body sent; subject is irrelevant for SMS (`Message:` only).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-010",
+      "description": "AI personalization is performed BEFORE merge-tag rendering at send time: when AI output happens to contain a literal `{{...}}` string, the downstream rendering pass strips it (silent data loss — known risk).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-011",
+      "description": "`generate_ai_variants` switch on email action editor is hidden in production (`!IS_PROD` guard) and on staging it's a UI stub — toggling it has no observable backend effect today.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-012",
+      "description": "AI agent `/health` endpoint reports OpenAI connectivity and thread-pool size.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-013",
+      "description": "Inbound sentiment scoring runs **regardless of `ai_personalization_enabled`** — confirm by sending an inbound SMS to a campaign with the flag OFF; `messages.sentiment` still updates.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-014",
+      "description": "Manual inference heuristics run before OpenAI: send inbound message containing exactly the word \"unsubscribe\" → sentiment is NEGATIVE within 1-2 seconds (no OpenAI latency).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-015",
+      "description": "Heuristics fall through to OpenAI: ambiguous body like \"let me think about it\" → goes to OpenAI; result comes back within ~75 s worst case (5 retries × 15 s).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-016",
+      "description": "AI agent retries OpenAI failure 5 times before giving up → message stays at `sentiment=NONE`. Service does not crash.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-017",
+      "description": "`/v1/messages/sentiment-webhook` and `/v1/emails/sentiment-webhook` from outside the cluster — confirm not reachable from public internet (no auth on these routes today).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-018",
+      "description": "Credit balance drops by the AI personalization rate after a personalized email send (charge happens in deals-actions-service / users-service).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-019",
+      "description": "Toky send + AI personalization = AI credits charged + phone credits skipped (FE-SMS-TOKY-016 cross-reference).",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AI-020",
+      "description": "Cleanup endpoint `POST /v1/cleanup-old-prompts` removes prompt responses older than 24h from MongoDB; healthy DB count after.",
+      "area": "AI personalization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-001",
+      "description": "`/login` page renders with email + password + Forgot Password + Login + Register link.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "page-load",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-002",
+      "description": "Login with valid credentials → success toast → redirect to /automation-campaign.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-003",
+      "description": "Login with wrong password → friendly error, no stack trace.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-004",
+      "description": "Login with non-existent email → generic friendly error (no enumeration).",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-005",
+      "description": "Login with empty fields → form validation errors.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-006",
+      "description": "Eye icon on password field toggles show/hide.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-007",
+      "description": "Forgot Password link → /forgot-password page renders.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "page-load",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-008",
+      "description": "Submit forgot password form with valid email → success message.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-009",
+      "description": "Submit forgot password with non-existent email → generic success (anti-enumeration).",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-010",
+      "description": "`/auth-reset-password?token=invalid` → friendly invalid token error.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-011",
+      "description": "`/auth-reset-password` reset password form validates min length and match.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-012",
+      "description": "Sign Out button → clears cookies → redirects to /login.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-013",
+      "description": "Hard refresh of authenticated page → session restores, no console errors.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-014",
+      "description": "Direct nav to authenticated route while logged out → redirects to /login with `?redirect=` preserved.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-015",
+      "description": "JWT expires mid-session → next API call triggers refresh; refresh fail → logout.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-016",
+      "description": "Login on staging hits staging BFF (`user-fe-backend.test.revhero.io`), NOT prod (FE-BUG-002 regression test).",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-017",
+      "description": "Cookie has `Secure`, `HttpOnly`, `SameSite=Lax` flags.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-018",
+      "description": "Open redirect — `?redirect=https://evil.com` after login → blocked.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-019",
+      "description": "Login button shows loading spinner while authenticating.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-AUTH-020",
+      "description": "Rate limiting on /login (50 rapid attempts) → blocked or warned.",
+      "area": "Authentication",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-001",
+      "description": "`/automation-campaign` lists campaigns. Empty state \"No Campaign found\" when none.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-002",
+      "description": "Tabs: Active / Inactive / All Campaigns switch correctly.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-003",
+      "description": "Search Campaigns input filters list.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-004",
+      "description": "Pagination Next/Prev disabled at boundaries.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-005",
+      "description": "PULSE / SWARM tabs at top (SWARM dev-only).",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-006",
+      "description": "Click \"Create campaign\" → /automation-campaign/create renders builder.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-007",
+      "description": "Campaign builder shows \"Building campaign\" header + Untitled placeholder (NOT literal \"undefined\" — FE-BUG-08 fix).",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-008",
+      "description": "Campaign builder canvas shows \"Add Stage +\" button.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-009",
+      "description": "Click Add Stage opens stage type modal.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-010",
+      "description": "Stage settings modal validates required fields.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-011",
+      "description": "Edit campaign name pencil opens rename input.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-012",
+      "description": "Save Campaign with no stages → friendly error or warning.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-013",
+      "description": "Active toggle persists after save.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-014",
+      "description": "Click \"Import campaign from CRM\" → opens import modal.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-015",
+      "description": "Import campaign validates CRM connection state.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-016",
+      "description": "`/automation-campaign/[id]` for non-existent ID → 404 or friendly error.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-017",
+      "description": "`/automation-campaign/[id]/deals` lists campaign deals.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-018",
+      "description": "Deals table search works.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-019",
+      "description": "Pull CRM State button triggers sync.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CAMP-020",
+      "description": "Stage drag-and-drop reorders without crashes.",
+      "area": "Campaign Builder",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "high",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-001",
+      "description": "Header credit-balance widget reflects current balance (`GET /v1/credit`).",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-002",
+      "description": "Top-up via card → balance increases by purchased amount; transaction recorded.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-003",
+      "description": "Send a Twilio SMS → balance decreases by 1 PHONE/SMS_MESSAGE unit.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-004",
+      "description": "Twilio API failure → balance returns to original value (release flow).",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-005",
+      "description": "Send a Toky SMS → balance unchanged (BYOC).",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-006",
+      "description": "Send a personalized email/SMS via stage action → balance decreases by AI personalization unit (NOT phone).",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-007",
+      "description": "Failed AI personalization (PersonalizeIQ 5xx) → AI credits not committed; falls back to un-personalized template.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-008",
+      "description": "Hit balance = 0 → outbound Twilio send rejected with friendly out-of-credits modal.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-009",
+      "description": "Add-on activation increases monthly credit allowance; reflected in `/v1/credit/settings`.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRED-010",
+      "description": "Cancel add-on at end of period → next month's allowance reverts.",
+      "area": "Credits / billing",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "critical",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-001",
+      "description": "Connect Pipedrive via `POST /v1/supported-crms/pipedrive/verify-api-key` with valid token → green badge.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-002",
+      "description": "Invalid API key → friendly error, no green badge.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-003",
+      "description": "Map Pipedrive user to RevHero account.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-004",
+      "description": "Enable CRM sync on a campaign → existing Pipedrive deals pulled into the campaign.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-005",
+      "description": "Force-pull from CRM → deal-mover gets new candidates next sweep.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-006",
+      "description": "Disable CRM sync → no further auto-pulls; existing deals retained.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-007",
+      "description": "Stage move with CRM sync enabled → Pipedrive note + stage update appear within ~30 s.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-008",
+      "description": "Pipedrive webhook (deal updated externally) → RevHero deal record updates.",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-009",
+      "description": "Pipedrive API outage → CRM sync goroutine fails silently; the move still succeeds (graceful degradation).",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CRM-010",
+      "description": "HubSpot connect flow renders, key validation succeeds (BFF `POST /v1/supported-crms/hubspot/verify-api-key`).",
+      "area": "CRM sync",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-001",
+      "description": "All staging API calls go to `*.test.revhero.io` (FE-BUG-002 regression).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-002",
+      "description": "Cloud-document uploads on staging go to `cloud-documents-service.test.revhero.io`.",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-003",
+      "description": "`/help`, `/dashboard`, `/purchase-lists`, `/linkedin-system`, `/admin` accessible on staging (proxy.ts hostname check).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-004",
+      "description": "Same routes redirect to /automation-campaign on prod (regression for FE-BUG-09 + 06 + 07).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-005",
+      "description": "Free Plan signup completes without payment form (regression for FE-BUG-001).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-006",
+      "description": "Plan-feature labels render numbers with thousands separators (regression for fe-ui-02).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-007",
+      "description": "Settings right-rail items don't truncate (regression for fe-ui-01).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-008",
+      "description": "Currency values show 2 decimals consistently (regression for FE-BUG-10).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-009",
+      "description": "Campaign create header shows \"Untitled campaign\" (regression for FE-BUG-08).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CROSS-010",
+      "description": "Phone system /sms doesn't get stuck on skeleton (regression for FE-BUG-04).",
+      "area": "Cross-cutting",
+      "role": "ADMIN",
+      "type": "regression",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-001",
+      "description": "Download CSV template via `GET /v1/csv-imports/template` → CSV with the canonical header row.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-002",
+      "description": "Upload a valid CSV against an \"import stage\" via `POST /v1/stages/:id/csv-imports` → import job created with status `pending`.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-003",
+      "description": "Upload moves to `processing` → `completed` (poll `GET /v1/csv-imports/:id`); ingested deals appear in the campaign.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-004",
+      "description": "Upload a CSV with missing required columns → import fails with a friendly per-row error report.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-005",
+      "description": "Upload a CSV with malformed phone numbers → the offending rows are skipped with errors logged; valid rows still ingest.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-006",
+      "description": "Upload a CSV with duplicate emails (already exist as deals) → duplicates skipped or merged per dedupe rule; not double-inserted.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-007",
+      "description": "Reprocess an existing import via `POST /v1/csv-imports/:id/reprocess` → re-runs the import; idempotent on already-ingested rows.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-008",
+      "description": "`GET /v1/stages/:id/csv-imports` lists past import jobs for the stage with their status + counts.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-009",
+      "description": "Suppress-import-actions flag on the campaign (`PUT /v1/campaigns/:id/suppress-import-actions/enable`): freshly imported deals do NOT trigger stage actions on the import stage; flag OFF: they do.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-CSV-010",
+      "description": "Upload an oversized CSV (e.g. 100k rows) → either succeeds with progress feedback, or rejects with a clear size-limit error; no 500 / hung UI.",
+      "area": "CSV imports / lead ingestion",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-001",
+      "description": "Manually trigger sweep: `GET https://deal-mover.test.revhero.io/v1/sweeper/run` → 200 with `{\"jobs_scheduled\":N}`. Run twice in close succession → second call is safe (idempotent at the queue level).",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-002",
+      "description": "Create a campaign with stages `Stage1 (action) → Wait (3 days) → Stage2 (action)`. Insert a deal with `next_move_date = today` in Stage1. Run sweep → deal moves to Stage2; `next_move_date` becomes `today + 3` (the wait stage delay).",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-003",
+      "description": "Inactive campaign (`is_active=false`) → sweeper enqueues nothing for that campaign.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-004",
+      "description": "Inactive user (per users-service `CheckUsersActiveStatus`) → sweeper skips that user's stages entirely.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-005",
+      "description": "Stage with `max_deals_to_move=2` and 5 due deals → only 2 move today; remaining 3 stay with `next_move_date=today` and move tomorrow (counter resets at YearDay boundary).",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-006",
+      "description": "Worker pops a job from Redis (`dealmover:scheduled_jobs` ZSET) within 5 seconds; transactional `FOR UPDATE SKIP LOCKED` snapshot prevents two workers picking the same deal.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-007",
+      "description": "Worker successfully processes job → calls deals-actions-service `POST /v1/actions/trigger` → email-action / sms-action fires → recipient receives the message.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-008",
+      "description": "Action executor returns HTTP 425 (\"AI scrape pending\") for one deal → that deal is rolled back to the prior stage; other deals in the batch still advance.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-009",
+      "description": "Action executor returns 5xx → retry counter increments; exponential backoff `2^retry` minutes; after 5 retries → moved to `dealmover:failed_jobs` LIST for manual inspection.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-010",
+      "description": "Successful move appears in BFF `GET /v1/deals/filter` with new stage; `entered_stage_at` updated.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-011",
+      "description": "Successful move does **NOT** create an activity record (known gap — only failures log activity). Failures DO create one.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-012",
+      "description": "CRM sync goroutine fires after move (Pipedrive note + stage update if campaign has CRM connected); sync failures don't block the move.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-013",
+      "description": "`/v1/stages/scheduled` debug route returns stages with deals due today; matches the count produced by the sweep.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-014",
+      "description": "`/v1/stages/moved` debug route returns stages already processed today.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-015",
+      "description": "Redis isolation: write a marker to staging Redis `dealmover:scheduled_jobs` → confirm it is NOT visible in prod Redis (separate hosts since 2026-04-15).",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-016",
+      "description": "Trigger the sweeper via the super-admin portal button (once issue #22 ships) → response surfaces `jobs_scheduled` in a toast.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "SUPER_ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-017",
+      "description": "Halt a single deal by setting `next_move_date=NULL` directly in DB → sweeper does NOT pick it up, even with `is_active=true`.",
+      "area": "Deal Mover — sweeper + worker",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-001",
+      "description": "Type an email into the Search Deals input → after debounce, the table filters to deals whose contact email contains the substring.",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-002",
+      "description": "Type a partial first name → table filters by `person_name` substring.",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-003",
+      "description": "Press Enter in the search input → submits without a full page reload.",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-004",
+      "description": "Clear the input → full deal list returns; result count updates.",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-005",
+      "description": "Search input persists across pagination (page 2 keeps the same filter).",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-DEAL-SEARCH-006",
+      "description": "`Include lost deals` toggle ON → lost deals appear; OFF → they're hidden. Toggle state survives a search query change.",
+      "area": "Deals search regression",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-001",
+      "description": "Signup → Onboarding → First Campaign → First Deal Email Sent",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-002",
+      "description": "Inbound reply → AI sentiment NEGATIVE → Deal auto-marked Lost :: 1. Recipient of FE-E2E-001 replies \"not interested, please remove me\". / 2. Pub/Sub webhook delivers the message to email-ingress. / 3. Sentiment is dispatched async to ai-agent → manual heuristic returns NEGATIVE.",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-003",
+      "description": "Toky BYOC end-to-end SMS round-trip :: 1. Add Toky carrier credential. / 2. Import the test number `+18137719803`. / 3. Send personalized SMS to `+19543041414` from a stage action with AI on.",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-004",
+      "description": "Multi-stage campaign with wait + actions :: 1. Build campaign: Stage1 (email) → Wait 1 day → Stage2 (sms) → Wait 1 day → Stage3 (email). / 2. Insert deal with `next_move_date=today` in Stage1. / 3. Day 0: trigger sweep → email sent → `next_move_date=today+1`.",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-005",
+      "description": "Quota cap respected",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-006",
+      "description": "Inactive user pause-billing edge case",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-007",
+      "description": "Free-plan user can use SMS via Toky (BYOC) but cannot via Twilio (no credits)",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-008",
+      "description": "JWT expiry mid-flow",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-009",
+      "description": "Multi-tenant isolation",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-E2E-010",
+      "description": "Webhook-only services not exposed",
+      "area": "Cross-service E2E journeys",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p2",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-001",
+      "description": "`/email-system/email` lists messages or empty state.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-002",
+      "description": "\"Mailbox not connected\" empty state with Connect Mailbox CTA.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-003",
+      "description": "Connect Mailbox button opens OAuth flow.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-004",
+      "description": "Email filters (All / All Emails / Select an option) work.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-005",
+      "description": "Search Emails input filters list.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-006",
+      "description": "Click `+` button → opens compose / add modal.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-007",
+      "description": "`/email-system/email/add` page renders compose form.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "page-load",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-008",
+      "description": "Compose form requires recipient + subject + body.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-009",
+      "description": "Send email triggers BFF call and shows success toast.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-010",
+      "description": "`/email-system/email/[id]` shows email detail.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-011",
+      "description": "Email categories sidebar (Inbox / Star / Sent / Archive) navigates correctly.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-012",
+      "description": "Pagination at top right (X of Y) updates with results.",
+      "area": "Email System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-001",
+      "description": "Reply to a sent campaign email from the recipient's external inbox → within ~30 s the reply appears in the FE thread for the deal (Pub/Sub push path).",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-002",
+      "description": "Same reply: `email` row in DB has `sentiment != ''` after sentiment scorer completes (POSITIVE / NEGATIVE / NEUTRAL).",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-003",
+      "description": "Send an inbound email containing the word \"unsubscribe\" → manual heuristic infers NEGATIVE (no OpenAI call); deal moves to LOST status; deal timeline shows the \"negative sentiment\" entry.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-004",
+      "description": "Send an inbound email containing OOO autoresponder text with date \"back on May 15\" → AI agent extracts date via OOO_RESUMPTION_DATE_EXTRACTION; sentiment = NEUTRAL; deal NOT marked Lost.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-005",
+      "description": "Self-reply (sender = same mailbox owner) → sentiment dispatch is **skipped** by `email.helper.go`; sentiment stays empty.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-006",
+      "description": "Reply with literal \"<script>alert(xss)</script>\" subject → FE renders escaped, no JS executes.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-007",
+      "description": "Bounce notification (DSN) inbound → bounce_detector flags the original send as bounced; recipient address marked unverified or sending paused.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-008",
+      "description": "`POST /v1/emails/sentiment-webhook` directly from outside the cluster (network test) — should be unreachable from the public internet. **If reachable, this is a CRITICAL security finding** (today the route has no auth — see `architecture_dataflow.md`).",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-009",
+      "description": "Mark inbound email as Read / Unread / Favourite / Archive via FE buttons → state persists across reload.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-010",
+      "description": "Conversation history endpoint merges sent + received in chronological order with no duplicates.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-IN-011",
+      "description": "Inbound email with `deal_id` resolved to deal owned by another tenant → recipient mailbox owner sees it (their own data); other tenant's UI does NOT.",
+      "area": "Email — inbound + AI sentiment",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-001",
+      "description": "Connect Gmail mailbox via OAuth from `/email-system/email/add` → BFF `PUT /v1/user/oauth/google/url` returns provider URL → consent flow → mailbox row created in email-ingress with `IsConnected=true`, `RefreshToken` populated.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "needs-google-oauth"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-002",
+      "description": "Connect Microsoft mailbox same flow (separate OAuth client).",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "needs-microsoft-oauth"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-003",
+      "description": "Disconnect mailbox via `POST /v1/user-mailboxes/:id/disconnect` → row soft-deleted or `IsConnected=false`; subsequent send attempts surface a friendly \"mailbox not connected\" error in the FE.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-004",
+      "description": "From a campaign's email stage-action editor, click \"Test Email\" → BFF `POST /v1/emails/test-send` (rate-limited 5/hr) → email lands in caller's own inbox with subject prefixed `[TEST]`. Recipient field is locked server-side; FE has no recipient input.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-005",
+      "description": "Test-Email button is **disabled when campaign `ai_personalization_enabled === false`** (matches `CreateEmail.tsx:82-83`). Re-enable when toggling the campaign flag on.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-006",
+      "description": "Send 6 test emails within 1 hour from the same user → 6th returns 429 with friendly retry message; 7th after the hour resets succeeds.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-007",
+      "description": "Send a manual email from `/email-system/email/add` composer with merge tags `{{first_name}}` / `{{company_name}}` to a known deal → recipient receives the rendered text (no raw `{{...}}`).",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-008",
+      "description": "Send manual email when the recipient is a deal contact → `sent_email` row has `deal_id` populated and the message appears in `GET /v1/emails/deal/:deal_id/conversation-history`.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-009",
+      "description": "Email signature configured in `/settings/general` → AI Customized Templates is appended to outbound (verify on receipt; HTML wrapper from `email-composer.tsx`).",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-010",
+      "description": "Send empty subject → form validation rejects.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-011",
+      "description": "Send extremely long body (>50 KB) → either succeeds clean or hits a friendly limit error, never a 500.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-EMAIL-OUT-012",
+      "description": "Submit XSS payload in subject + body (`<script>alert(1)</script>`) → recipient HTML view escapes (no execution); plain-text view shows literal characters.",
+      "area": "Email — outbound",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-001",
+      "description": "`/help` Help Center renders with FAQ section (dev-only).",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-002",
+      "description": "Search articles input filters FAQ.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-003",
+      "description": "Help category cards (Getting Started / Account & Billing / Using Revhero) render.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-004",
+      "description": "Contact Support button opens email/chat.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-005",
+      "description": "`/getting-started` checklist progress bar updates as steps complete.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-006",
+      "description": "Watch Video button opens video modal.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-007",
+      "description": "Add Signature redirects to email signature settings.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-HELP-008",
+      "description": "Start Guided Walkthrough triggers tour.",
+      "area": "Help / Getting Started",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-001",
+      "description": "Sidebar visible on every authenticated dashboard page.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-002",
+      "description": "Sidebar shows: Dashboard / Campaign Builder / Phone / Email / LinkedIn / Buy Leads / Help / Settings (Dashboard, LinkedIn, Buy Leads, Help dev-only).",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-003",
+      "description": "Header shows credit balance, notification bell, sign out.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-004",
+      "description": "Active sidebar item highlighted in primary color.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-005",
+      "description": "Click sidebar item navigates without full page reload.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-006",
+      "description": "Mobile nav (<768px) collapses sidebar to hamburger.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-007",
+      "description": "Layout no CLS when notifications appear/dismiss.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-LAY-008",
+      "description": "Layout no CLS when modals open/close.",
+      "area": "Layout / Shell",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-001",
+      "description": "`/user` Change Password modal — submit with wrong current password → friendly error, NOT 500.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-002",
+      "description": "`/user` Change Password — new password = old password → blocked with friendly validation.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-003",
+      "description": "`/user` Change Password — new password meets policy → success toast → next login uses new password.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-004",
+      "description": "Driver License upload from `/settings/general` (BFF `PUT /v1/user/driver-license`) — accepts JPG/PNG/PDF; rejects others with friendly error.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-005",
+      "description": "Driver License upload — file >5 MB → rejected with friendly limit message.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-006",
+      "description": "Driver License — `GET /v1/user/driver-license` returns the previously uploaded file; expired sessions return 401, not the file.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-007",
+      "description": "Payment method add — invalid card number → Stripe (or gateway) error surfaces in a friendly inline message.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-008",
+      "description": "Payment method delete (when only one exists) → friendly blocker telling the user to add another first.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-009",
+      "description": "Set default payment method from a list of multiple → `PUT /v1/user/payment-methods/:id/default` updates; other methods remain available.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-MISC-010",
+      "description": "AI Customized Templates editor (in `/settings/general`) — create a template, save, use as merge content elsewhere → template renders in send.",
+      "area": "Misc settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-001",
+      "description": "`/notifications` renders list with All / Read / Unread tabs.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-002",
+      "description": "Tabs filter notifications correctly.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-003",
+      "description": "Sub-tabs Email / SMS / LinkedIn / System filter by type.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-004",
+      "description": "\"Mark all as read\" link clears all unread.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-005",
+      "description": "Per-row \"Mark as Read\" updates individual row.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-006",
+      "description": "Notifications scoped to current account_id only (no cross-tenant leak — fe-data-01).",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-007",
+      "description": "Bell icon in header shows unread count badge.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-NOTIF-008",
+      "description": "Relative timestamps update correctly.",
+      "area": "Notifications",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-001",
+      "description": "`/automation-campaign` loads <5s on staging.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-002",
+      "description": "`/dashboard` LCP <2.5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-003",
+      "description": "`/email-system/email` loads <5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-004",
+      "description": "`/phone-system/sms` loads <5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-005",
+      "description": "`/notifications` loads <5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-006",
+      "description": "`/settings/general` loads <5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-007",
+      "description": "`/admin/dashboard` loads <5s.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-008",
+      "description": "axe-core on `/automation-campaign` — zero serious violations.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-009",
+      "description": "axe-core on `/settings/general` — zero serious violations.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-010",
+      "description": "Form inputs have associated `<label>` tags.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-011",
+      "description": "Color contrast on inactive buttons meets WCAG AA 3:1.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-012",
+      "description": "Tab order through forms is logical.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-013",
+      "description": "Images have alt text.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-014",
+      "description": "Page titles match content.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PERF-015",
+      "description": "No 404s on static assets.",
+      "area": "Performance / a11y",
+      "role": "ADMIN",
+      "type": "performance",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-001",
+      "description": "`/phone-system` redirects to `/phone-system/sms`.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-002",
+      "description": "`/phone-system/sms` renders proper empty state when no phone numbers (FE-BUG-04 fix — no permanent skeleton).",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-003",
+      "description": "Empty state shows \"Go to Phone System Settings\" CTA.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "page-load",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-004",
+      "description": "`/phone-system/voicemails` lists voicemails or empty state.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-005",
+      "description": "Brand registration flow accessible from phone system.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-006",
+      "description": "A2P status badge displays correct color/text per status.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-007",
+      "description": "Phone Number purchase flow renders available numbers.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-008",
+      "description": "Buy phone number button triggers purchase API call.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PHONE-009",
+      "description": "Send SMS modal validates recipient + body.",
+      "area": "Phone / SMS System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-001",
+      "description": "`/purchase-lists` renders list (dev-only — visible on staging via proxy fix).",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-002",
+      "description": "Search by Name filters list.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-003",
+      "description": "Status badges (In Progress / Success) render with correct colors.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-004",
+      "description": "Download Leads icon enabled only for Success status.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-005",
+      "description": "`/purchase-lists/create` renders create form.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-006",
+      "description": "Create requires name + filters.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-007",
+      "description": "Pagination Rows per page selector works.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-PUR-008",
+      "description": "Targeting Information eye icon opens detail modal.",
+      "area": "Purchase Lists / Buy Leads",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-001",
+      "description": "`/signup` step 1 renders register form (name, email, password, phone, etc.).",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-002",
+      "description": "Submit empty form → field validation errors.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-003",
+      "description": "Submit with invalid email format → validation error.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-004",
+      "description": "Submit with weak password → strength meter + rejection.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-005",
+      "description": "Submit with duplicate email → friendly \"email already registered\".",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-006",
+      "description": "Submit valid form → advances to step 2 (Select Plan).",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-007",
+      "description": "Step 2 shows Pulse Free + Pulse Pro side-by-side.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-008",
+      "description": "Toggle Monthly ↔ Annually switches all plan prices and shows discount.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-009",
+      "description": "Click Free Plan → advances directly to step 4 (Order Information), skipping step 3.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-010",
+      "description": "Click Pulse Pro → advances to step 3 (Add-ons).",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-011",
+      "description": "Step 4 (Free Plan) — Total Due $0.00, \"Continue\" button (NOT \"Continue to Payment\").",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-012",
+      "description": "Step 4 (Free Plan) — promo code field hidden (FE-BUG-001 fix).",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-013",
+      "description": "Step 4 (Free Plan) — clicking Continue skips payment form and completes signup.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-014",
+      "description": "Step 4 (Paid plan) — Payment Information form shows card fields.",
+      "area": "Registration / Signup wizard",
+      "role": "PAID_ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-015",
+      "description": "Step 4 — apply promo code BETAOFFER → 100% discount → button label changes to \"Continue\".",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-016",
+      "description": "Step 4 — invalid promo code → friendly error.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-017",
+      "description": "Step 4 — expired promo code → friendly error.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-018",
+      "description": "Step 4 — payment form rejects invalid card number.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-019",
+      "description": "Step 4 — payment form rejects expired card.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-020",
+      "description": "Step 4 — payment form requires all billing address fields.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-021",
+      "description": "Browser back button mid-wizard preserves form state.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-022",
+      "description": "Direct nav to ?step=4 without completing 1-3 → redirects to step 1 or login.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-023",
+      "description": "Already-authenticated user navigating to /signup step=1 → redirects to dashboard.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-REG-024",
+      "description": "Wizard step indicator updates correctly per step.",
+      "area": "Registration / Signup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-001",
+      "description": "Login as MEMBER (non-admin) credentials from `test-credentials.md` → land on dashboard.",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-002",
+      "description": "MEMBER attempts to navigate to `/admin/dashboard` → redirected or shown 403 (not blank, not crash).",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-003",
+      "description": "MEMBER attempts `PUT /v1/admin/plans/:plan_id` directly via curl-equivalent → 403, not 200.",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-004",
+      "description": "MEMBER can view campaigns and deals owned by their account but NOT another sub-user in the same parent_user.",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-005",
+      "description": "MEMBER cannot create campaigns or invite seats; admin-only actions are hidden from the UI.",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ROLE-006",
+      "description": "MEMBER can edit their own user profile (`/user`) but not delete the account.",
+      "area": "Multi-role coverage enforcement",
+      "role": "MEMBER",
+      "type": "security",
+      "severity": "critical",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-001",
+      "description": "`/settings/general` Sub-User Management → Invite form requires valid email + role selection.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-002",
+      "description": "Submit invite → seat row created in pending state; invitation email sent.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-003",
+      "description": "Recipient receives email with `/invite/[id]` link.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-004",
+      "description": "`/invite/[id]` page shows account name + inviter name + Accept button (no auth required for the GET).",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-005",
+      "description": "Accept the invite from a brand-new email → account creation + role assignment in one step → land on dashboard with the right account context.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-006",
+      "description": "Reuse an already-accepted invite link → friendly \"already accepted\" message, not a duplicate seat.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-007",
+      "description": "Use an expired invite → friendly expired-link message; CTA to ask for a new invite.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-008",
+      "description": "Admin revokes a seat from `/settings/general` → MEMBER's session is invalidated within their next BFF call.",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEAT-009",
+      "description": "Seat count increments `GET /v1/user/seats`; respects plan seat cap (creating a new invite past cap → friendly upsell error).",
+      "area": "Sub-user invite + accept",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-001",
+      "description": "Direct API call to BFF without token → 401.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-002",
+      "description": "Manipulated JWT → server rejects with 401, FE redirects to login.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-003",
+      "description": "XSS via campaign name → escaped on render.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-004",
+      "description": "XSS via email signature → escaped.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-005",
+      "description": "XSS via business profile description → escaped.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-006",
+      "description": "SQL injection via search inputs → safe (Prisma parameterized).",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-007",
+      "description": "Direct nav to /admin/* as non-admin → blocked.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-008",
+      "description": "IDOR — change `/automation-campaign/[id]` to another user's id → 403/404.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-009",
+      "description": "IDOR — `/admin/billing/clients/[id]` for foreign id → 403/404.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-010",
+      "description": "File upload — wrong type rejected.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-011",
+      "description": "File upload — oversized file rejected with friendly error.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-012",
+      "description": "File upload uses staging cloud-documents URL on staging (regression for FE-BUG-002).",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-013",
+      "description": "CSP blocks third-party scripts not in allowlist.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-014",
+      "description": "Frames-ancestors blocks iframe embedding.",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SEC-015",
+      "description": "Logout invalidates session token on backend (call BFF after logout → 401).",
+      "area": "Security",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p7"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-001",
+      "description": "`/settings/general` renders Billing section by default.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-002",
+      "description": "Right sidebar nav items show full text (NOT truncated — fe-ui-01 fix).",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-003",
+      "description": "Right sidebar nav: CRM API / Billing / Sub-User Management / Active Hours / Email Signatures / Book Link / AI Customized Templates.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-004",
+      "description": "Switching nav items updates main panel without page reload.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-005",
+      "description": "Current Plan card shows plan name + price (NOT 0/month if user has paid plan).",
+      "area": "Settings — General",
+      "role": "PAID_ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6",
+        "paid"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-006",
+      "description": "Plan features show numbers with thousands separators (\"50,000 email included\" — fe-ui-02 fix).",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-007",
+      "description": "Promo code card shows discount + expiry + COPY button.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-008",
+      "description": "Manage Add-ons button → opens manage-plans page.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-009",
+      "description": "CRM API tab shows connected CRM with key (masked).",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6",
+        "needs-pipedrive"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-010",
+      "description": "Sub-User Management lists invited users.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-011",
+      "description": "Sub-User Invite form validates email.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-012",
+      "description": "Active Hours tab allows setting weekly schedule.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-013",
+      "description": "Email Signatures tab renders editor + preview.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-014",
+      "description": "Book Link tab persists URL.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-G-015",
+      "description": "AI Customized Templates tab lists templates.",
+      "area": "Settings — General",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-001",
+      "description": "`/settings/manage-plans` renders Manage add-ons section.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-002",
+      "description": "Existing add-ons list shows current subscription add-ons.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-003",
+      "description": "Empty state \"No active add-ons found\" friendly message.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-004",
+      "description": "Available add-ons list shows add-ons compatible with current plan.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-005",
+      "description": "Add new add-on triggers checkout flow.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-M-006",
+      "description": "Cancel add-on triggers confirmation modal then API call.",
+      "area": "Settings — Manage Plans",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-001",
+      "description": "`/settings/system` renders Brand Status + Phone Settings.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-002",
+      "description": "Right sidebar Phone Settings / Email Settings.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-003",
+      "description": "Brand Status badge color matches status.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-004",
+      "description": "Register Brand button opens brand registration modal.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-005",
+      "description": "Phone Number Settings shows \"No Phone Number Purchased\" empty state.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-006",
+      "description": "Email Settings shows OAuth connection state.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SET-S-007",
+      "description": "Save Route button persists route preferences.",
+      "area": "Settings — System",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-001",
+      "description": "`/setup` page renders for newly-signed-up users.",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "page-load",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-002",
+      "description": "Setup wizard captures business profile info.",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-003",
+      "description": "Skip onboarding via \"Skip for now\" → dashboard with welcome modal.",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-004",
+      "description": "`/getting-started` shows 3-step checklist (Watch Intro, Set Email Signature, Create First Campaign).",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-005",
+      "description": "Welcome modal \"Hello {firstName}\" greets correct user name.",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-006",
+      "description": "Setup completion advances `setup_finished` flag in DB.",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SETUP-007",
+      "description": "`/getting-started` is accessible even before `setup_finished=true` (onboarding route exception).",
+      "area": "Onboarding / Setup wizard",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p0"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SIG-001",
+      "description": "Save email signature in `/settings/general` → reload retains signature; `GET /v1/user/email-signature` matches.",
+      "area": "Signature + booking link end-to-end",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SIG-002",
+      "description": "Send an outbound email (manual or stage-action) → recipient sees the signature appended below the body.",
+      "area": "Signature + booking link end-to-end",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SIG-003",
+      "description": "Save booking link URL in `/settings/general` → `GET /v1/user/booking-link` matches.",
+      "area": "Signature + booking link end-to-end",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SIG-004",
+      "description": "Send a stage email/SMS containing `{{sender_booking_link}}` merge tag → recipient receives the link expanded to the saved URL (validates the new template variable shipped 2026-04-29).",
+      "area": "Signature + booking link end-to-end",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SIG-005",
+      "description": "Empty signature configured → outbound email has no trailing artifact (no extra hr/divider with empty content).",
+      "area": "Signature + booking link end-to-end",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-001",
+      "description": "Navigate to `/settings/system` → Phone Settings → BYOC card → click \"Add Custom Carrier\" → modal lists Toky as enabled (others greyed/coming soon).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-002",
+      "description": "Save bogus Toky API key → red error toast `\"Invalid Toky API key\"` (driven by VerifyAPIKey returning 401).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-003",
+      "description": "Save the real test API key (`2ca9ccb31175d7bec49cfc1f1c1d269db42c37998b1dc507af30bac2ea433d6e`) → green \"Connected\" pill; `carrier_credentials` row created with `verified=true`, `verified_at` set, AES-encrypted `api_key_encrypted` populated.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-004",
+      "description": "Save handshake registers a webhook on Toky's side: `pkg/toky/client.ListWebhooks` should return a `new_sms` hook pointing at our staging webhook URL (HTTP Basic auth set).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-005",
+      "description": "Re-save the same Toky credential → handshake clears existing webhook auth (DeleteWebhookAuth) before re-setting; no orphan basic-auth entries on user's Toky account.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "high",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-006",
+      "description": "\"Add Toky Number\" → modal lists user's Toky inventory via `GET /v1/sms/carriers/credentials/:id/numbers`. Unimported numbers are selectable; already-imported numbers are marked.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-007",
+      "description": "Import the test number `+18137719803` and assign to a test account → `phonenumbers` row with `provider='toky'`, `twilio_sid=NULL`, `twilio_subaccount_id=NULL`.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-008",
+      "description": "Get user's credit balance → send an SMS from the imported Toky number to `+19543041414` → message delivered, recipient receives → user's credit balance is **unchanged** (Toky path skips credit reserve/commit).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-009",
+      "description": "Reply from the test recipient `+19543041414` → inbound SMS lands in the FE thread within ~10 s; `messages` row has `direction=inbound`, `external_id` formatted as `toky:<phoneID>:<sha256>`.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-010",
+      "description": "Toky inbound webhook validates HTTP Basic auth: send a webhook with no auth header → 401; with wrong password → 401; with correct creds → 200 + persisted message.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-011",
+      "description": "Toky inbound webhook payload arrives as a JSON **array** (Toky's documented shape) → service correctly takes element 0; second element (if present) is logged but ignored.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-012",
+      "description": "Inbound Toky SMS with negative sentiment → deal marked LOST exactly like Twilio path (verifies the shared `IngressInboundMessage` helper).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-013",
+      "description": "Idempotency — replay the same Toky inbound payload twice → only one `messages` row (idempotency key = sha256(from|date|body)).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-014",
+      "description": "Disconnect the Toky credential → DELETE flow revokes the remote webhook + clears webhook auth on Toky's side; `carrier_credentials` soft-deleted; subsequent SMS sends from imported Toky numbers fail with friendly 4xx (carrier-not-found).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "high",
+      "destructive": true,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-015",
+      "description": "A user with both a Twilio number and a Toky number sees both in `/settings/system` Phone Numbers list; sending from each routes correctly (provider branching at `message.service.go:161`).",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-016",
+      "description": "AI personalization with Toky: campaign with `ai_personalization_enabled=true` triggers a stage email/SMS action that uses a Toky number → AI personalization credits **are** charged (PersonalizeIQ); SMS credits are NOT.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-017",
+      "description": "Twilio regression — after enabling Toky, sending an SMS from an existing Twilio number still reserves+commits credits as before. (Critical sanity check; the BFF SendSMS double-marshalling bug from PR #31 had affected both paths.)",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-018",
+      "description": "Confirm `phonenumbers` table tolerates the legacy default: rows pre-2026-04-27 with `provider=NULL` or empty string are treated as `'twilio'` and continue to work.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-019",
+      "description": "Save Toky credential with an API key for an account that has zero SMS-enabled numbers → save succeeds, but \"Add Toky Number\" modal shows empty inventory with a clear empty state.",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TOKY-020",
+      "description": "Toky's `GET /webhooks` returns the DRF-paginated `{count, next, results}` shape — verify our dedup logic in `ensureWebhookRegistered` correctly sees existing webhooks (otherwise saves fail with \"Webhook for the same event and with the same URL already exists\").",
+      "area": "SMS — Toky BYOC path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow",
+        "needs-toky"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-001",
+      "description": "A2P brand registration starts from `/settings/system` → `POST /v1/a2p/register` → status badge transitions through Pending → Approved (Twilio sandbox / mock).",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-002",
+      "description": "Phone-number purchase blocked when A2P status != `brand_approved` → friendly error surfaces in FE.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-003",
+      "description": "Phone-number purchase succeeds when A2P approved → row in `phonenumbers` with `provider='twilio'`, `twilio_sid` set.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-004",
+      "description": "Send SMS from `/phone-system/sms` to a test recipient → recipient receives within ~10 s; `messages` row has `direction=outbound`, status=delivered.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-005",
+      "description": "Send SMS with merge tag `{{first_name}}` linked to a deal → rendered correctly.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-006",
+      "description": "Send SMS exhausts user's PHONE/SMS_MESSAGE credit balance → 402 / friendly \"out of credits\" toast; no Twilio API call made.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-007",
+      "description": "Twilio API failure mid-send → `messages` row has `status=failed` + `error_message`; reserved credits are **released** (verified via users-service balance returns to original).",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-008",
+      "description": "Send SMS exceeds rate limit (`max_messages_per_hour` = 100 default) → 429 / friendly throttle message.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-009",
+      "description": "Inbound SMS from test recipient → appears in FE thread within ~10 s; sentiment column updates async.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-010",
+      "description": "Inbound SMS with negative sentiment (\"not interested\", \"stop\", \"unsubscribe\") → deal marked LOST; deal-loss activity logged.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-011",
+      "description": "Twilio webhook with wrong `bears_key` → 401; no `messages` row created.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1",
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-SMS-TW-012",
+      "description": "Twilio status callback updates `messages.status` from `queued` → `sent` → `delivered`.",
+      "area": "SMS — Twilio path",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p1"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-001",
+      "description": "`/user` renders profile fields (Name, Role, Email, Created).",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-002",
+      "description": "Created date renders correctly (NOT \"Invalid Date\").",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-003",
+      "description": "Change Password button opens password modal.",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-004",
+      "description": "Password modal validates current + new + confirm.",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-005",
+      "description": "Wrong current password → friendly error.",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-USER-006",
+      "description": "Password change success closes modal + shows toast.",
+      "area": "User Settings",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p6"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-001",
+      "description": "`/phone-system/voicemails` lists voicemail records or shows empty state.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-002",
+      "description": "Each row shows recipient + duration + status + timestamp.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-003",
+      "description": "Row \"Play\" affordance plays the audio inline.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-004",
+      "description": "Filter by status (delivered / failed) works.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-005",
+      "description": "Pagination works at boundaries.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-VM-006",
+      "description": "Voicemail audio URL is signed/scoped — direct hit from logged-out browser → 401/403, not 200 with the file.",
+      "area": "Voicemails — usage page",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p4"
+      ],
+      "file": null,
+      "last_audited_at": null
+    }
+  ]
+}

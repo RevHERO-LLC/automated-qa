@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test artefacts
+runner/reports/
+runner/test-results/
+runner/playwright-report/
+runner/.playwright-cache/
+qa-screenshots/
+qa-baselines/
+audit/reports/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+sessions/
+.credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

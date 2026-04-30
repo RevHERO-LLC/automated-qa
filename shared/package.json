@@ -1,0 +1,25 @@
+{
+  "name": "@revhero/qa-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./registry-schema": "./src/registry-schema.ts",
+    "./env": "./src/env.ts",
+    "./slack": "./src/slack.ts",
+    "./github-issues": "./src/github-issues.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.7.5"
+  }
+}

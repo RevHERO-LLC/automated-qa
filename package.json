@@ -1,0 +1,23 @@
+{
+  "name": "@revhero/automated-qa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RevHero automated QA — Playwright suite + scheduled runner + Claude Code audit agent",
+  "scripts": {
+    "test": "pnpm -C runner test",
+    "test:p0": "pnpm -C runner test:p0",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "build:registry": "tsx scripts/build-registry.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.12.3"
+}
