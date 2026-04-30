@@ -20,7 +20,19 @@ type AuthRole = "ADMIN" | "PAID_ADMIN" | "MEMBER" | "SUPER_ADMIN";
 
 let browser: Browser | null = null;
 
-const SESSION_DIR = path.resolve(__dirname, "../.sessions");
+// In the deployed runner container, .sessions lives in the shared
+// qa-reports-volume so it survives container restarts. That keeps the
+// BFF login budget intact across days — without this, each scheduled
+// run does a fresh login which over time exhausts
+// LoginMaxAttemptsPerEmail. Locally (no QA_REPORT_DIR or QA_REPORT_DIR
+// not on /mnt), .sessions falls back to the runner's own dir.
+const SESSION_DIR = (() => {
+  const reportDir = process.env.QA_REPORT_DIR;
+  if (reportDir && reportDir.startsWith("/mnt/")) {
+    return path.join(reportDir, ".sessions");
+  }
+  return path.resolve(__dirname, "../.sessions");
+})();
 
 async function getBrowser(): Promise<Browser> {
   if (!browser) {
