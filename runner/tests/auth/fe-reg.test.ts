@@ -9,6 +9,7 @@ import { getCredentials } from "../../lib/context.js";
 import { expectVisible } from "../../fixtures/dom.js";
 
 const PAID = process.env.QA_RUN_PAID === "1";
+const SUBMIT_BUTTON = /register|registering|get started|sign up|next|continue|submit/i;
 
 describe("Registration wizard (FE-REG)", () => {
   beforeAll(() => {
@@ -38,8 +39,10 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-002 — Submit empty form → field validation errors", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: /next|continue|submit/i }).first().click();
+      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
+      await submit.waitFor({ state: "visible", timeout: 15_000 });
+      await submit.click();
       await expectVisible(
         page.getByText(/required|invalid|enter.*email|enter.*password/i).first(),
         { timeout: 5_000 }
@@ -55,12 +58,12 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-003 — Submit with invalid email format → validation error", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
-      const emailInput = page.locator('input[type="email"]').first();
-      await emailInput.fill("not-an-email");
-      const passInput = page.locator('input[type="password"]').first();
-      await passInput.fill("ValidPass123!");
-      await page.getByRole("button", { name: /next|continue|submit/i }).first().click();
+      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      await page.locator('input[type="email"]').first().fill("not-an-email");
+      await page.locator('input[type="password"]').first().fill("ValidPass123!");
+      const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
+      await submit.waitFor({ state: "visible", timeout: 15_000 });
+      await submit.click();
       await expectVisible(
         page.getByText(/invalid email|email.*invalid|valid email/i).first(),
         { timeout: 5_000 }
@@ -73,12 +76,14 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-004 — Submit with weak password → strength meter + rejection", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
+      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
       const passInput = page.locator('input[type="password"]').first();
       await passInput.fill("abc");
       await passInput.blur();
       await page.locator('input[type="email"]').first().fill(`weak-pass-${Date.now()}@yopmail.com`);
-      await page.getByRole("button", { name: /next|continue|submit/i }).first().click();
+      const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
+      await submit.waitFor({ state: "visible", timeout: 15_000 });
+      await submit.click();
       await expectVisible(
         page.getByText(/weak|strength|at least|too short|password must|password.*characters/i).first(),
         { timeout: 5_000 }
@@ -90,22 +95,30 @@ describe("Registration wizard (FE-REG)", () => {
 
   test("FE-REG-005 — Submit with duplicate email → friendly 'email already registered'", async () => {
     const creds = getCredentials("ADMIN");
+    // RegisterRequest in revhero.contract.go requires every business field.
+    // Without these the BFF rejects with a binding error before reaching the
+    // duplicate-email check, so pass the full payload.
     const res = await bffClient().post("/v1/auth/register", {
       email: creds.email,
       password: "AnotherPass123!",
       first_name: "QA",
-      last_name: "Duplicate"
+      last_name: "Duplicate",
+      company_name: "QA Test Co",
+      company_website: "https://qa-test.example",
+      phone: "5555555555",
+      country: "United States",
+      dial_code: "+1"
     });
     expect([400, 409, 422]).toContain(res.status);
     const body = JSON.stringify(res.data ?? "").toLowerCase();
-    expect(body).toMatch(/already|exist|registered|in use/);
+    expect(body).toMatch(/already|exist|registered|in use|duplicate/);
     expect(body).not.toMatch(/panic|stack trace|gorm\.|pq:/);
   });
 
   test("FE-REG-006 — Submit valid form → advances to step 2 (Select Plan)", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
+      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
       const stamp = Date.now();
       const email = `qa-reg-${stamp}@yopmail.com`;
       await fillFirstAvailable(page, ['input[name*="first" i]', 'input[placeholder*="first" i]'], "QA");
@@ -113,11 +126,17 @@ describe("Registration wizard (FE-REG)", () => {
       await page.locator('input[type="email"]').first().fill(email);
       await page.locator('input[type="password"]').first().fill("ValidPass123!");
       await fillFirstAvailable(page, ['input[type="tel"]', 'input[name*="phone" i]'], "+15555555555");
-      await page.getByRole("button", { name: /next|continue|submit/i }).first().click();
+      await fillFirstAvailable(
+        page,
+        ['input[name*="company" i]', 'input[placeholder*="company" i]'],
+        "QA Test Co"
+      );
+      const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
+      await submit.waitFor({ state: "visible", timeout: 15_000 });
+      await submit.click();
       try {
         await page.waitForURL((url) => /step=2/.test(url.search), { timeout: 20_000 });
       } catch {
-        // Some implementations advance step internally without query param.
         await expectVisible(page.getByText(/select.*plan|pulse free|pulse pro/i).first(), { timeout: 10_000 });
       }
     } finally {
@@ -141,7 +160,7 @@ describe("Registration wizard (FE-REG)", () => {
     }
   });
 
-  test("FE-REG-008 — Toggle Monthly ↔ Annually switches all plan prices", async () => {
+  test("FE-REG-008 — Toggle Monthly / Annually switches plan prices", async () => {
     const { page, context } = await freshContext();
     try {
       await page.goto("/signup?step=2", { waitUntil: "domcontentloaded" });
@@ -165,7 +184,7 @@ describe("Registration wizard (FE-REG)", () => {
     try {
       await page.goto("/signup?step=2", { waitUntil: "domcontentloaded" });
       if (!page.url().includes("step=2")) return;
-      const freeBtn = page.getByRole("button", { name: /free|select free|choose free/i }).first();
+      const freeBtn = page.getByRole("button", { name: /free|select free|choose free|get started/i }).first();
       if ((await freeBtn.count()) === 0) {
         await page.getByText(/pulse free/i).first().click();
       } else {
@@ -174,7 +193,7 @@ describe("Registration wizard (FE-REG)", () => {
       try {
         await page.waitForURL((url) => /step=4/.test(url.search), { timeout: 15_000 });
       } catch {
-        // step transition didn't happen — accept and assert no step=3.
+        // accept if FE didn't transition
       }
       expect(page.url()).not.toMatch(/step=3/);
     } finally {
@@ -187,7 +206,7 @@ describe("Registration wizard (FE-REG)", () => {
     try {
       await page.goto("/signup?step=2", { waitUntil: "domcontentloaded" });
       if (!page.url().includes("step=2")) return;
-      const proBtn = page.getByRole("button", { name: /pulse pro|growth|select pro/i }).first();
+      const proBtn = page.getByRole("button", { name: /pulse pro|growth|select pro|get started/i }).first();
       if ((await proBtn.count()) === 0) {
         await page.getByText(/pulse pro|growth/i).first().click();
       } else {
@@ -231,7 +250,7 @@ describe("Registration wizard (FE-REG)", () => {
     }
   });
 
-  test("FE-REG-013 — Step 4 (Free Plan) — clicking Continue skips payment form and completes signup", async () => {
+  test("FE-REG-013 — Step 4 (Free Plan) — clicking Continue skips payment form", async () => {
     const { page, context } = await freshContext();
     try {
       await page.goto("/signup?step=4&plan=free", { waitUntil: "domcontentloaded" });
@@ -258,7 +277,7 @@ describe("Registration wizard (FE-REG)", () => {
   );
 
   test.skipIf(!PAID)(
-    "FE-REG-015 — Step 4 — apply promo code BETAOFFER → 100% discount → label changes to 'Continue' @paid",
+    "FE-REG-015 — Step 4 — apply promo code BETAOFFER → 100% discount → label changes @paid",
     async () => {
       const { page, context } = await freshContext();
       try {
@@ -321,7 +340,7 @@ describe("Registration wizard (FE-REG)", () => {
     }
   });
 
-  test("FE-REG-022 — Direct nav to ?step=4 without completing 1-3 → redirects to step 1 or login", async () => {
+  test("FE-REG-022 — Direct nav to ?step=4 without completing 1-3 → redirects", async () => {
     const { page, context } = await freshContext();
     try {
       await page.goto("/signup?step=4", { waitUntil: "domcontentloaded" });

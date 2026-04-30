@@ -50,9 +50,18 @@ export async function closePool(): Promise<void> {
   }
 }
 
-export async function findUserByEmail(email: string): Promise<{ id: number; account_id: number } | null> {
-  const rows = await query<{ id: number; account_id: number }>(
-    "SELECT id, account_id FROM users WHERE email = $1 LIMIT 1",
+export async function findUserByEmail(
+  email: string
+): Promise<{ id: number; account_id: number | null; setup_finished: boolean } | null> {
+  // The users table has no account_id column directly — accounts are linked
+  // via the accounts_users join table. Pull both in one query.
+  const rows = await query<{ id: number; account_id: number | null; setup_finished: boolean }>(
+    `SELECT u.id, u.setup_finished, au.account_id
+     FROM users u
+     LEFT JOIN accounts_users au ON au.user_id = u.id
+     WHERE u.email = $1
+     ORDER BY au.account_id NULLS LAST
+     LIMIT 1`,
     [email]
   );
   return rows.length > 0 ? rows[0]! : null;
