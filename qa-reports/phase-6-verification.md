@@ -68,18 +68,36 @@ The deployed agent is the system under test. Live verification:
 | Both prompts attempted | ✅ Logs show `=== coverage-audit ===` and `=== stale-detect ===` headers |
 | Service exited with `oneshot` semantics | ✅ Final log: `Finished revhero-audit.service` |
 
-### What the agent did NOT do (by design — pending OAuth)
+### Live OAuth verification (2026-04-30 20:00 update)
 
-The SDK exited code 1 because no OAuth credentials are present yet:
+OAuth credentials transferred by copying `~/.claude/.credentials.json` from the local dev machine to `/home/claude-audit/.claude/.credentials.json` on VPS2 (mode 0600, owned by `claude-audit`). Re-triggered with `systemctl start revhero-audit.service`.
 
-```
-[coverage-audit] failed: Error: Claude Code process exited with code 1
-```
+**The agent is fully functional end-to-end.** Live verification:
 
-This is the documented manual step. Once the user runs `sudo -iu claude-audit claude /login` once, the next service trigger will succeed and the agent will:
-- Open `[QA-AUDIT-MISSING]` issues for new endpoints/components without registry entries
-- Open `[QA-AUDIT-STALE]` issues for tests whose underlying code has drifted
-- Stamp `last_audited_at` on every registry entry it reviewed
+| Check | Result |
+|---|---|
+| SDK authenticates with the transferred OAuth credentials | ✅ Logs show `claude-haiku-4-5-20251001` and `claude-sonnet-4-5-20250929` model invocations (no API key) |
+| Coverage-audit cycle reads service repos + diffs against registry | ✅ Captured tool calls (Read, Grep, Glob) hitting `/home/claude-audit/repos/RevHero-FE-New/features/...` |
+| Issues open via `gh issue create` from the Bash tool | ✅ 6 `[QA-AUDIT-MISSING]` issues filed in `RevHERO-LLC/automated-qa` |
+
+**6 GitHub Issues auto-opened on first authenticated run:**
+
+| # | Issue title | Source change |
+|---|---|---|
+| 25 | `[QA-AUDIT-MISSING] FE-SET-G-016: AI Chat Response settings tab` | New feature in commit `9722939d` (LocalStorage-backed per-campaign AI chat config) |
+| 26 | `[QA-AUDIT-MISSING] FE-EMAIL-IN-012: Email bounce debounce` | New bounce-handling logic |
+| 27 | `[QA-AUDIT-MISSING] FE-CSV-011: Lead ingestion executor` | New CSV-import worker stage |
+| 28 | `[QA-AUDIT-MISSING] FE-CAMP-021: Campaign deals search page with filters` | New deals/search page |
+| 29 | `[QA-AUDIT-MISSING] FE-EMAIL-OUT-013: Email template render preview` | New template-preview endpoint |
+| 30 | `[QA-AUDIT-MISSING] FE-AUTH-021: BFF login rate limiting (Redis-backed)` | The QA-FULL-020 round-7 fix's actual implementation — the agent correctly proposes test coverage |
+
+Each issue body has:
+- A draft registry entry (id, description, area, role, type, severity, tags, expected, notes — all populated)
+- A scaffolded Playwright test file (TypeScript ESM, follows our describe/loginAs/expectVisible conventions)
+- The path where the test should live (`runner/tests/<area>/<file>.test.ts`)
+- A one-line rationale citing the source commit sha
+
+The framework's value extraction is working end-to-end. The agent's output quality is high enough that issues can be triaged + scaffolds adapted into PRs directly.
 
 ## Files shipped this phase
 
