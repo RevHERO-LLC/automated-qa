@@ -1,14 +1,21 @@
-# Daily scheduled QA run + manual workflow_dispatch trigger.
-# Phase 3 wires the Dokploy app deploy.
-name: qa-staging
+# Per-PR QA run gated by workflow_dispatch + status check.
+# Service-repo deploy-prod.yml workflows dispatch this with `ref` and
+# `slice` inputs so we can run a filtered slice against the PR's image.
+name: qa-pr
 
 on:
-  schedule:
-    - cron: '7 7 * * *' # 2 AM ET — avoid the :00 hot-zone
   workflow_dispatch:
     inputs:
+      ref:
+        description: "Source ref to test (sha or branch)"
+        required: true
+        default: "main"
       slice:
-        description: "Tag filter to run (p0, p1, smoke, etc). Empty = full suite."
+        description: "Tag filter (p0, smoke, critical, etc). Empty = full suite."
+        required: false
+        default: "p0"
+      caller:
+        description: "Calling repo for cross-reference in reports"
         required: false
         default: ""
 
@@ -20,7 +27,7 @@ jobs:
   trigger-run:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Dokploy QA-runner redeploy (runs the suite)
+      - name: Trigger Dokploy QA-runner redeploy
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
           QA_RUNNER_APP_ID: ${{ vars.QA_RUNNER_APP_ID }}
@@ -31,12 +38,11 @@ jobs:
             "http://147.93.1.174:3000/api/application.deploy" \
             -d "{\"applicationId\":\"${QA_RUNNER_APP_ID}\"}"
 
-      - name: Wait for Dokploy run to finish
+      - name: Wait for completion
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
           QA_RUNNER_APP_ID: ${{ vars.QA_RUNNER_APP_ID }}
         run: |
-          # Poll application.status every 15s for up to 30 minutes.
           deadline=$(( $(date +%s) + 1800 ))
           while [[ $(date +%s) -lt $deadline ]]; do
             status=$(curl -fsSL \
@@ -44,13 +50,8 @@ jobs:
               "http://147.93.1.174:3000/api/application.one?applicationId=${QA_RUNNER_APP_ID}" \
               | jq -r '.applicationStatus // "unknown"')
             echo "Dokploy status: $status"
-            if [[ "$status" == "done" || "$status" == "idle" ]]; then
-              exit 0
-            fi
-            if [[ "$status" == "error" ]]; then
-              exit 1
-            fi
+            if [[ "$status" == "done" || "$status" == "idle" ]]; then exit 0; fi
+            if [[ "$status" == "error" ]]; then exit 1; fi
             sleep 15
           done
-          echo "::warning::Dokploy run still in-flight after 30m"
-          exit 0
+          exit 1

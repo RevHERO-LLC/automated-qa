@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/build
+**/.pnpm-store
+**/reports
+**/test-results
+**/playwright-report
+**/.playwright-cache
+.sessions
+.env
+.env.*
+.git
+.github
+*.log
+audit
+qa-reports
