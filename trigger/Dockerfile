@@ -7,19 +7,16 @@ WORKDIR /app
 
 ENV PORT=3000
 
-# Install runtime deps. Keep NODE_ENV unset for the install step so dev
-# deps (typescript) we add for the build don't get filtered out — flip
-# NODE_ENV=production at runtime via the CMD env.
+# Install both runtime + dev deps so tsc + @types/node are present, build,
+# then prune to prod-only. Cleaner than juggling NODE_ENV mid-install.
 COPY trigger/package.json ./package.json
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
-# Compile TS to JS at build time. typescript is a build-only dep — install
-# it globally so the runtime image stays slim, then build, then ship.
 COPY trigger/tsconfig.json ./tsconfig.json
 COPY trigger/src ./src
-RUN npm install -g typescript@5.6.3 \
- && tsc -p tsconfig.json \
- && npm uninstall -g typescript
+RUN npx tsc -p tsconfig.json
+
+RUN npm prune --omit=dev
 
 ENV NODE_ENV=production
 
