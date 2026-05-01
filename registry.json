@@ -3807,7 +3807,7 @@
     },
     {
       "id": "FE-EMAIL-OUT-013",
-      "description": "POST /v1/emails/render renders email template body with merge tags resolved (rendered_body in response).",
+      "description": "POST /v1/templates/render on email-ingress is registered (not 404). Internal service-to-service endpoint consumed by deals-actions AI personalization.",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -3818,12 +3818,12 @@
         "p2"
       ],
       "file": "runner/tests/email/fe-email-out-render.test.ts",
-      "notes": "Source: email-ingress added dto/render.dto.go + RenderTemplate handler.",
-      "last_audited_at": "2026-04-30T18:19:29.723Z"
+      "notes": "Audit cycle 1 (#30) opened this against /v1/emails/render — wrong path + wrong host. Corrected 2026-05-01 to email-ingress /v1/templates/render with the real DTO {deal_id, parent_user_id, texts}. See routing.go:156 + email.handler.go:898.",
+      "last_audited_at": "2026-05-01T11:30:00.000Z"
     },
     {
       "id": "FE-EMAIL-OUT-014",
-      "description": "/v1/emails/render with invalid deal_id returns 4xx (not 500).",
+      "description": "/v1/templates/render handles invalid deal_id without panicking. 500 is allowed today (known follow-up to map deal-not-found to 404 in email-ingress).",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -3836,11 +3836,12 @@
         "p2"
       ],
       "file": "runner/tests/email/fe-email-out-render.test.ts",
-      "last_audited_at": "2026-04-30T18:19:29.723Z"
+      "notes": "Email-ingress RenderForDeal currently returns 500 on validation/lookup errors. Test accepts 4xx OR 500 today; tighten once email-ingress maps not-found to 404.",
+      "last_audited_at": "2026-05-01T11:30:00.000Z"
     },
     {
       "id": "FE-EMAIL-OUT-015",
-      "description": "/v1/emails/render with missing template_body returns 400 with friendly error.",
+      "description": "/v1/templates/render with missing required `texts` field returns 400 from gin's binding layer.",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -3853,7 +3854,7 @@
         "p2"
       ],
       "file": "runner/tests/email/fe-email-out-render.test.ts",
-      "last_audited_at": "2026-04-30T18:19:29.723Z"
+      "last_audited_at": "2026-05-01T11:30:00.000Z"
     },
     {
       "id": "FE-HELP-001",

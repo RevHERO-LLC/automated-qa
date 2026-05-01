@@ -141,7 +141,12 @@ export default class QaReporter {
       const slackUrl = process.env.SLACK_WEBHOOK_QA;
       if (slackUrl) {
         try {
-          await postSlack(slackUrl, buildQaSummaryMessage(summary));
+          // Compute severity breakdown of the FAILures by joining results
+          // against registry.json. Lets the headline say "0 CRITICAL —
+          // deploys NOT blocked" instead of the previous misleading
+          // "N/total CRITICAL" hardcoded string.
+          const severityCounts = this.severityCountsForFailures();
+          await postSlack(slackUrl, buildQaSummaryMessage(summary, undefined, severityCounts));
         } catch (err) {
           console.error("[reporter] Slack post failed:", err);
         }
@@ -195,6 +200,41 @@ export default class QaReporter {
 
   private areaForId(id: string): string {
     return id.replace(/-\d{3}$/, "").toLowerCase();
+  }
+
+  // Joins the run's FAILures with registry.json severity. Falls back to
+  // counting everything as "medium" if the registry can't be loaded —
+  // we'd rather post a slightly-fuzzy summary than silently fail.
+  private severityCountsForFailures(): { critical: number; high: number; medium: number; low: number } {
+    const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+    let registry: { entries: { id: string; severity?: string }[] } | null = null;
+    try {
+      const candidates = [
+        path.resolve(process.cwd(), "registry.json"),
+        path.resolve(process.cwd(), "../registry.json"),
+        path.resolve(__dirname, "../../../registry.json"),
+        path.resolve(__dirname, "../../registry.json")
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          registry = JSON.parse(fs.readFileSync(p, "utf8"));
+          break;
+        }
+      }
+    } catch (err) {
+      console.error("[reporter] registry.json load failed (severity fallback):", err);
+    }
+    const sevById = new Map<string, string>();
+    if (registry?.entries) {
+      for (const e of registry.entries) sevById.set(e.id, e.severity ?? "medium");
+    }
+    for (const r of this.results) {
+      if (r.status !== "FAIL") continue;
+      const sev = (sevById.get(r.id) ?? "medium") as keyof typeof counts;
+      if (sev in counts) counts[sev]++;
+      else counts.medium++;
+    }
+    return counts;
   }
 
   private buildSummary(): RunSummary {

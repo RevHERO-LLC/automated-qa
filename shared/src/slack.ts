@@ -22,12 +22,26 @@ export async function postSlack(webhookUrl: string, message: SlackMessage): Prom
   }
 }
 
-export function buildQaSummaryMessage(summary: RunSummary, reportUrl?: string): SlackMessage {
-  const emoji = summary.failed > 0 ? ":x:" : ":white_check_mark:";
-  const headline =
-    summary.failed > 0
-      ? `${emoji} QA run failed: ${summary.failed}/${summary.total} CRITICAL`
-      : `${emoji} QA run passed: ${summary.passed}/${summary.total}`;
+export function buildQaSummaryMessage(
+  summary: RunSummary,
+  reportUrl?: string,
+  severityCounts?: { critical: number; high: number; medium: number; low: number }
+): SlackMessage {
+  // The headline distinguishes "any fails" (informational, gate still
+  // green) from "critical fails" (deploy gate is blocking). Without
+  // severityCounts the reporter can't tell — fall back to a neutral count.
+  let emoji = ":white_check_mark:";
+  let headline = `${emoji} QA run passed: ${summary.passed}/${summary.total}`;
+  if (severityCounts && severityCounts.critical > 0) {
+    emoji = ":x:";
+    headline = `${emoji} QA run failed: ${severityCounts.critical} CRITICAL fail(s) — deploys BLOCKED`;
+  } else if (summary.failed > 0) {
+    emoji = ":warning:";
+    const breakdown = severityCounts
+      ? ` (${severityCounts.high}H/${severityCounts.medium}M/${severityCounts.low}L)`
+      : "";
+    headline = `${emoji} QA run had ${summary.failed} non-critical fail(s)${breakdown} — deploys NOT blocked`;
+  }
 
   return {
     text: headline,

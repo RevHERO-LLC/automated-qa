@@ -41,10 +41,16 @@ describe("Layout / Shell (FE-LAY)", () => {
   test("FE-LAY-003 — Header shows credit balance, notification bell, sign out", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
-      const signOut = page.getByRole("button", { name: /sign out/i }).first();
-      const exists = (await signOut.count()) > 0;
-      expect(exists, "Sign Out button missing from header").toBe(true);
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      // The header sign-out is an icon-only <button aria-label="Sign out">.
+      // Use Playwright's locator.waitFor so we don't race React's header
+      // hydration the way networkidle + count() did (FE-LAY-003 went green
+      // for weeks before flaking on 2026-05-01). Vitest doesn't ship the
+      // toBeVisible matcher, so use locator.waitFor + a synchronous count
+      // check instead.
+      const signOut = page.getByRole("button", { name: /sign\s*out|log\s*out/i }).first();
+      await signOut.waitFor({ state: "visible", timeout: 15_000 });
+      expect(await signOut.count()).toBeGreaterThan(0);
     } finally {
       await context.close();
     }
