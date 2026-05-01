@@ -89,9 +89,6 @@ importers:
 
   trigger:
     dependencies:
-      '@revhero/qa-shared':
-        specifier: workspace:*
-        version: link:../shared
       fastify:
         specifier: ^4.28.1
         version: 4.29.1

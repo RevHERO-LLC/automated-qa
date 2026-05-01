@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@revhero/qa-shared": "workspace:*",
     "fastify": "^4.28.1"
   },
   "devDependencies": {
