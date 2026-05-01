@@ -2,3 +2,4 @@ packages:
   - "runner"
   - "audit"
   - "shared"
+  - "trigger"
