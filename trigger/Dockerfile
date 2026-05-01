@@ -17,7 +17,9 @@ RUN npm install --omit=dev --no-audit --no-fund
 # emitted JS only.
 COPY trigger/tsconfig.json ./tsconfig.json
 COPY trigger/src ./src
-RUN npx --yes typescript@5.6.3 -p tsconfig.json
+RUN npm install --save-dev typescript@5.6.3 \
+ && npx tsc -p tsconfig.json \
+ && npm uninstall typescript
 
 EXPOSE 3000
 
