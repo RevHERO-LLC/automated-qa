@@ -129,51 +129,43 @@ async function pollUntilDone(dispatchId: string, timeoutSec: number): Promise<vo
   if (!dispatch) return;
   const deadline = Date.now() + timeoutSec * 1000;
   // Capture the run_id we saw before we kicked off the deploy so we can
-  // tell when a NEW run has been written to the volume.
+  // tell when a NEW run has been written to the volume. This is a more
+  // reliable completion signal than dokployStatus, which flips to "done"
+  // as soon as the deploy step (image pull + container start) finishes —
+  // but the actual vitest run continues for a few minutes inside.
   const previous = await fetchLatestReport();
   const previousRunId = previous?.run_id;
-
-  // Allow Dokploy a few seconds to flip status to "running" so we don't
-  // see the still-idle previous state and think we're done.
-  await new Promise((r) => setTimeout(r, 5_000));
+  let sawRunning = false;
 
   while (Date.now() < deadline) {
-    let status = "unknown";
+    // Surface dokploy status as a hint for callers, but don't gate on it.
     try {
-      status = await dokployStatus();
+      const status = await dokployStatus();
+      dispatch.dokploy_status = status;
+      if (status === "running") {
+        dispatch.status = "running";
+        sawRunning = true;
+      } else if (status === "error") {
+        dispatch.status = "failed";
+        dispatch.error = "Dokploy reported deployment error";
+        dispatch.finished_at = new Date().toISOString();
+        return;
+      } else if ((status === "done" || status === "idle") && sawRunning && dispatch.status === "deploying") {
+        dispatch.status = "running";
+      }
     } catch (err) {
       console.error(`[qa-trigger] dispatch ${dispatchId} dokployStatus error:`, err);
     }
-    dispatch.dokploy_status = status;
-    if (status === "running") {
-      dispatch.status = "running";
-    } else if (status === "done" || status === "idle") {
-      // Dokploy says the app is back to idle — but the runner writes
-      // latest.json AS PART of its exit path, and there can be ~1s of
-      // FS lag before the static reporter sees the new file. Poll the
-      // report URL and require the run_id to differ from previousRunId.
-      for (let i = 0; i < 30; i++) {
-        const report = await fetchLatestReport();
-        if (report && report.run_id !== previousRunId) {
-          dispatch.report = report;
-          dispatch.status = "completed";
-          dispatch.finished_at = new Date().toISOString();
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 2_000));
-      }
-      // Volume never updated — Dokploy is idle but the runner didn't
-      // complete a run (maybe it crashed before writing). Surface that.
-      dispatch.status = "failed";
-      dispatch.error = "Dokploy reported idle but no new latest.json appeared";
-      dispatch.finished_at = new Date().toISOString();
-      return;
-    } else if (status === "error") {
-      dispatch.status = "failed";
-      dispatch.error = "Dokploy reported deployment error";
+
+    // Real completion signal: a new run_id appears in latest.json.
+    const report = await fetchLatestReport();
+    if (report && report.run_id !== previousRunId) {
+      dispatch.report = report;
+      dispatch.status = "completed";
       dispatch.finished_at = new Date().toISOString();
       return;
     }
+
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
   }
   dispatch.status = "timeout";
