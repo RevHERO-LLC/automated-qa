@@ -5,21 +5,23 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-ENV NODE_ENV=production
 ENV PORT=3000
 
-# Install runtime deps first for cache stability.
+# Install runtime deps. Keep NODE_ENV unset for the install step so dev
+# deps (typescript) we add for the build don't get filtered out — flip
+# NODE_ENV=production at runtime via the CMD env.
 COPY trigger/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Bring source + tsconfig and compile in-place. tsx isn't shipped at
-# runtime (it's a dev dep) so we run tsc once at build time and ship the
-# emitted JS only.
+# Compile TS to JS at build time. typescript is a build-only dep — install
+# it globally so the runtime image stays slim, then build, then ship.
 COPY trigger/tsconfig.json ./tsconfig.json
 COPY trigger/src ./src
-RUN npm install --save-dev typescript@5.6.3 \
- && npx tsc -p tsconfig.json \
- && npm uninstall typescript
+RUN npm install -g typescript@5.6.3 \
+ && tsc -p tsconfig.json \
+ && npm uninstall -g typescript
+
+ENV NODE_ENV=production
 
 EXPOSE 3000
 
