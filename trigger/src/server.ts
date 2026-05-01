@@ -14,7 +14,12 @@ const DOKPLOY_API_URL = process.env.DOKPLOY_API_URL ?? "http://147.93.1.174:3000
 const DOKPLOY_API_TOKEN = process.env.DOKPLOY_API_TOKEN ?? "";
 const QA_RUNNER_APP_ID = process.env.QA_RUNNER_APP_ID ?? "";
 const QA_TRIGGER_TOKEN = process.env.QA_TRIGGER_TOKEN ?? "";
-const QA_REPORTS_BASE_URL = process.env.QA_REPORTS_BASE_URL ?? "https://qa-reports.test.revhero.io";
+// Internal URL is used for fetches by this service so we don't have to
+// re-enter Traefik (which causes a 504 when the container is on the same
+// VPS as Traefik but DNS resolves to VPS2 then back). Public URL is what
+// gets handed back in responses so callers can click through.
+const QA_REPORTS_INTERNAL_URL = process.env.QA_REPORTS_INTERNAL_URL ?? "http://automated-qa-static-staging-6pwsju";
+const QA_REPORTS_PUBLIC_URL = process.env.QA_REPORTS_PUBLIC_URL ?? "https://qa-reports.test.revhero.io";
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS ?? 15_000);
 const MAX_RUN_TIMEOUT_SEC = Number(process.env.MAX_RUN_TIMEOUT_SEC ?? 1800); // 30 min ceiling
 
@@ -88,11 +93,7 @@ async function dokployStatus(): Promise<string> {
 
 async function fetchLatestReport(): Promise<Dispatch["report"] | undefined> {
   try {
-    // qa-reports uses the Traefik default cert (LE pending). Set
-    // NODE_TLS_REJECT_UNAUTHORIZED=0 in the deploy env to accept it
-    // until LE issuance lands; once LE is healthy, drop the env var
-    // and the verify flips back on automatically.
-    const res = await fetch(`${QA_REPORTS_BASE_URL}/latest.json`);
+    const res = await fetch(`${QA_REPORTS_INTERNAL_URL}/latest.json`);
     if (!res.ok) return undefined;
     const json = (await res.json()) as {
       summary?: {
@@ -115,7 +116,7 @@ async function fetchLatestReport(): Promise<Dispatch["report"] | undefined> {
       failed: s.failed ?? 0,
       skipped: s.skipped ?? 0,
       not_exec: s.not_exec ?? 0,
-      report_url: `${QA_REPORTS_BASE_URL}/${s.run_id}/report.md`
+      report_url: `${QA_REPORTS_PUBLIC_URL}/${s.run_id}/report.md`
     };
   } catch (err) {
     console.error("[qa-trigger] latest report fetch failed:", err);
