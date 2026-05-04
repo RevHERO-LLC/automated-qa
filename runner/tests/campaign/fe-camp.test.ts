@@ -62,11 +62,11 @@ describe("Campaign Builder (FE-CAMP)", () => {
       if ((await inactive.count()) > 0) {
         await inactive.click({ trial: true }).catch(() => {});
       }
-      // Tab structure: anchor to anchored words ("active" / "inactive" / "all")
-      // so common substrings like "small" or "called" don't trick the assertion.
+      // Tab structure: word-boundary so "Active Campaigns" / "All campaigns"
+      // labels still match, but substrings like "called" / "small" don't.
       const tabsExist =
         (await page.getByRole("tab").count()) > 0 ||
-        (await page.getByText(/^\s*(active|inactive|all)\s*$/i).count()) > 0;
+        (await page.getByText(/\b(active|inactive|all)\b/i).count()) > 0;
       expect(tabsExist).toBe(true);
     } finally {
       await context.close();
