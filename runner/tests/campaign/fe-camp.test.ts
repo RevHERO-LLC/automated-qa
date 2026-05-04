@@ -43,13 +43,30 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-002 — Tabs Active / Inactive / All switch correctly", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      // Wait for a positive render signal first — networkidle alone has been
+      // observed to fire on a logged-out / blank page (auth race) where the
+      // loose tab text match still returned 0. Mirror FE-CAMP-001's pattern.
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      const heading = page.getByRole("heading", { name: /campaign builder/i });
+      const createBtn = page.getByRole("button", { name: /create.*campaign|new campaign|import campaign/i });
+      const emptyText = page.getByText(/no campaign|empty/i);
+      const list = page.locator('[role="table"], table, .campaign-list, .campaign-card, [data-testid*="campaign-card" i]');
+      await Promise.any([
+        heading.first().waitFor({ state: "visible", timeout: 15_000 }),
+        createBtn.first().waitFor({ state: "visible", timeout: 15_000 }),
+        emptyText.first().waitFor({ state: "visible", timeout: 15_000 }),
+        list.first().waitFor({ state: "visible", timeout: 15_000 })
+      ]);
+
       const inactive = page.getByRole("tab", { name: /inactive/i }).or(page.getByText(/^inactive$/i)).first();
       if ((await inactive.count()) > 0) {
         await inactive.click({ trial: true }).catch(() => {});
       }
-      // Just verify the tab structure exists; don't assert post-click state — that's flaky on staging.
-      const tabsExist = (await page.getByRole("tab").count()) > 0 || (await page.getByText(/active|inactive|all/i).count()) > 0;
+      // Tab structure: anchor to anchored words ("active" / "inactive" / "all")
+      // so common substrings like "small" or "called" don't trick the assertion.
+      const tabsExist =
+        (await page.getByRole("tab").count()) > 0 ||
+        (await page.getByText(/^\s*(active|inactive|all)\s*$/i).count()) > 0;
       expect(tabsExist).toBe(true);
     } finally {
       await context.close();

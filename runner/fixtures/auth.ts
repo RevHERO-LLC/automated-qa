@@ -49,14 +49,44 @@ function sessionPath(role: AuthRole): string {
   return path.join(SESSION_DIR, `${role.toLowerCase()}.json`);
 }
 
+// Vitest runs test files across worker processes in parallel. Each call to
+// loginAs() may concurrently read/write the same per-role session file. The
+// previous implementation passed a path directly to Playwright's
+// newContext({ storageState: <path> }) and storageState({ path }), both of
+// which open the file non-atomically — readers could land mid-write and see
+// 0 bytes ("Unexpected end of JSON input"), and a half-applied state could
+// produce a context that looks logged-in to the cache check but lands on a
+// blank/redirect page later. Both failure modes were observed in the
+// scheduled-20260504T080637 run (FE-CAMP-001 and FE-CAMP-002). Fix: do the
+// I/O ourselves with defensive parsing and atomic temp+rename writes.
+function readStorageStateOrNull(file: string): unknown | null {
+  try {
+    const raw = fs.readFileSync(file, "utf8");
+    if (!raw.trim()) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function writeStorageStateAtomic(context: BrowserContext, file: string): Promise<void> {
+  const state = await context.storageState();
+  const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
+  fs.writeFileSync(tmp, JSON.stringify(state), "utf8");
+  fs.renameSync(tmp, file);
+}
+
 export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext; page: Page }> {
   const b = await getBrowser();
   const sp = sessionPath(role);
-  const reuse = fs.existsSync(sp);
+  const cached = readStorageStateOrNull(sp);
+  const reuse = cached !== null;
   const baseURL = getAreaUrls().base;
   const context = await b.newContext(
     reuse
-      ? { baseURL, storageState: sp, viewport: { width: 1440, height: 900 } }
+      ? { baseURL, storageState: cached as any, viewport: { width: 1440, height: 900 } }
       : { baseURL, viewport: { width: 1440, height: 900 } }
   );
   const page = await context.newPage();
@@ -70,7 +100,12 @@ export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext
   if (needsLogin) {
     await performLoginViaApi(context, role);
     await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
-    await context.storageState({ path: sp });
+    try {
+      await writeStorageStateAtomic(context, sp);
+    } catch (err) {
+      // Best-effort persistence — a failed write means the next test re-logs in.
+      console.warn(`[auth] storage state write failed for ${role}:`, err);
+    }
   }
   return { context, page };
 }
