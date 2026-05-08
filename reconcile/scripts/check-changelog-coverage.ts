@@ -101,11 +101,11 @@ function issueTitleFor(commit: CommitMeta): string {
 }
 
 function issueExists(title: string): boolean {
-  // gh issue list with the search query returns matching issues. We escape
-  // double quotes in the title and search the open+closed scope so reruns
-  // skip even if the issue was closed.
-  const safeTitle = title.replace(/"/g, '\\"');
-  const cmd = `gh issue list --repo ${ISSUE_REPO} --state all --search "${safeTitle} in:title" --json title --limit 5`;
+  // GitHub's search query parser eats bracket characters in `[CHANGELOG-MISSED]`,
+  // so we search by the unique SHA prefix slug and filter in JS.
+  const shaSlug = title.split("@")[1] ?? title;
+  const query = `${shaSlug} in:title`;
+  const cmd = `gh issue list --repo ${ISSUE_REPO} --state all --search ${shellQuote(query)} --json title --limit 10`;
   try {
     const raw = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
     const items = JSON.parse(raw) as Array<{ title: string }>;
@@ -142,32 +142,52 @@ function openIssue(commit: CommitMeta): boolean {
     "Detected by `automated-qa/reconcile/scripts/check-changelog-coverage.ts` (Layer 3 of Claude Changelog enforcement).",
   ].join("\n");
 
-  const titleArg = title.replace(/"/g, '\\"');
-  const bodyArg = body.replace(/"/g, '\\"');
-  const cmd = `gh issue create --repo ${ISSUE_REPO} --title "${titleArg}" --body "${bodyArg}" --label changelog-missed`;
+  // Use --body-file via a temp file. Inline --body breaks on backticks,
+  // dollar signs, parentheses, and other shell metacharacters that
+  // routinely appear in commit messages.
+  const bodyFile = path.join(REPORTS_DIR, `body-${commit.sha.slice(0, 7)}-${Date.now()}.md`);
   try {
-    const raw = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
-    console.log(`[reconcile] opened issue: ${title} → ${raw.trim()}`);
-    return true;
+    require("node:fs").writeFileSync(bodyFile, body, "utf8");
   } catch (err) {
-    const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
-    // The label may not exist on first run — fall back to no-label.
-    if (stderr.includes("could not add label")) {
-      try {
-        const raw = execSync(
-          `gh issue create --repo ${ISSUE_REPO} --title "${titleArg}" --body "${bodyArg}"`,
-          { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" }
-        );
-        console.log(`[reconcile] opened issue (no label): ${title} → ${raw.trim()}`);
-        return true;
-      } catch (err2) {
-        console.warn(`[reconcile] gh issue create failed for ${title}:`, err2);
-        return false;
-      }
-    }
-    console.warn(`[reconcile] gh issue create failed for ${title}:`, err);
+    console.warn(`[reconcile] failed to write body file for ${title}:`, err);
     return false;
   }
+
+  const tryCreate = (withLabel: boolean): { ok: boolean; stderr: string } => {
+    const labelArg = withLabel ? ' --label changelog-missed' : "";
+    const cmd = `gh issue create --repo ${ISSUE_REPO} --title ${shellQuote(title)} --body-file ${shellQuote(bodyFile)}${labelArg}`;
+    try {
+      const raw = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+      console.log(`[reconcile] opened issue${withLabel ? "" : " (no label)"}: ${title} → ${raw.trim()}`);
+      return { ok: true, stderr: "" };
+    } catch (err) {
+      const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
+      return { ok: false, stderr };
+    }
+  };
+
+  let result = tryCreate(true);
+  if (!result.ok && result.stderr.includes("could not add label")) {
+    result = tryCreate(false);
+  }
+  if (!result.ok) {
+    console.warn(`[reconcile] gh issue create failed for ${title}: ${result.stderr.slice(0, 200)}`);
+  }
+
+  // Best-effort cleanup of the temp body file.
+  try {
+    require("node:fs").unlinkSync(bodyFile);
+  } catch {
+    /* ignore */
+  }
+  return result.ok;
+}
+
+function shellQuote(value: string): string {
+  // POSIX single-quote escape: wrap in single quotes, replace any internal
+  // single quote with '\''. Safe for any string including those with
+  // backticks, dollars, parens, etc.
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 async function postSlackSummary(missed: CommitMeta[]): Promise<void> {
