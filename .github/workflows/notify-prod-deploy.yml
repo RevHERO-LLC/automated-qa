@@ -46,6 +46,9 @@ on:
         required: true
       SLACK_WEBHOOK_DEPLOYS:
         required: true
+      CHANGELOG_API_TOKEN:
+        required: false
+        description: "Bearer token for the Claude Changelog deploy-status PATCH (optional). If unset, the PATCH step is skipped."
 
 jobs:
   notify:
@@ -140,3 +143,39 @@ jobs:
               -H "Content-Type: application/json" \
               -d @- \
               "${SLACK_WEBHOOK_DEPLOYS}"
+
+      - name: Patch Claude Changelog deploy_status
+        if: ${{ always() }}
+        env:
+          CHANGELOG_API_TOKEN: ${{ secrets.CHANGELOG_API_TOKEN }}
+          OUTCOME: ${{ steps.wait.outputs.outcome }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CHANGELOG_API_TOKEN:-}" ]]; then
+            echo "CHANGELOG_API_TOKEN not provided — skipping changelog PATCH (caller didn't pass the secret)."
+            exit 0
+          fi
+          # Map our internal `outcome` to the changelog's deploy_status enum.
+          # `unknown`/empty falls through to a no-op so we never PATCH garbage.
+          case "$OUTCOME" in
+            healthy) STATUS="healthy" ;;
+            failed)  STATUS="failed" ;;
+            timeout) STATUS="timeout" ;;
+            *)
+              echo "Skipping changelog PATCH — outcome=${OUTCOME:-empty} is not a recognised deploy_status."
+              exit 0
+              ;;
+          esac
+          echo "Patching changelog deploy_status=${STATUS} for sha=${SHA}"
+          # The endpoint accepts any sha matching commit_shas in jsonb; if no
+          # record exists for this sha, response is 200 with updated:0. Don't
+          # fail the workflow on 404/4xx — the changelog is best-effort.
+          http_code=$(curl -sS -o /tmp/changelog_patch.out -w "%{http_code}" \
+            -X PATCH "https://config.revhero.ai/api/claude-changes/by-sha/${SHA}" \
+            -H "Authorization: Bearer ${CHANGELOG_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"deploy_status\":\"${STATUS}\"}")
+          echo "Changelog PATCH HTTP ${http_code}"
+          cat /tmp/changelog_patch.out
+          echo
