@@ -12,7 +12,8 @@
 // `SLACK_WEBHOOK_CLAUDE_CHANGES`.
 
 import { execSync } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
+import { writeFileSync, unlinkSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -27,6 +28,10 @@ const ISSUE_REPO = "RevHERO-LLC/automated-qa";
 const LOOKBACK_HOURS = 24;
 const BRANCHES = ["staging", "main"] as const;
 const SKIP_COMMIT_TAG = "[no-changelog]";
+// Optional: ISO timestamp; commits authored before this are skipped even if
+// they fall in the LOOKBACK_HOURS window. Useful right after the changelog
+// rollout to avoid flooding the issues queue with historical pushes.
+const SINCE_FLOOR = process.env.RECONCILE_SINCE_FLOOR_ISO;
 
 type RepoEntry = { name: string; url: string; path: string };
 type RepoConfig = { repos: RepoEntry[] };
@@ -147,7 +152,7 @@ function openIssue(commit: CommitMeta): boolean {
   // routinely appear in commit messages.
   const bodyFile = path.join(REPORTS_DIR, `body-${commit.sha.slice(0, 7)}-${Date.now()}.md`);
   try {
-    require("node:fs").writeFileSync(bodyFile, body, "utf8");
+    writeFileSync(bodyFile, body, "utf8");
   } catch (err) {
     console.warn(`[reconcile] failed to write body file for ${title}:`, err);
     return false;
@@ -176,7 +181,7 @@ function openIssue(commit: CommitMeta): boolean {
 
   // Best-effort cleanup of the temp body file.
   try {
-    require("node:fs").unlinkSync(bodyFile);
+    unlinkSync(bodyFile);
   } catch {
     /* ignore */
   }
@@ -243,7 +248,12 @@ async function main() {
   await mkdir(REPORTS_DIR, { recursive: true });
 
   const config = await loadRepoConfig();
-  const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3600 * 1000).toISOString();
+  const lookbackIso = new Date(Date.now() - LOOKBACK_HOURS * 3600 * 1000).toISOString();
+  const sinceIso =
+    SINCE_FLOOR && SINCE_FLOOR > lookbackIso ? SINCE_FLOOR : lookbackIso;
+  if (SINCE_FLOOR) {
+    console.log(`[reconcile] using SINCE_FLOOR=${SINCE_FLOOR} (lookback=${lookbackIso})`);
+  }
 
   const allCommits: CommitMeta[] = [];
   for (const repo of config.repos) {
