@@ -1,0 +1,15 @@
+[Unit]
+Description=Fire revhero-reconcile.service daily
+Requires=revhero-reconcile.service
+
+[Timer]
+# Daily at 09:00 UTC (~05:00 ET) — well after typical merge windows so the
+# 24h lookback covers the previous business day's pushes.
+OnCalendar=*-*-* 09:00:00
+# Persistent=true makes systemd run a missed timer at boot if the VPS was
+# down at the scheduled hour.
+Persistent=true
+Unit=revhero-reconcile.service
+
+[Install]
+WantedBy=timers.target

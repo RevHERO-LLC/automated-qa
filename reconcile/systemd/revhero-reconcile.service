@@ -1,0 +1,23 @@
+[Unit]
+Description=RevHero Claude Changelog reconciliation — daily SHA coverage check (Layer 3)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=claude-audit
+Group=claude-audit
+WorkingDirectory=/home/claude-audit/automated-qa/reconcile
+EnvironmentFile=/home/claude-audit/.env
+ExecStart=/bin/bash /home/claude-audit/automated-qa/reconcile/reconcile.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=15min
+
+# Tight resource caps — this script is mostly waiting on gh+pg I/O.
+MemoryMax=512M
+CPUQuota=50%
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

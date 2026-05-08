@@ -1,0 +1,21 @@
+{
+  "name": "@revhero/qa-reconcile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Layer 3 of Claude Changelog enforcement: daily systemd timer that diffs the last 24h of GitHub commits on staging+main against changelog.changes and opens [CHANGELOG-MISSED] issues for any push that wasn't logged.",
+  "scripts": {
+    "reconcile": "tsx scripts/check-changelog-coverage.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.6.3"
+  }
+}
