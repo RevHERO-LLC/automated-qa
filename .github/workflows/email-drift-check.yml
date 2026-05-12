@@ -1,0 +1,124 @@
+# Daily Gmail/Microsoft OAuth identity drift check (FU4).
+#
+# Polls email-ingress GET /v1/admin/email-drift-check, which scans recent
+# sent_emails rows where sender_oauth_email (the identity Google/MS reported
+# as authenticated at send time, populated since Bug 5b-b) does not match the
+# stored Mailbox.Email. Non-zero drift means a mailbox's OAuth grant was
+# silently re-authorized under a different account and is now shipping mail
+# from the wrong identity — the historical pattern that masked mailbox 13's
+# "sent" messages from its owner.
+#
+# Posts a Slack alarm to the deploys channel when drift > 0 so an operator
+# can pause the affected mailbox and re-authorize the correct grant. Quiet
+# otherwise (no Slack noise when everything's clean).
+name: email-drift-check
+
+on:
+  schedule:
+    - cron: '13 11 * * *' # 6:13 AM ET — well after qa-staging at 2 AM
+  workflow_dispatch:
+    inputs:
+      window_hours:
+        description: "Lookback window in hours (1-720). Default 24."
+        required: false
+        default: "24"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl drift-check endpoint
+        id: drift
+        env:
+          EMAIL_INGRESS_URL: ${{ vars.EMAIL_INGRESS_URL || 'https://email-ingress.revhero.io' }}
+          INTERNAL_SECRET: ${{ secrets.INTERNAL_SERVICES_WEBHOOK_SECRET }}
+          WINDOW: ${{ github.event.inputs.window_hours || '24' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${INTERNAL_SECRET}" ]]; then
+            echo "::error::INTERNAL_SERVICES_WEBHOOK_SECRET is not set on this repo"
+            exit 1
+          fi
+
+          url="${EMAIL_INGRESS_URL%/}/v1/admin/email-drift-check?window_hours=${WINDOW}"
+          echo "GET ${url}"
+
+          http_code=$(curl -sS -o /tmp/drift.json -w "%{http_code}" \
+            -H "X-Internal-Secret: ${INTERNAL_SECRET}" \
+            --max-time 30 \
+            "${url}")
+
+          echo "HTTP ${http_code}"
+          cat /tmp/drift.json
+          echo
+
+          if [[ "${http_code}" != "200" ]]; then
+            echo "::error::drift-check endpoint returned HTTP ${http_code}"
+            exit 1
+          fi
+
+          # Pull aggregate counters out of `.data` for the Slack template.
+          total_drift=$(jq -r '.data.total_drift_detected // 0' /tmp/drift.json)
+          total_sent=$(jq -r '.data.total_sent_in_window // 0' /tmp/drift.json)
+          missing_identity=$(jq -r '.data.total_missing_sender_oauth_email // 0' /tmp/drift.json)
+          mailboxes_with_drift=$(jq -r '[.data.mailboxes[]? | select(.drift_count > 0)] | length' /tmp/drift.json)
+
+          echo "total_drift=${total_drift}"          >> "$GITHUB_OUTPUT"
+          echo "total_sent=${total_sent}"            >> "$GITHUB_OUTPUT"
+          echo "missing_identity=${missing_identity}" >> "$GITHUB_OUTPUT"
+          echo "mailboxes_with_drift=${mailboxes_with_drift}" >> "$GITHUB_OUTPUT"
+
+      - name: Compose drift-summary message
+        id: msg
+        if: steps.drift.outputs.total_drift != '0'
+        env:
+          TOTAL_DRIFT: ${{ steps.drift.outputs.total_drift }}
+          TOTAL_SENT: ${{ steps.drift.outputs.total_sent }}
+          MISSING_IDENTITY: ${{ steps.drift.outputs.missing_identity }}
+          MAILBOXES_WITH_DRIFT: ${{ steps.drift.outputs.mailboxes_with_drift }}
+          WINDOW: ${{ github.event.inputs.window_hours || '24' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Build a compact per-mailbox detail block: each mailbox with drift
+          # gets one line of "id (stored_email): N drifts / M sent, examples...".
+          details=$(jq -r '
+            .data.mailboxes[]?
+            | select(.drift_count > 0)
+            | "• mb \(.mailbox_id) `\(.mailbox_email)` — drift \(.drift_count)/\(.sent_in_window)"
+              + (if (.drift_examples // []) | length > 0 then "\n    " + ((.drift_examples // [])[0:3] | join("\n    ")) else "" end)
+          ' /tmp/drift.json)
+
+          headline=":rotating_light: *Email OAuth identity drift detected* — last ${WINDOW}h"
+          body=$(printf "Drifted sends: *%s* across *%s* mailbox(es), out of %s total sends. Missing identity: %s.\nAffected mailboxes:\n%s\n<%s|Workflow run>" \
+            "${TOTAL_DRIFT}" "${MAILBOXES_WITH_DRIFT}" "${TOTAL_SENT}" "${MISSING_IDENTITY}" "${details}" "${RUN_URL}")
+
+          # Persist to file for the next step — output here would mangle newlines.
+          jq -n --arg headline "${headline}" --arg body "${body}" '{
+            text: $headline,
+            blocks: [
+              { type: "section", text: { type: "mrkdwn", text: $headline } },
+              { type: "section", text: { type: "mrkdwn", text: $body } }
+            ]
+          }' > /tmp/slack-payload.json
+          echo "payload written"
+
+      - name: Post Slack alarm
+        if: steps.drift.outputs.total_drift != '0'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SLACK_WEBHOOK}" ]]; then
+            echo "::error::SLACK_WEBHOOK_DEPLOYS is not set"
+            exit 1
+          fi
+          curl -fsSL -X POST -H "Content-Type: application/json" -d @/tmp/slack-payload.json "${SLACK_WEBHOOK}"
+
+      - name: All clean — no alarm
+        if: steps.drift.outputs.total_drift == '0'
+        run: |
+          echo "OK: ${{ steps.drift.outputs.total_sent }} sends scanned in last ${{ github.event.inputs.window_hours || '24' }}h, no identity drift."
