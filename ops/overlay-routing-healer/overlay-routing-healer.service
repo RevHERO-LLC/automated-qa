@@ -1,0 +1,11 @@
+[Unit]
+Description=Check + auto-fix stale Docker Swarm overlay routing
+After=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/overlay-routing-healer.env
+ExecStart=/usr/local/bin/check-and-fix-overlay-routing.sh
+StandardOutput=journal
+StandardError=journal
+User=root
