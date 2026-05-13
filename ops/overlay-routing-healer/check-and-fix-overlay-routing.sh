@@ -82,11 +82,17 @@ for config_file in "${TRAEFIK_DYNAMIC_DIR}"/*.yml; do
   (( check_count++ )) || true
 
   # ── Step 1: Probe public URL ─────────────────────────────────────────────
+  # Use a temp file so that the exit-code fallback doesn't concatenate with
+  # the -w "%{http_code}" output when curl exits non-zero.
+  pub_code="000"
   pub_code="$(curl -sk \
     -o /dev/null \
     -w "%{http_code}" \
     --max-time "${PROBE_TIMEOUT}" \
-    "https://${public_host}/" 2>/dev/null || echo "000")"
+    "https://${public_host}/" 2>/dev/null)" || true
+  # Strip any non-digit chars (safety net for unexpected curl output)
+  pub_code="${pub_code//[^0-9]/}"
+  [[ -z "${pub_code}" ]] && pub_code="000"
 
   if [[ "${pub_code}" != "000" && "${pub_code}" != "504" ]]; then
     log "${svc}: code=${pub_code} host=${public_host} — routing healthy"
@@ -96,12 +102,15 @@ for config_file in "${TRAEFIK_DYNAMIC_DIR}"/*.yml; do
   log "${svc}: code=${pub_code} host=${public_host} — SUSPECT stale routing, probing overlay..."
 
   # ── Step 2: Probe via dokploy-network overlay ─────────────────────────────
+  overlay_code="000"
   overlay_code="$(docker run --rm \
     --network dokploy-network \
     "${CURL_IMAGE}" \
     -sS -o /dev/null -w "%{http_code}" \
     --max-time "${OVERLAY_TIMEOUT}" \
-    "${internal_url}/" 2>/dev/null || echo "000")"
+    "${internal_url}/" 2>/dev/null)" || true
+  overlay_code="${overlay_code//[^0-9]/}"
+  [[ -z "${overlay_code}" ]] && overlay_code="000"
 
   if [[ "${overlay_code}" == "000" ]]; then
     log "${svc}: overlay also 000 — real outage (container not responding), skipping force-update"
@@ -138,11 +147,14 @@ for config_file in "${TRAEFIK_DYNAMIC_DIR}"/*.yml; do
   post_code="000"
 
   while [[ "$(date +%s)" -lt "${deadline}" ]]; do
+    post_code="000"
     post_code="$(curl -sk \
       -o /dev/null \
       -w "%{http_code}" \
       --max-time "${PROBE_TIMEOUT}" \
-      "https://${public_host}/" 2>/dev/null || echo "000")"
+      "https://${public_host}/" 2>/dev/null)" || true
+    post_code="${post_code//[^0-9]/}"
+    [[ -z "${post_code}" ]] && post_code="000"
 
     if [[ "${post_code}" != "000" && "${post_code}" != "504" ]]; then
       elapsed=$(( $(date +%s) - fix_start ))
