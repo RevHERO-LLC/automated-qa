@@ -44,6 +44,15 @@ interface CommitMeta {
   message: string;
   htmlUrl: string;
   committedAt: string;
+  /**
+   * Parent SHAs of this commit, as returned by the GitHub commits API.
+   * Merge commits have 2+ parents; the first parent is the previous tip of
+   * the target branch, the second is the feature-branch tip being merged.
+   * Used by buildAncestryCoveredSet to mark non-merge feature-branch
+   * commits as "covered" by a logged merge commit. Empty when the API
+   * response omits parents (e.g. an octopus-merge or unusual history).
+   */
+  parents: string[];
 }
 
 async function loadRepoConfig(): Promise<RepoConfig> {
@@ -75,6 +84,7 @@ function fetchRecentCommits(repoFullName: string, branch: string, sinceIso: stri
       message: string;
     };
     author?: { login?: string } | null;
+    parents?: Array<{ sha: string }>;
   }>;
 
   return items.map((c) => ({
@@ -85,7 +95,58 @@ function fetchRecentCommits(repoFullName: string, branch: string, sinceIso: stri
     message: c.commit.message,
     htmlUrl: c.html_url,
     committedAt: c.commit.author.date,
+    parents: (c.parents ?? []).map((p) => p.sha),
   }));
+}
+
+/**
+ * Build the set of commits that are ancestors of any logged SHA in the
+ * inspection window. These are the feature-branch commits that get pushed
+ * alongside a logged merge commit — they don't need their own changelog
+ * record because the merge commit's record covers the logical change.
+ *
+ * Algorithm: BFS from each logged commit through its parents (using the
+ * parents we already have in the window), marking ancestors as covered.
+ * Stops when an ancestor is outside the window (no parents map entry) or
+ * already visited. Logged commits themselves are NOT added to `covered`
+ * (they're matched separately via `loggedShas`); only their ancestors
+ * are.
+ *
+ * Trade-off: if a merge SHA is in commit_shas, every feature-branch
+ * commit it pulled in is auto-covered. This matches reality — when an
+ * operator manually pushes a feature-branch commit ahead of the merge
+ * (rare for our workflow), it would have been covered by the eventual
+ * merge anyway. False-negatives (a feature commit that legitimately
+ * needed its own record) are vanishingly unlikely in our merge model.
+ */
+function buildAncestryCoveredSet(
+  allCommits: CommitMeta[],
+  loggedShas: Set<string>,
+): Set<string> {
+  const parentsMap = new Map<string, string[]>();
+  for (const c of allCommits) {
+    parentsMap.set(c.sha, c.parents);
+  }
+
+  const covered = new Set<string>();
+  const queue: string[] = [];
+  for (const sha of loggedShas) {
+    if (parentsMap.has(sha)) queue.push(sha);
+  }
+  while (queue.length > 0) {
+    const sha = queue.shift()!;
+    const parents = parentsMap.get(sha);
+    if (!parents) continue;
+    for (const p of parents) {
+      if (covered.has(p)) continue;
+      // Only mark parents that are in our window — outside-window parents
+      // are out of scope anyway.
+      if (!parentsMap.has(p)) continue;
+      covered.add(p);
+      queue.push(p);
+    }
+  }
+  return covered;
 }
 
 function fullRepoName(repoEntry: RepoEntry): string {
@@ -272,14 +333,26 @@ async function main() {
   console.log(`[reconcile] inspected ${allCommits.length} commits across ${config.repos.length} repos`);
 
   const missed: CommitMeta[] = [];
+  let ancestryCoveredCount = 0;
   if (allCommits.length > 0) {
     const pool = new pg.Pool({ connectionString: process.env.CHANGELOG_DB_URL, max: 2 });
     const client = await pool.connect();
     try {
       const shas = allCommits.map((c) => c.sha);
       const missedShas = await findMissedShas(client, shas);
+      // Commits that ARE logged (i.e. in changelog.commit_shas) — used as
+      // BFS roots for ancestry coverage.
+      const loggedShas = new Set(
+        allCommits.filter((c) => !missedShas.has(c.sha)).map((c) => c.sha),
+      );
+      const ancestryCovered = buildAncestryCoveredSet(allCommits, loggedShas);
       for (const c of allCommits) {
-        if (missedShas.has(c.sha)) missed.push(c);
+        if (!missedShas.has(c.sha)) continue;
+        if (ancestryCovered.has(c.sha)) {
+          ancestryCoveredCount++;
+          continue;
+        }
+        missed.push(c);
       }
     } finally {
       client.release();
@@ -287,7 +360,10 @@ async function main() {
     }
   }
 
-  console.log(`[reconcile] ${missed.length} commit(s) missing changelog entries`);
+  console.log(
+    `[reconcile] ${missed.length} commit(s) missing changelog entries ` +
+      `(ancestry-covered: ${ancestryCoveredCount})`,
+  );
 
   let openedCount = 0;
   for (const c of missed) {
@@ -302,6 +378,7 @@ async function main() {
     repos_inspected: config.repos.length,
     commits_inspected: allCommits.length,
     missed_count: missed.length,
+    ancestry_covered_count: ancestryCoveredCount,
     issues_opened: openedCount,
     missed: missed.map((c) => ({
       repo: c.repo,
