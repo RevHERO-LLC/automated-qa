@@ -76,8 +76,28 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-003 — Search Campaigns input filters list", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      // Mirror FE-CAMP-001/002: `networkidle` races with React hydration and
+      // has been observed to fire on a logged-out / blank page (auth race),
+      // so an immediate search.count() returns 0 even though the input is
+      // present. Verified on staging 2026-05-26 (real browser): the campaign
+      // list renders input[placeholder="Search Campaigns "] visible — the
+      // lone failure on scheduled-20260526T082244 ("expected false to be
+      // true") was this race, not a missing input. Wait for a positive render
+      // signal first, then give the search box its own auto-wait.
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      const heading = page.getByRole("heading", { name: /campaign builder/i });
+      const createBtn = page.getByRole("button", { name: /create.*campaign|new campaign|import campaign/i });
+      const emptyText = page.getByText(/no campaign|empty/i);
+      const list = page.locator('[role="table"], table, .campaign-list, .campaign-card, [data-testid*="campaign-card" i]');
+      await Promise.any([
+        heading.first().waitFor({ state: "visible", timeout: 15_000 }),
+        createBtn.first().waitFor({ state: "visible", timeout: 15_000 }),
+        emptyText.first().waitFor({ state: "visible", timeout: 15_000 }),
+        list.first().waitFor({ state: "visible", timeout: 15_000 })
+      ]);
+
       const search = page.locator('input[placeholder*="search" i]').first();
+      await search.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
       const has = (await search.count()) > 0;
       expect(has, "Expected a search input on the campaign list page").toBe(true);
       if (has) await search.fill("zzz-no-match-xyz");
