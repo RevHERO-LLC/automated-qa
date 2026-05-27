@@ -1,0 +1,74 @@
+# Post-deploy staging smoke gate (RevHero Phase 6.4).
+#
+# Lightweight, dependency-free health gate: confirms every staging service +
+# the FE/BFF actually respond (not down / 5xx / unreachable) and fails loud to
+# Slack. Catches the most common broken-deploy modes — build failed, service
+# won't start, crash-loop, bad routing — within the schedule interval.
+#
+# Triggers:
+#   - schedule (*/30): works with ZERO extra setup; the default safety net.
+#   - workflow_dispatch: manual run.
+#   - repository_dispatch [staging-deployed]: precise on-deploy run. To wire it,
+#     add a QA_DISPATCH_TOKEN PAT (repo scope on automated-qa) as an org secret
+#     and append to each service's deploy-staging.yml after a successful deploy:
+#       - if: success()
+#         run: gh api repos/RevHERO-LLC/automated-qa/dispatches --method POST
+#              --field event_type=staging-deployed
+#              --field client_payload='{"service":"${{ github.repository }}"}'
+#         env: { GH_TOKEN: ${{ secrets.QA_DISPATCH_TOKEN }} }
+#
+# DEEPER GATE (follow-up): to run the authenticated p0 flow suite here instead,
+# two things are needed first — (1) wire the tag filter so `pnpm test:p0` runs
+# only p0 (today QA_TAG_FILTER is read but shouldRunTag() is never called, so it
+# runs all 449 tests ~10min), and (2) add the QA_* test-account creds as GH org
+# secrets (the daily qa-staging.yml gets them from the Dokploy container env, not
+# GH secrets). Until then this health gate is the working smoke check.
+
+name: qa-post-staging-deploy
+run-name: "staging smoke — ${{ github.event.client_payload.service || github.event_name }}"
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [staging-deployed]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: self-hosted
+    steps:
+      - name: Staging health smoke
+        id: check
+        run: |
+          set -uo pipefail
+          urls="staging.revhero.ai user-fe-backend.test.revhero.io users-service.test.revhero.io campaign-service.test.revhero.io deals-actions-service.test.revhero.io sms-service.test.revhero.io email-ingress.test.revhero.io hubspot-service.test.revhero.io pipedrive-service.test.revhero.io deal-mover.test.revhero.io activity-service.test.revhero.io cloud-documents-service.test.revhero.io ai-agent.test.revhero.io config.test.revhero.ai"
+          probe() { c=$(curl -s -o /dev/null -w "%{http_code}" -m 15 "https://$1/" 2>/dev/null); echo "${c:-000}"; }
+          fail=""
+          for h in $urls; do
+            code=$(probe "$h")
+            case "$code" in 000|502|503|504) sleep 8; code=$(probe "$h");; esac   # retry once (ride out rollout blips)
+            echo "$h -> $code"
+            case "$code" in 000|502|503|504) fail="$fail $h($code)";; esac
+          done
+          if [ -n "$fail" ]; then
+            echo "failing=$fail" >> "$GITHUB_OUTPUT"
+            echo "::error::Staging unhealthy:$fail"
+            exit 1
+          fi
+          echo "All staging services responding (non-5xx)."
+      - name: Slack alert on failure
+        if: failure()
+        env:
+          HOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+          SVC: ${{ github.event.client_payload.service || github.event_name }}
+          FAILING: ${{ steps.check.outputs.failing }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -z "${HOOK:-}" ] && { echo "no SLACK_WEBHOOK_DEPLOYS set"; exit 0; }
+          curl -fsS -X POST -H 'Content-Type: application/json' \
+            -d "{\"text\":\":rotating_light: *Staging smoke gate FAILED* (trigger: ${SVC}) — unhealthy:${FAILING:-?} . <${RUN}|view run> — check before promoting staging → main\"}" \
+            "$HOOK" || true
