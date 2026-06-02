@@ -22,6 +22,12 @@ PROBE_TIMEOUT=6       # seconds for public HTTPS probe
 OVERLAY_TIMEOUT=8     # seconds for overlay probe (docker run has startup overhead)
 CONVERGE_TIMEOUT=90   # seconds to wait for convergence after force-update
 DEBOUNCE_SECS=3600    # 1 hour between Slack alerts per service
+PERSIST_BACKOFF=21600 # 6h: skip re-healing a service whose prior force-update did NOT
+                      # converge. Such a service has a persistent routing problem
+                      # (broken DNS/cert/Host rule), NOT transient stale IPVS that a
+                      # force-update can fix — re-updating every cycle just needlessly
+                      # restarts it (observed churning the NATS server 263x/day via the
+                      # dead events.config.revhero.ai route). Retry at most once per window.
 
 mkdir -p "${DEBOUNCE_DIR}"
 
@@ -131,6 +137,21 @@ for config_file in "${TRAEFIK_DYNAMIC_DIR}"/*.yml; do
 
   log "${svc}: UpdateStatus=${update_state} — safe to force-update"
 
+  # ── Step 3b: Skip services stuck in persistent non-convergence ───────────
+  # If a prior force-update did NOT fix the public route, this is a persistent
+  # routing problem (broken DNS/cert/Host rule), not transient stale IPVS — a
+  # force-update can't fix it, and re-running it every cycle needlessly restarts
+  # the service. Back off PERSIST_BACKOFF and let the periodic retry (+ the
+  # debounced Slack warning) flag it for manual investigation instead.
+  persist_file="${DEBOUNCE_DIR}/persist-fail-${svc}"
+  if [[ -f "${persist_file}" ]]; then
+    persist_age=$(( $(date +%s) - $(cat "${persist_file}" 2>/dev/null || echo 0) ))
+    if [[ "${persist_age}" -lt "${PERSIST_BACKOFF}" ]]; then
+      log "${svc}: prior force-update did NOT converge ${persist_age}s ago — persistent route failure (not transient IPVS). Skipping re-heal for $(( (PERSIST_BACKOFF - persist_age) / 60 ))m. Manual fix needed: DNS/cert/Traefik Host rule for ${public_host}."
+      continue
+    fi
+  fi
+
   # ── Step 4: Force-update ─────────────────────────────────────────────────
   fix_start="$(date +%s)"
   log "${svc}: running 'docker service update --force --detach=false ${svc}' ..."
@@ -168,7 +189,12 @@ for config_file in "${TRAEFIK_DYNAMIC_DIR}"/*.yml; do
 
   if [[ "${converged}" != "true" ]]; then
     elapsed=$(( $(date +%s) - fix_start ))
-    log "${svc}: WARNING — public route did NOT converge within ${CONVERGE_TIMEOUT}s (last code=${post_code}). Manual investigation needed."
+    log "${svc}: WARNING — public route did NOT converge within ${CONVERGE_TIMEOUT}s (last code=${post_code}). Marking persistent failure (skip re-heal for $(( PERSIST_BACKOFF / 3600 ))h). Manual investigation needed."
+    date +%s > "${persist_file}"
+  else
+    # Converged: clear any stale persistent-failure marker so a future genuine
+    # stale-IPVS event on this service is healed normally.
+    rm -f "${persist_file}" 2>/dev/null || true
   fi
 
   # ── Step 6: Slack alert (debounced per-service) ───────────────────────────
