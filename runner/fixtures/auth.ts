@@ -78,6 +78,30 @@ async function writeStorageStateAtomic(context: BrowserContext, file: string): P
   fs.renameSync(tmp, file);
 }
 
+// Confirm the context is actually authenticated AND the FE has hydrated the
+// logged-in layout before we hand the page back to a test. The FE reads the
+// auth cookie client-side and briefly renders a blank / login state before
+// hydrating the authed dashboard; `domcontentloaded` (and even `networkidle`)
+// can fire inside that window, so an immediate element check sees count()===0
+// even though the session is valid. We wait for a positive authed signal (the
+// layout sidebar/nav, present on every authenticated page) and verify we were
+// not bounced to /login. Returns false if the session didn't land so the
+// caller can re-log-in or fail loudly instead of returning a logged-out page —
+// the root cause of the recurring FE-CAMP-003 / FE-LAY-001 "expected false to
+// be true" flakes.
+async function ensureAuthedRender(page: Page, timeoutMs = 12_000): Promise<boolean> {
+  if (page.url().includes("/login")) return false;
+  const authedSignal = page
+    .locator('[role="navigation"], aside, nav.sidebar, .sidebar')
+    .first();
+  try {
+    await authedSignal.waitFor({ state: "visible", timeout: timeoutMs });
+  } catch {
+    return false;
+  }
+  return !page.url().includes("/login");
+}
+
 export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext; page: Page }> {
   const b = await getBrowser();
   const sp = sessionPath(role);
@@ -93,13 +117,28 @@ export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext
 
   let needsLogin = !reuse;
   if (reuse) {
-    // Validate the cached session still works; if not, rebuild.
+    // Validate the cached session still works AND the FE renders the authed
+    // layout; if not, rebuild.
     await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
-    if (page.url().includes("/login")) needsLogin = true;
+    if (!(await ensureAuthedRender(page))) needsLogin = true;
   }
   if (needsLogin) {
     await performLoginViaApi(context, role);
     await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+    // Verify the session actually landed before returning. A cookie-propagation
+    // race (or stale storage state) can otherwise leave the page on /login or a
+    // blank pre-hydration state — handing that to a test produces the recurring
+    // "expected false to be true" flakes. Retry the login once, then fail loudly
+    // rather than return a logged-out page.
+    if (!(await ensureAuthedRender(page))) {
+      await performLoginViaApi(context, role);
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      if (!(await ensureAuthedRender(page))) {
+        throw new Error(
+          `[auth] loginAs(${role}) could not establish an authenticated session (still at ${page.url()})`
+        );
+      }
+    }
     try {
       await writeStorageStateAtomic(context, sp);
     } catch (err) {

@@ -10,11 +10,15 @@ describe("Layout / Shell (FE-LAY)", () => {
   test("FE-LAY-001 — Sidebar visible on every authenticated dashboard page", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      // domcontentloaded + an explicit auto-wait on the sidebar, instead of
+      // `networkidle` which can fire on the pre-hydration / logged-out frame and
+      // make the immediate isVisible()/count() check return false (the flake).
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       const sidebar = page
         .locator('[role="navigation"]')
         .or(page.locator("aside, nav.sidebar, .sidebar"))
         .first();
+      await sidebar.waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
       const visible = await sidebar.isVisible().catch(() => false);
       // Sidebar should be visible at desktop viewport.
       expect(visible || (await sidebar.count()) > 0).toBe(true);
