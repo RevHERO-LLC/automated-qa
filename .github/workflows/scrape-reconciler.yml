@@ -12,15 +12,19 @@
 # validation run (logs what WOULD change, writes nothing).
 # The scheduled run uses DRY_RUN=false and performs real writes.
 #
-# AWS auth: OIDC role-assume via aws-actions/configure-aws-credentials@v4,
-# mirroring the pattern from AI-data-lake/deploy-scrapers.yml (the only RevHero
-# workflow that touches S3). Requires AWS_DEPLOY_ROLE_ARN secret + id-token
-# write permission.
+# AWS auth: scoped static credentials (RECONCILER_AWS_ACCESS_KEY_ID /
+# RECONCILER_AWS_SECRET_ACCESS_KEY repo secrets) for the dedicated IAM user
+# `automated-qa-scrape-reconciler`, whose inline policy allows ONLY
+# s3:GetObject on the processed-data bucket's leads/* prefix (+ ListBucket).
+# OIDC was considered but the existing lead-enrichment-scraper-deploy role's
+# trust policy is CDK-managed and scoped to repo:RevHERO-LLC/AI-data-lake:*;
+# widening it by hand would drift-revert on the next LeadEnrich deploy
+# (the #601 defect class). Fold into OIDC properly via the LeadEnrich CDK
+# if/when desired.
 #
-# DB secret: CAMPAIGN_DB_DSN — a Postgres DSN for the campaign DB (VPS4).
-# This secret does NOT yet exist in the automated-qa repo/org secrets; the
-# operator must create it before the workflow can write to Postgres.
-# See README.md for the expected DSN format.
+# DB secret: CAMPAIGN_DB_DSN — Postgres DSN for the campaign DB over the
+# WireGuard address (10.8.0.4:5432) — the self-hosted runner reaches it;
+# GitHub-hosted runners cannot. Created 2026-06-03 alongside the AWS pair.
 name: Scrape-status reconciler (#602)
 
 on:
@@ -34,7 +38,6 @@ on:
         default: "false"
 
 permissions:
-  id-token: write   # required for OIDC AWS role-assume
   contents: read
 
 jobs:
@@ -44,10 +47,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials (scoped reconciler user)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.RECONCILER_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RECONCILER_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Set up Python

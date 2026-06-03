@@ -1,0 +1,59 @@
+{
+  "cookies": [
+    {
+      "name": "revhero_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc3NjYyMjk4LCJpYXQiOjE3Nzc1NzU4OTh9.XNQPFXfuKieGeye63V7zcBruEpsgkKePhnHWUz3Al4c",
+      "domain": "user-fe-backend.test.revhero.io",
+      "path": "/",
+      "expires": 1777662298.22,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "revhero_refresh_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzgwMTY3ODk4LCJpYXQiOjE3Nzc1NzU4OTh9.IPzklfmzcnAs92UzFnwLAAfITcihndJNEiqDl6kqC6g",
+      "domain": "user-fe-backend.test.revhero.io",
+      "path": "/",
+      "expires": 1780167898.22,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc3NjYyMjk4LCJpYXQiOjE3Nzc1NzU4OTh9.XNQPFXfuKieGeye63V7zcBruEpsgkKePhnHWUz3Al4c",
+      "domain": "staging.revhero.ai",
+      "path": "/",
+      "expires": 1777662298,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "refresh_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzgwMTY3ODk4LCJpYXQiOjE3Nzc1NzU4OTh9.IPzklfmzcnAs92UzFnwLAAfITcihndJNEiqDl6kqC6g",
+      "domain": "staging.revhero.ai",
+      "path": "/",
+      "expires": 1777662298,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://staging.revhero.ai",
+      "localStorage": [
+        {
+          "name": "revhero_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc3NjYyMjk4LCJpYXQiOjE3Nzc1NzU4OTh9.XNQPFXfuKieGeye63V7zcBruEpsgkKePhnHWUz3Al4c"
+        },
+        {
+          "name": "access_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMCwiZW1haWwiOiJ0ZXN0QHlvcG1haWwuY29tIiwiYWNjb3VudF9pZCI6IjM1Iiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc3NjYyMjk4LCJpYXQiOjE3Nzc1NzU4OTh9.XNQPFXfuKieGeye63V7zcBruEpsgkKePhnHWUz3Al4c"
+        }
+      ]
+    }
+  ]
+}
