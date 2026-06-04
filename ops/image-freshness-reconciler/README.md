@@ -21,10 +21,21 @@ services, present and future; nats/redis/traefik are skipped):
    re-heal the same service within 30 min — if it's stale *again* that fast it
    alerts `:rotating_light:` and leaves it for a human.
 
-Known residual gap (accepted): a task that crash-restarts on a node holding a
-stale cache *after* the image was published looks "fresh" to tier 1 on remote
-nodes (VPS1/VPS3); tier 2 catches it only for VPS2-local containers. Real
-deploys and healer force-rolls always resolve digests, so this is rare.
+Known residual gaps (accepted, documented from the 2026-06-04 drills):
+
+1. A task that crash-restarts on a node holding a stale cache *after* the
+   image was published looks "fresh" to tier 1 on remote nodes (VPS1/VPS3);
+   tier 2 catches it only for VPS2-local containers.
+2. **Zero-diff rebuilds keep the old image `Created`** (BuildKit full cache
+   hit reproduces the cached config — seen on an empty-commit rebuild AND on
+   LABEL-only builds), so tier 1 can't flag them if the roll is missed. Real
+   deploys change code layers and always get a fresh `Created`, so the
+   production failure mode is covered. If this ever matters, the upgrade path
+   is digest-state tracking (remember last-seen registry digest per service,
+   heal when it changes without a newer task).
+3. Dokploy ALSO early-rolls on the git push webhook (before the image is
+   built) — harmless restart on the old image, later corrected by the
+   workflow's `application.deploy` (or by this reconciler).
 
 ## Install (VPS2)
 
