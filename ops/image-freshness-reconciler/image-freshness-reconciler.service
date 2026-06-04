@@ -1,0 +1,11 @@
+[Unit]
+Description=Detect + heal swarm services running images older than the registry tag
+After=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/image-freshness-reconciler.env
+ExecStart=/usr/local/bin/image-freshness-reconciler.sh
+StandardOutput=journal
+StandardError=journal
+User=root

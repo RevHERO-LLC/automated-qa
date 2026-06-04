@@ -1,0 +1,11 @@
+[Unit]
+Description=Run image-freshness reconciler every 5 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Persistent=true
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target
