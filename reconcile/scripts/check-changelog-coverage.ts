@@ -37,7 +37,8 @@ const SINCE_FLOOR = process.env.RECONCILE_SINCE_FLOOR_ISO;
 // [CHANGELOG-MISSED] backlog and closes any issue whose SHA is now covered by
 // a changelog record (e.g. a late or backfilled entry). This makes the issue
 // queue self-clearing instead of growing forever. Set RECONCILE_AUTOCLOSE=0 to
-// disable; RECONCILE_DRY_RUN=1 reports what it WOULD close without closing.
+// disable. RECONCILE_DRY_RUN=1 makes the whole run read-only: it reports what
+// it would open and close but writes nothing (no issue opens/closes, no Slack).
 const AUTOCLOSE_ENABLED = process.env.RECONCILE_AUTOCLOSE !== "0";
 const DRY_RUN = process.env.RECONCILE_DRY_RUN === "1";
 
@@ -510,11 +511,20 @@ async function main() {
   );
 
   let openedCount = 0;
-  for (const c of missed) {
-    if (openIssue(c)) openedCount++;
-  }
+  if (DRY_RUN) {
+    for (const c of missed) {
+      console.log(`[reconcile] DRY RUN would open: ${issueTitleFor(c)}`);
+    }
+    console.log(
+      `[reconcile] DRY RUN — skipping ${missed.length} issue open(s) and the Slack post`,
+    );
+  } else {
+    for (const c of missed) {
+      if (openIssue(c)) openedCount++;
+    }
 
-  await postSlackSummary(missed);
+    await postSlackSummary(missed);
+  }
 
   const summary = {
     ran_at: new Date().toISOString(),
