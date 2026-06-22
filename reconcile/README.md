@@ -2,6 +2,8 @@
 
 Daily systemd timer on VPS2 that compares the last 24h of staging+main commits across all 13 RevHero repos against `changelog.changes`. Any push that shipped without a corresponding changelog entry → one `[CHANGELOG-MISSED]` GitHub Issue + one Slack summary line.
 
+It also runs a **self-healing auto-close sweep**: each run closes any open `[CHANGELOG-MISSED]` issue whose SHA has since been covered by a (late or backfilled) changelog record, so the queue clears itself instead of growing forever.
+
 ## Why three layers?
 
 | Layer | Mechanism | Reliability | Catches |
@@ -21,6 +23,7 @@ Daily systemd timer on VPS2 that compares the last 24h of staging+main commits a
 7. For each missed SHA: `gh issue create --repo RevHERO-LLC/automated-qa --title "[CHANGELOG-MISSED] <repo>@<sha>"`. The script first checks if an issue with the same title already exists in any state (open/closed) — if yes, dedup hits and we skip.
 8. After all issues are opened, posts ONE Slack summary line to `SLACK_WEBHOOK_CLAUDE_CHANGES` if any were missed.
 9. Writes `reports/reconcile-<iso-timestamp>.json` for journald + later inspection.
+10. **Auto-close sweep (self-healing):** lists every OPEN `[CHANGELOG-MISSED]` issue, re-checks each SHA against `changelog.changes` via `sql/covered-shas.sql` (symmetric prefix match — title SHAs are short 7-char, stored values may be short or full), and closes the now-covered ones with a comment. Toggle off with `RECONCILE_AUTOCLOSE=0`; preview with `RECONCILE_DRY_RUN=1` (reports what it would close, closes nothing). Results land in the JSON report under `autoclose`.
 
 ## Postgres role
 
@@ -29,6 +32,7 @@ A read-only `changelog_reader` role is provisioned with `SELECT` on `changelog.c
 ## Operating
 
 - **Manual run:** `sudo systemctl start revhero-reconcile.service` (foreground via `journalctl -u revhero-reconcile.service -f`).
+- **Preview the auto-close sweep:** from `reconcile/` with `/home/claude-audit/.env` loaded, `RECONCILE_DRY_RUN=1 pnpm exec tsx scripts/check-changelog-coverage.ts` — lists the issues it would close without touching them.
 - **Schedule check:** `systemctl list-timers | grep revhero-reconcile`.
 - **Re-trigger after a missed-log:** open the issue, manually POST the record (or close the issue with `[no-changelog]` justification), then re-run.
 

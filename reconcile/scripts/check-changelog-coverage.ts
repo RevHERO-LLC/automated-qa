@@ -24,6 +24,7 @@ const ROOT = path.resolve(__dirname, "..");
 const REPORTS_DIR = path.join(ROOT, "reports");
 const REPOS_JSON = path.resolve(ROOT, "..", "audit", "repos.json");
 const SQL_FILE = path.join(ROOT, "sql", "missed-shas.sql");
+const COVERED_SQL_FILE = path.join(ROOT, "sql", "covered-shas.sql");
 const ISSUE_REPO = "RevHERO-LLC/automated-qa";
 const LOOKBACK_HOURS = 24;
 const BRANCHES = ["staging", "main"] as const;
@@ -32,6 +33,13 @@ const SKIP_COMMIT_TAG = "[no-changelog]";
 // they fall in the LOOKBACK_HOURS window. Useful right after the changelog
 // rollout to avoid flooding the issues queue with historical pushes.
 const SINCE_FLOOR = process.env.RECONCILE_SINCE_FLOOR_ISO;
+// Auto-close pass: when enabled (default), every run re-checks the OPEN
+// [CHANGELOG-MISSED] backlog and closes any issue whose SHA is now covered by
+// a changelog record (e.g. a late or backfilled entry). This makes the issue
+// queue self-clearing instead of growing forever. Set RECONCILE_AUTOCLOSE=0 to
+// disable; RECONCILE_DRY_RUN=1 reports what it WOULD close without closing.
+const AUTOCLOSE_ENABLED = process.env.RECONCILE_AUTOCLOSE !== "0";
+const DRY_RUN = process.env.RECONCILE_DRY_RUN === "1";
 
 type RepoEntry = { name: string; url: string; path: string };
 type RepoConfig = { repos: RepoEntry[] };
@@ -162,6 +170,17 @@ async function findMissedShas(client: pg.PoolClient, shas: string[]): Promise<Se
   return new Set(result.rows.map((r) => r.sha));
 }
 
+// Inverse of findMissedShas: returns the subset of `shas` that ARE covered by
+// a changelog record. Used by the auto-close backlog sweep. Input SHAs here
+// are the SHORT 7-char hashes parsed from issue titles, so the SQL uses a
+// symmetric prefix match (see sql/covered-shas.sql).
+async function findCoveredShas(client: pg.PoolClient, shas: string[]): Promise<Set<string>> {
+  if (shas.length === 0) return new Set();
+  const sql = await readFile(COVERED_SQL_FILE, "utf8");
+  const result = await client.query<{ sha: string }>(sql, [shas]);
+  return new Set(result.rows.map((r) => r.sha));
+}
+
 function issueTitleFor(commit: CommitMeta): string {
   return `[CHANGELOG-MISSED] ${commit.repo}@${commit.sha.slice(0, 7)}`;
 }
@@ -256,6 +275,117 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
+// ---------------------------------------------------------------------------
+// Auto-close pass (Layer-3 self-healing): the cron only ever OPENED issues,
+// so the [CHANGELOG-MISSED] queue grew forever. This sweep re-checks the open
+// backlog each run and closes any issue whose SHA is now covered by a
+// changelog record (e.g. a late or backfilled entry).
+// ---------------------------------------------------------------------------
+
+const ISSUE_TITLE_PREFIX = "[CHANGELOG-MISSED] ";
+
+interface OpenMissedIssue {
+  number: number;
+  title: string;
+  repo: string;
+  sha: string;
+}
+
+interface AutoCloseResult {
+  open_backlog: number;
+  covered: number;
+  closed: number;
+  uncovered: Array<{ number: number; repo: string; sha: string }>;
+}
+
+function parseIssueTitle(title: string): { repo: string; sha: string } | null {
+  // e.g. "[CHANGELOG-MISSED] RevHERO-LLC/RevHero-FE-New@84b2d78"
+  const body = title.slice(ISSUE_TITLE_PREFIX.length);
+  const at = body.lastIndexOf("@");
+  if (at < 0) return null;
+  const repo = body.slice(0, at).trim();
+  const sha = body.slice(at + 1).trim().toLowerCase();
+  if (!/^[0-9a-f]{7,40}$/.test(sha)) return null;
+  return { repo, sha };
+}
+
+function listOpenMissedIssues(): OpenMissedIssue[] {
+  // GitHub search eats the bracket characters in the title, so search by the
+  // bare slug and filter to the exact prefix in JS. --limit headroom is set
+  // well above the realistic backlog size.
+  const cmd = `gh issue list --repo ${ISSUE_REPO} --state open --search ${shellQuote(
+    "CHANGELOG-MISSED in:title",
+  )} --json number,title --limit 1000`;
+  let raw: string;
+  try {
+    raw = execSync(cmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+  } catch (err) {
+    const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? String(err);
+    console.warn(`[reconcile] gh issue list (open backlog) failed: ${stderr.slice(0, 200)}`);
+    return [];
+  }
+  const items = JSON.parse(raw) as Array<{ number: number; title: string }>;
+  const out: OpenMissedIssue[] = [];
+  for (const it of items) {
+    if (!it.title.startsWith(ISSUE_TITLE_PREFIX)) continue;
+    const parsed = parseIssueTitle(it.title);
+    if (!parsed) {
+      console.warn(`[reconcile] could not parse SHA from issue #${it.number}: ${it.title}`);
+      continue;
+    }
+    out.push({ number: it.number, title: it.title, repo: parsed.repo, sha: parsed.sha });
+  }
+  return out;
+}
+
+function closeMissedIssue(issue: OpenMissedIssue): boolean {
+  const comment =
+    `Auto-closed by Layer-3 reconciliation: a changelog entry now covers ` +
+    `\`${issue.sha}\` (matched in \`changelog.changes.commit_shas\`). ` +
+    `If this was closed in error, reopen it and ensure a record exists.`;
+  const cmd = `gh issue close ${issue.number} --repo ${ISSUE_REPO} --comment ${shellQuote(comment)}`;
+  try {
+    execSync(cmd, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+    console.log(`[reconcile] auto-closed #${issue.number}: ${issue.title}`);
+    return true;
+  } catch (err) {
+    const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? String(err);
+    console.warn(`[reconcile] gh issue close failed for #${issue.number}: ${stderr.slice(0, 200)}`);
+    return false;
+  }
+}
+
+async function autoCloseCoveredIssues(client: pg.PoolClient): Promise<AutoCloseResult> {
+  const open = listOpenMissedIssues();
+  if (open.length === 0) {
+    console.log("[reconcile] auto-close: no open [CHANGELOG-MISSED] issues");
+    return { open_backlog: 0, covered: 0, closed: 0, uncovered: [] };
+  }
+  const shas = [...new Set(open.map((i) => i.sha))];
+  const coveredShas = await findCoveredShas(client, shas);
+  const coveredIssues = open.filter((i) => coveredShas.has(i.sha));
+  const uncovered = open
+    .filter((i) => !coveredShas.has(i.sha))
+    .map((i) => ({ number: i.number, repo: i.repo, sha: i.sha }));
+
+  console.log(
+    `[reconcile] auto-close: ${open.length} open backlog issue(s); ` +
+      `${coveredIssues.length} now covered; ${uncovered.length} still uncovered` +
+      (DRY_RUN ? " (DRY RUN — closing nothing)" : ""),
+  );
+
+  let closed = 0;
+  for (const issue of coveredIssues) {
+    if (DRY_RUN) {
+      console.log(`[reconcile] DRY RUN would close #${issue.number}: ${issue.title}`);
+      continue;
+    }
+    if (closeMissedIssue(issue)) closed++;
+  }
+
+  return { open_backlog: open.length, covered: coveredIssues.length, closed, uncovered };
+}
+
 async function postSlackSummary(missed: CommitMeta[]): Promise<void> {
   const webhook = process.env.SLACK_WEBHOOK_CLAUDE_CHANGES;
   if (!webhook) return;
@@ -334,25 +464,39 @@ async function main() {
 
   const missed: CommitMeta[] = [];
   let ancestryCoveredCount = 0;
-  if (allCommits.length > 0) {
+  let autoClose: AutoCloseResult = { open_backlog: 0, covered: 0, closed: 0, uncovered: [] };
+
+  // Open the changelog DB once for both the missed-detection query and the
+  // auto-close backlog sweep. The sweep runs independent of today's commits,
+  // so connect whenever either consumer needs it.
+  const needDb = allCommits.length > 0 || AUTOCLOSE_ENABLED;
+  if (needDb) {
     const pool = new pg.Pool({ connectionString: process.env.CHANGELOG_DB_URL, max: 2 });
     const client = await pool.connect();
     try {
-      const shas = allCommits.map((c) => c.sha);
-      const missedShas = await findMissedShas(client, shas);
-      // Commits that ARE logged (i.e. in changelog.commit_shas) — used as
-      // BFS roots for ancestry coverage.
-      const loggedShas = new Set(
-        allCommits.filter((c) => !missedShas.has(c.sha)).map((c) => c.sha),
-      );
-      const ancestryCovered = buildAncestryCoveredSet(allCommits, loggedShas);
-      for (const c of allCommits) {
-        if (!missedShas.has(c.sha)) continue;
-        if (ancestryCovered.has(c.sha)) {
-          ancestryCoveredCount++;
-          continue;
+      if (allCommits.length > 0) {
+        const shas = allCommits.map((c) => c.sha);
+        const missedShas = await findMissedShas(client, shas);
+        // Commits that ARE logged (i.e. in changelog.commit_shas) — used as
+        // BFS roots for ancestry coverage.
+        const loggedShas = new Set(
+          allCommits.filter((c) => !missedShas.has(c.sha)).map((c) => c.sha),
+        );
+        const ancestryCovered = buildAncestryCoveredSet(allCommits, loggedShas);
+        for (const c of allCommits) {
+          if (!missedShas.has(c.sha)) continue;
+          if (ancestryCovered.has(c.sha)) {
+            ancestryCoveredCount++;
+            continue;
+          }
+          missed.push(c);
         }
-        missed.push(c);
+      }
+
+      // Layer-3 self-healing: close stale backlog issues now covered by a
+      // (late/backfilled) changelog record so the queue doesn't grow forever.
+      if (AUTOCLOSE_ENABLED) {
+        autoClose = await autoCloseCoveredIssues(client);
       }
     } finally {
       client.release();
@@ -380,6 +524,7 @@ async function main() {
     missed_count: missed.length,
     ancestry_covered_count: ancestryCoveredCount,
     issues_opened: openedCount,
+    autoclose: autoClose,
     missed: missed.map((c) => ({
       repo: c.repo,
       sha: c.sha,
