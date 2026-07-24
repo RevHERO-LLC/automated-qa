@@ -1,0 +1,58 @@
+# Deal-cadence + table-growth monitor (deal-scale early-warning).
+#
+# READ-ONLY. Runs a few SELECT COUNT / size queries against the prod campaign DB
+# once a day and posts a Slack alert ONLY on a threshold breach (a single day's
+# `deals` inserts > 5000, or a watched table crossing its size band). Every run
+# logs the current numbers to the Actions log for liveness.
+#
+# Origin: the deal-scale audit (2026-07-23) named this as the leading-indicator
+# for when the deferred index/partition work is warranted — growth here is
+# episodic bulk imports, not organic drip.
+#
+# DB secret: DEAL_MONITOR_DB_DSN — a dedicated READ-ONLY role (deal_monitor_ro,
+# SELECT on deals/deal_configurations/deal_activities/request_status only) over
+# the WireGuard address (10.8.0.4:5432). NOT the write-capable CAMPAIGN_DB_DSN.
+# Self-hosted runner reaches it; GitHub-hosted runners cannot.
+# Alert secret: SLACK_WEBHOOK_DEPLOYS (existing ops channel).
+name: Deal-cadence monitor
+
+on:
+  schedule:
+    - cron: "45 6 * * *"   # 06:45 UTC daily — free slot after scrape-reconciler (06:30)
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: "Force one Slack post to validate the alert path (true = post regardless of thresholds)."
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install --quiet psycopg2-binary
+
+      - name: Run deal-cadence monitor
+        env:
+          DB_DSN: ${{ secrets.DEAL_MONITOR_DB_DSN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+          TEST_ALERT: ${{ github.event.inputs.test_alert || 'false' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DB_DSN:-}" ]]; then
+            echo "::error::DEAL_MONITOR_DB_DSN secret is not set. Add it to the automated-qa repo secrets."
+            exit 1
+          fi
+          python ops/deal-cadence-monitor/monitor.py
