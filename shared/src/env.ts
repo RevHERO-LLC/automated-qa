@@ -46,8 +46,60 @@ export function loadEnv(): Env {
   }
   assertStaging(parsed.data.STAGING_BASE_URL);
   assertStaging(parsed.data.STAGING_BFF_URL);
+  parsed.data.STAGING_BFF_URL = reconcileBffSite(
+    parsed.data.STAGING_BFF_URL,
+    parsed.data.STAGING_BASE_URL
+  );
   cached = parsed.data;
   return cached;
+}
+
+// Legacy BFF hostnames and the same-site host that replaces them. The BFF is
+// dual-hosted, so both names reach the same service.
+const LEGACY_BFF_HOSTS: Record<string, string> = {
+  "user-fe-backend.test.revhero.io": "api.staging.revhero.ai"
+};
+
+// The registrable domain ("site") of a URL — the last two labels of the host.
+function siteOf(url: string): string {
+  return new URL(url).hostname.toLowerCase().split(".").slice(-2).join(".");
+}
+
+// The BFF issues the HttpOnly session cookie that the FE reads, and a cookie is
+// only shared between two hosts on the same registrable domain. If
+// STAGING_BFF_URL and STAGING_BASE_URL sit on different sites, the cookie is
+// host-only to the BFF and NO browser test can ever authenticate: loginAs()
+// never establishes a session, never caches its storageState, and every test
+// re-logs in until it exhausts the BFF login rate limiter. The visible symptom
+// is a flood of unexplained 429s that looks nothing like the actual cause.
+//
+// This is not hypothetical. The deploy pipeline re-applies Dokploy's stored env
+// on every redeploy, which silently reverted STAGING_BFF_URL to the legacy .io
+// host and left the prod-deploy QA gate red for every repo. Encoding the
+// invariant here means an env revert cannot quietly re-break it.
+function reconcileBffSite(bffUrl: string, baseUrl: string): string {
+  if (siteOf(bffUrl) === siteOf(baseUrl)) return bffUrl;
+
+  const bffHost = new URL(bffUrl).hostname.toLowerCase();
+  const replacement = LEGACY_BFF_HOSTS[bffHost];
+  if (replacement && siteOf(`https://${replacement}`) === siteOf(baseUrl)) {
+    const rewritten = new URL(bffUrl);
+    rewritten.hostname = replacement;
+    const out = rewritten.toString().replace(/\/$/, "");
+    console.warn(
+      `[env] STAGING_BFF_URL (${bffHost}) is on a different registrable domain than ` +
+        `STAGING_BASE_URL (${new URL(baseUrl).hostname}). Cookie auth cannot work across ` +
+        `sites, so rewriting to ${out}. Update the stored env to silence this.`
+    );
+    return out;
+  }
+
+  throw new Error(
+    `STAGING_BFF_URL (${bffHost}) and STAGING_BASE_URL (${new URL(baseUrl).hostname}) are on ` +
+      `different registrable domains (${siteOf(bffUrl)} vs ${siteOf(baseUrl)}). The BFF's ` +
+      `session cookie would be host-only and no authenticated test could pass. Point both at ` +
+      `the same site.`
+  );
 }
 
 function assertStaging(url: string): void {
