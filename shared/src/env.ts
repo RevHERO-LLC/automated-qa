@@ -54,6 +54,13 @@ function assertStaging(url: string): void {
   const host = new URL(url).hostname.toLowerCase();
   const isStaging =
     host.startsWith("staging.") ||
+    // Nested staging hosts, e.g. api.staging.revhero.ai — the BFF is dual-hosted
+    // there so it shares the staging.revhero.ai registrable domain with the FE.
+    // Without this the cookie the BFF issues is host-only to a different domain
+    // and never reaches the FE, which silently breaks every authenticated test.
+    // Matched as a dot-delimited label so a lookalike like notstaging.revhero.ai
+    // is still refused, and prod (api.revhero.ai) matches nothing here.
+    host.includes(".staging.") ||
     host.includes(".test.") ||
     host === "localhost" ||
     host === "127.0.0.1";
