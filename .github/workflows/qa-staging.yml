@@ -5,6 +5,17 @@
 # this workflow reads the report from the static endpoint after the run
 # completes and uses the auto-scoped GITHUB_TOKEN (issues:write) to open,
 # update, and close issues for each FAIL — no PAT lives in the container.
+#
+# Trigger mechanism (rewritten 2026-08-27): the runner is a Docker Swarm
+# ONESHOT (restart-condition=none). The old trigger POSTed to Dokploy's
+# application.deploy API and then trusted Dokploy's applicationStatus field,
+# which flips to "error" ~50% of runs because Dokploy mishandles a
+# restart-condition=none container that is SUPPOSED to exit — the poll then
+# exit-1'd on that single reading before ever fetching the report, so
+# latest.json silently went stale for days. We now force-run the oneshot
+# directly with `docker service update --force` on the swarm manager (the
+# proven-reliable path) and treat a NEW run_id in latest.json — not Dokploy's
+# status — as the completion signal.
 name: qa-staging
 
 on:
@@ -20,50 +31,77 @@ on:
 permissions:
   contents: read
   issues: write
+  packages: read
 
 jobs:
-  trigger-and-report:
+  run-suite:
+    # Runs on the vps2 self-hosted runner, which is the swarm LEADER and whose
+    # gha-runner user is in the docker group — so `docker service update` works
+    # as a plain local command (no SSH, no Dokploy). The `vps2` label pins it to
+    # that manager node; the assert-manager step fails loud if it ever doesn't.
+    runs-on: [self-hosted, vps2]
+    outputs:
+      prev_run_id: ${{ steps.prev.outputs.run_id }}
+    steps:
+      - name: Assert this runner is on a swarm manager
+        run: |
+          if ! docker node ls >/dev/null 2>&1; then
+            echo "::error::Job did not land on a swarm manager (docker node ls failed). The 'vps2' runner must be the swarm Leader. Aborting rather than silently no-op."
+            exit 1
+          fi
+
+      - name: Log in to ghcr.io (so --with-registry-auth can pull :latest)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Capture current report run_id (baseline)
+        id: prev
+        run: |
+          prev=$(curl -fsSLk --retry 3 https://qa-reports.test.revhero.io/latest.json | jq -r '.summary.run_id // ""')
+          echo "run_id=$prev" >> "$GITHUB_OUTPUT"
+          echo "baseline run_id before force-run: $prev"
+
+      - name: Force-run the QA oneshot (docker service update, retry 3x)
+        run: |
+          for attempt in 1 2 3; do
+            if docker service update --with-registry-auth --force automated-qa-runner-staging-3kteos; then
+              echo "force-run dispatched on attempt $attempt"
+              exit 0
+            fi
+            echo "attempt $attempt failed; retrying in 20s"
+            sleep 20
+          done
+          echo "::error::docker service update failed 3x — could not start the QA runner oneshot"
+          exit 1
+
+  report:
+    needs: run-suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Trigger Dokploy QA-runner redeploy (runs the suite)
+      - name: Wait for a NEW report run_id (not Dokploy status)
         env:
-          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
-          QA_RUNNER_APP_ID: ${{ vars.QA_RUNNER_APP_ID }}
+          PREV_RUN_ID: ${{ needs.run-suite.outputs.prev_run_id }}
         run: |
-          curl -fsSL -X POST \
-            -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            "http://147.93.1.174:3000/api/application.deploy" \
-            -d "{\"applicationId\":\"${QA_RUNNER_APP_ID}\"}"
-
-      - name: Wait for Dokploy run to finish
-        env:
-          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
-          QA_RUNNER_APP_ID: ${{ vars.QA_RUNNER_APP_ID }}
-        run: |
-          # Poll application.status every 15s for up to 30 minutes.
-          deadline=$(( $(date +%s) + 1800 ))
+          echo "waiting for a run_id newer than: '${PREV_RUN_ID}'"
+          deadline=$(( $(date +%s) + 1800 )) # 30 min
+          cur="${PREV_RUN_ID}"
           while [[ $(date +%s) -lt $deadline ]]; do
-            status=$(curl -fsSL \
-              -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
-              "http://147.93.1.174:3000/api/application.one?applicationId=${QA_RUNNER_APP_ID}" \
-              | jq -r '.applicationStatus // "unknown"')
-            echo "Dokploy status: $status"
-            if [[ "$status" == "done" || "$status" == "idle" ]]; then
+            cur=$(curl -fsSLk https://qa-reports.test.revhero.io/latest.json | jq -r '.summary.run_id // ""')
+            if [[ -n "$cur" && "$cur" != "${PREV_RUN_ID}" ]]; then
+              echo "fresh report published: $cur"
               break
-            fi
-            if [[ "$status" == "error" ]]; then
-              echo "::error::Dokploy reported error during QA run"
-              exit 1
             fi
             sleep 15
           done
+          if [[ -z "$cur" || "$cur" == "${PREV_RUN_ID}" ]]; then
+            echo "::error::No fresh QA report after 30min (still '${PREV_RUN_ID}'). The oneshot did not publish — check the runner service on the swarm."
+            exit 1
+          fi
 
       - name: Fetch latest QA report
         run: |
-          # The static reporter serves the volume the runner just wrote to.
           # Allow a few seconds for nginx to see the new files.
           sleep 10
           curl -fsSLk https://qa-reports.test.revhero.io/latest.json -o /tmp/latest.json

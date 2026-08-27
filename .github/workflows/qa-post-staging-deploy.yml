@@ -72,3 +72,32 @@ jobs:
           curl -fsS -X POST -H 'Content-Type: application/json' \
             -d "{\"text\":\":rotating_light: *Staging smoke gate FAILED* (trigger: ${SVC}) — unhealthy:${FAILING:-?} . <${RUN}|view run> — check before promoting staging → main\"}" \
             "$HOOK" || true
+
+  # Freshness safety-net for the daily QA runner. GitHub's own scheduler
+  # silently skips a `schedule:` cron with some regularity (the 2026-08-27
+  # qa-staging run never fired at all), which leaves the deploy gate reading a
+  # days-old latest.json. This job piggybacks on this workflow's reliable
+  # triggers (*/30 cron + a repository_dispatch on every staging deploy — far
+  # more trigger surface than a lone daily cron) and re-dispatches qa-staging
+  # whenever the published QA report is older than 26h.
+  ensure-qa-freshness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Re-dispatch qa-staging if the QA report is stale (>26h)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          fin=$(curl -fsSLk --retry 3 https://qa-reports.test.revhero.io/latest.json | jq -r '.summary.finished_at // ""')
+          fin_epoch=$(date -d "$fin" +%s 2>/dev/null || echo 0)
+          now=$(date -u +%s)
+          age_h=$(( (now - fin_epoch) / 3600 ))
+          echo "latest QA report finished_at='$fin' (${age_h}h old)"
+          if [[ "$fin_epoch" -eq 0 || "$age_h" -ge 26 ]]; then
+            echo "QA report is stale (${age_h}h >= 26h) — the daily scheduled run was likely skipped by GitHub. Re-dispatching qa-staging."
+            gh workflow run qa-staging.yml -R "${{ github.repository }}" || echo "::warning::qa-staging dispatch failed"
+          else
+            echo "QA report is fresh (${age_h}h < 26h). No re-dispatch needed."
+          fi
