@@ -1,4 +1,12 @@
 """
+⚠️ SUPERSEDED — DO NOT RE-RUN BLINDLY (note added 2026-08-27). This script
+stamps the ORIGINAL qa-gate template: critical-only, `runs-on: ubuntu-latest`,
+no id-prefix filter, no freshness check. The LIVE gates have since drifted
+(`self-hosted`, `curl -fsSLk`, 5 repos gained a `grep -E` id-prefix filter) and
+been hardened (freshness + NOT_EXEC + critical/high). Re-running this would
+REVERT every one of those. To harden the existing inline gates, use the
+in-place, filter-preserving `harden-deploy-gate.py` instead. Kept for history.
+
 Applies the Phase 4 deploy-prod.yml patch (qa-gate + notify-prod-deploy reuse)
 to all 13 service repos.
 
