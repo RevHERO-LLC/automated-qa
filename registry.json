@@ -1,11 +1,58 @@
 {
   "version": 1,
-  "generated_at": "2026-04-30T18:49:27.680Z",
+  "generated_at": "2026-08-27T00:00:00.000Z",
   "source": "test-registry.md",
-  "total": 492,
-  "active": 469,
+  "total": 501,
+  "active": 478,
   "descoped": 23,
   "entries": [
+    {
+      "id": "ANALYTICS-001",
+      "description": "Unauth GET /v1/dashboard/health is rejected (401/403) — auth is enforced on the analytics-service proxy.",
+      "area": "Analytics",
+      "role": "ANY",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/analytics/analytics-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "ANALYTICS-002",
+      "description": "Authed GET /v1/dashboard/health returns 200 or a documented 503 (stale) — analytics-service is up (not a 5xx outage).",
+      "area": "Analytics",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [
+        "ANALYTICS-001"
+      ],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/analytics/analytics-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "ANALYTICS-003",
+      "description": "Bogus /v1/dashboard/* path 404s distinctly from the real routes 401 (route-exists sanity).",
+      "area": "Analytics",
+      "role": "ANY",
+      "type": "functional",
+      "severity": "low",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/analytics/analytics-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
     {
       "id": "FE-ACT-001",
       "description": "Outbound SMS send → `activities` row \"SMS Sent\" written by sms-service; visible in the deal's activity panel and in `/notifications`.",
@@ -7066,6 +7113,100 @@
       ],
       "file": null,
       "last_audited_at": null
+    },
+    {
+      "id": "JUDY-001",
+      "description": "Unauth GET /v1/judy/conversations is rejected (401/403) — auth is enforced on the judy-service proxy.",
+      "area": "Judy",
+      "role": "ANY",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/judy/judy-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "JUDY-002",
+      "description": "Authed GET /v1/judy/conversations does not 5xx — judy-service is up + reachable from the BFF.",
+      "area": "Judy",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [
+        "JUDY-001"
+      ],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/judy/judy-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "JUDY-003",
+      "description": "Bogus /v1/judy/* path 404s distinctly from the real routes 401 (route-exists sanity).",
+      "area": "Judy",
+      "role": "ANY",
+      "type": "functional",
+      "severity": "low",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/judy/judy-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "OPT-001",
+      "description": "Unauth GET /v1/optimization/signoffs is rejected (401/403) — auth is enforced on the optimization-service proxy.",
+      "area": "Optimization",
+      "role": "ANY",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/optimization/opt-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "OPT-002",
+      "description": "Authed GET /v1/optimization/signoffs does not 5xx — optimization-service is up + reachable from the BFF.",
+      "area": "Optimization",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "high",
+      "destructive": false,
+      "deps": [
+        "OPT-001"
+      ],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/optimization/opt-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
+    },
+    {
+      "id": "OPT-003",
+      "description": "Bogus /v1/optimization/* path 404s distinctly from the real routes 401 (route-exists sanity).",
+      "area": "Optimization",
+      "role": "ANY",
+      "type": "functional",
+      "severity": "low",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "smoke"
+      ],
+      "file": "runner/tests/optimization/opt-smoke.test.ts",
+      "last_audited_at": "2026-08-27T00:00:00.000Z"
     },
     {
       "id": "WEBHOOK-AUTH-001",
