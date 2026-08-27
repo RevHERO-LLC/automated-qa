@@ -2,8 +2,8 @@
   "version": 1,
   "generated_at": "2026-04-30T18:49:27.680Z",
   "source": "test-registry.md",
-  "total": 485,
-  "active": 462,
+  "total": 492,
+  "active": 469,
   "descoped": 23,
   "entries": [
     {
@@ -357,6 +357,66 @@
       "id": "FE-ACT-PD-005",
       "description": "Invalid template_id → action fails gracefully, deal NOT advanced.",
       "area": "Stage actions — PandaDoc",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-S2C-001",
+      "description": "Add a Send-to-Campaign action with `campaign_id` + `stage_id` → row created.",
+      "area": "Stage actions — Send-to-Campaign",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-S2C-002",
+      "description": "Editor lists user's other active campaigns + their stages in a dropdown.",
+      "area": "Stage actions — Send-to-Campaign",
+      "role": "ADMIN",
+      "type": "destructive",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-S2C-003",
+      "description": "Trigger on a deal → deal moved into the target campaign at the specified stage; original campaign no longer tracks it.",
+      "area": "Stage actions — Send-to-Campaign",
+      "role": "ADMIN",
+      "type": "functional",
+      "severity": "medium",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "p3"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "FE-ACT-S2C-004",
+      "description": "Cycle prevention — point a Send-to-Campaign action at its own campaign → friendly validation error at save time.",
+      "area": "Stage actions — Send-to-Campaign",
       "role": "ADMIN",
       "type": "functional",
       "severity": "medium",
@@ -7004,6 +7064,49 @@
       "tags": [
         "p4"
       ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "WEBHOOK-AUTH-001",
+      "description": "email-ingress sentiment/reply webhook rejects an unauthenticated POST (401/403), never processes it (regression for the prod sentiment-webhook 401 outage class).",
+      "area": "Webhook authentication",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "WEBHOOK-AUTH-002",
+      "description": "sms-service sentiment/inbound webhook rejects an unauthenticated POST (401/403).",
+      "area": "Webhook authentication",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [
+        "slow"
+      ],
+      "file": null,
+      "last_audited_at": null
+    },
+    {
+      "id": "WEBHOOK-AUTH-003",
+      "description": "deal-mover sweeper trigger endpoint rejects an unauthenticated call (401/403).",
+      "area": "Webhook authentication",
+      "role": "ADMIN",
+      "type": "security",
+      "severity": "critical",
+      "destructive": false,
+      "deps": [],
+      "tags": [],
       "file": null,
       "last_audited_at": null
     }
