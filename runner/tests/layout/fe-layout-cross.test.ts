@@ -30,7 +30,10 @@ describe("Layout / Shell (FE-LAY)", () => {
   test("FE-LAY-002 — Sidebar shows Dashboard / Campaign / Phone / Email / Settings (smoke)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      // Wait for the sidebar to hydrate before counting — networkidle + an immediate
+      // count() raced React hydration (got 0/4), the same flake FE-LAY-003 fixed.
+      await page.getByText(/campaign|settings/i).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
       const labels = ["campaign", "phone", "email", "settings"];
       let found = 0;
       for (const l of labels) {

@@ -327,9 +327,14 @@ describe("Registration wizard (FE-REG)", () => {
     const { page, context } = await freshContext();
     try {
       await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
+      // Wait for the register form to hydrate before filling — a raw fill raced
+      // React hydration and timed out (flaky; the email input IS present on step=1,
+      // verified 2026-08-27).
+      const emailInput = page.locator('input[type="email"]').first();
+      await emailInput.waitFor({ state: "visible", timeout: 20_000 });
       const stamp = Date.now();
       const email = `qa-back-${stamp}@yopmail.com`;
-      await page.locator('input[type="email"]').first().fill(email);
+      await emailInput.fill(email);
       await page.locator('input[type="password"]').first().fill("ValidPass123!");
       await page.goto("/signup?step=2", { waitUntil: "domcontentloaded" });
       await page.goBack({ waitUntil: "domcontentloaded" });
