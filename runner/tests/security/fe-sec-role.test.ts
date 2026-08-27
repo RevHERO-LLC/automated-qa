@@ -22,7 +22,10 @@ describe("Security (FE-SEC)", () => {
   test("FE-SEC-007 — Direct nav to /admin/* as non-admin blocked", async () => {
     const { page, context } = await loginAs("MEMBER");
     try {
-      await page.goto("/admin/dashboard", { waitUntil: "networkidle", timeout: 20_000 });
+      // domcontentloaded, NOT networkidle (dashboard polls -> networkidle never
+      // settles -> flaky timeout; same fix as FE-ROLE-002).
+      await page.goto("/admin/dashboard", { waitUntil: "domcontentloaded", timeout: 20_000 });
+      await page.waitForURL((u) => !u.pathname.includes("/admin/dashboard"), { timeout: 8_000 }).catch(() => {});
       const url = page.url();
       // FE proxy.ts ADMIN_ONLY_PATHS should redirect; allow either redirect-away
       // OR a 403/blocked page.
@@ -64,9 +67,14 @@ describe("Multi-role enforcement (FE-ROLE)", () => {
   test("FE-ROLE-002 — MEMBER /admin/dashboard redirected or 403", async () => {
     const { page, context } = await loginAs("MEMBER");
     try {
-      await page.goto("/admin/dashboard", { waitUntil: "networkidle", timeout: 20_000 });
+      // domcontentloaded, NOT networkidle: the dashboard polls continuously so
+      // networkidle never settles and timed out BEFORE this assertion (flaky — it
+      // was never an access-control failure). Verified 2026-08-27 a MEMBER IS
+      // redirected /admin/dashboard -> /dashboard.
+      await page.goto("/admin/dashboard", { waitUntil: "domcontentloaded", timeout: 20_000 });
+      await page.waitForURL((u) => !u.pathname.includes("/admin/dashboard"), { timeout: 8_000 }).catch(() => {});
       const blocked = !page.url().includes("/admin/dashboard") || (await page.content()).includes("403");
-      expect(blocked).toBe(true);
+      expect(blocked, `MEMBER not redirected/blocked from /admin/dashboard (url=${page.url()})`).toBe(true);
     } finally { await context.close(); }
   });
   test("FE-ROLE-003 — MEMBER PUT /v1/admin/plans/:id → 403 (smoke)", async () => { expect(true).toBe(true); });
