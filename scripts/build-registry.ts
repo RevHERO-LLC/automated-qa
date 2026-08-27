@@ -34,14 +34,18 @@ const LINKEDIN_ADMIN_IDS = new Set(["FE-ADM-009", "FE-ADM-010", "FE-ADM-011"]);
 const P0_AREAS = new Set(["FE-AUTH", "FE-REG", "FE-SETUP"]);
 
 const SECTION_REGEX = /^###\s+(.+?)(?:\s+\((FE-[A-Z0-9-]+)\))?\s*$/;
-const TEST_REGEX = /^-\s+\*\*(FE-[A-Z]+(?:-[A-Z]+)*-\d{3})\*\*\s+—\s+(.+)$/;
-const TEST_REGEX_FALLBACK = /^-\s+\*\*(FE-[A-Z]+(?:-[A-Z]+)*-\d{3})\*\*\s+[—–-]\s+(.+)$/;
+// Widened 2026-08-27 to match the runtime reporter regex: allow a digit in any
+// segment (FE-ACT-S2C-###) and a non-FE- prefix (WEBHOOK-AUTH-###). The old
+// FE-letters-only form silently dropped those ids from the registry, so tests
+// that ran carried no severity and could never gate a prod deploy.
+const TEST_REGEX = /^-\s+\*\*([A-Z][A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3})\*\*\s+—\s+(.+)$/;
+const TEST_REGEX_FALLBACK = /^-\s+\*\*([A-Z][A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3})\*\*\s+[—–-]\s+(.+)$/;
 const E2E_REGEX = /^-\s+\*\*(FE-E2E-\d{3})\s+—\s+(.+?)\*\*\s*$/;
 const E2E_REGEX_FALLBACK = /^-\s+\*\*(FE-E2E-\d{3})\s+[—–-]\s+(.+?)\*\*\s*$/;
 
 function inferType(id: string, description: string): TestType {
   const idPrefix = id.replace(/-\d{3}$/, "");
-  if (idPrefix === "FE-SEC" || idPrefix === "FE-ROLE") return "security";
+  if (idPrefix === "FE-SEC" || idPrefix === "FE-ROLE" || idPrefix === "WEBHOOK-AUTH") return "security";
   if (idPrefix === "FE-PERF") return "performance";
   if (idPrefix === "FE-CROSS") return "regression";
   if (/^renders|^lists|^shows|loads <|page renders|empty state shows/i.test(description)) {
@@ -58,6 +62,9 @@ function inferSeverity(id: string): Severity {
   // CRITICAL: paths whose failure blocks deploys per the plan.
   if (idPrefix === "FE-AUTH" || idPrefix === "FE-SEC" || idPrefix === "FE-ROLE") return "critical";
   if (idPrefix === "FE-CRED" || idPrefix === "FE-E2E") return "critical";
+  // Unauthenticated-webhook rejection tests — a live prod incident class
+  // (sentiment-webhook 401 outage). A failure here = an open unauth endpoint.
+  if (idPrefix === "WEBHOOK-AUTH") return "critical";
   if (idPrefix === "FE-CROSS") return "high";
   if (idPrefix === "FE-REG" || idPrefix === "FE-SETUP") return "high";
   if (idPrefix === "FE-CAMP" || idPrefix === "FE-DEAL" || idPrefix === "FE-EMAIL") return "high";

@@ -56,7 +56,15 @@ type CaseRecord = {
   test_path: string;
 };
 
-const TEST_ID_REGEX = /^(FE-[A-Z]+(?:-[A-Z]+)*-\d{3})\b/;
+// Matches a test id at the start of a test name. Widened 2026-08-27: the old
+// pattern (/^(FE-[A-Z]+(?:-[A-Z]+)*-\d{3})/) required a literal `FE-` prefix and
+// letters-only mid-segments, so ids with a digit in a non-final segment
+// (FE-E2E-###, FE-ACT-S2C-###) or a non-FE- prefix (WEBHOOK-AUTH-###) fell
+// through to UNKNOWN-xxxx at runtime — which the prod deploy gate cannot map to
+// a severity, so they could never block a deploy (a live silent-pass hole that
+// affected all 10 CRITICAL FE-E2E journeys). This form allows digits in any
+// segment and any uppercase prefix, still anchored on the trailing -\d{3}.
+const TEST_ID_REGEX = /^([A-Z][A-Z0-9]+(?:-[A-Z0-9]+)*-\d{3})\b/;
 
 export default class QaReporter {
   private startedAt = "";
