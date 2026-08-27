@@ -143,6 +143,32 @@ function deriveArea(sectionName: string, prefix: string | undefined): string {
   return prefix ?? "Unknown";
 }
 
+const SEVERITY_RANK: Record<Severity, number> = { critical: 3, high: 2, medium: 1, low: 0 };
+function strongerSeverity(a: Severity, b: Severity): Severity {
+  return SEVERITY_RANK[a] >= SEVERITY_RANK[b] ? a : b;
+}
+
+// Merge a freshly-parsed md entry with a previously-committed one of the same id.
+// registry.json is partially hand-curated: some entries carry a severity, deps,
+// file, expected/notes, or last_audited_at that INFERENCE CANNOT REPRODUCE —
+// e.g. FE-EMAIL-IN-012 is a CRITICAL webhook-auth test that the FE-EMAIL→high
+// prefix rule would silently DOWNGRADE, and FE-CSV-011 (high) would fall to the
+// default medium. Refresh the human-editable fields (description/area/type/role/
+// tags) from the md, but NEVER downgrade severity and always keep curated hard
+// fields, so a rebuild can only ADD protection, never regress the gate.
+function mergeEntry(parsed: RegistryEntry, prev: RegistryEntry): RegistryEntry {
+  const merged: RegistryEntry = {
+    ...parsed,
+    severity: strongerSeverity(parsed.severity, prev.severity),
+    deps: prev.deps && prev.deps.length ? prev.deps : parsed.deps,
+    file: prev.file ?? parsed.file,
+    last_audited_at: prev.last_audited_at ?? parsed.last_audited_at
+  };
+  if (prev.expected) merged.expected = prev.expected;
+  if (prev.notes) merged.notes = prev.notes;
+  return merged;
+}
+
 async function main() {
   const [, , inPath, outPath] = process.argv;
   if (!inPath || !outPath) {
@@ -218,7 +244,40 @@ async function main() {
   for (const e of allEntries) {
     if (!byId.has(e.id)) byId.set(e.id, e);
   }
-  const entries = Array.from(byId.values()).sort((a, b) => a.id.localeCompare(b.id));
+
+  // Merge-preserving rebuild: if a registry.json already exists at the out-path,
+  // treat it as the curation layer. This keeps `build:registry` idempotent +
+  // non-destructive — it can ADD ids and STRENGTHEN severity, but never DROP an
+  // entry that was registered directly into registry.json nor DOWNGRADE a
+  // hand-curated severity. (Before this, a rebuild dropped ~23 registry-only
+  // entries and re-inferred severity — silently regressing the prod gate.)
+  // A fresh build (no file at out-path) is unchanged: pure parse.
+  const existingById = new Map<string, RegistryEntry>();
+  try {
+    const prev = JSON.parse(await readFile(outPath, "utf8")) as { entries?: RegistryEntry[] };
+    for (const e of prev.entries ?? []) existingById.set(e.id, e);
+  } catch {
+    // no existing registry.json at out-path -> fresh from-scratch build
+  }
+
+  const mergedById = new Map<string, RegistryEntry>();
+  for (const [id, parsed] of byId) {
+    const prev = existingById.get(id);
+    mergedById.set(id, prev ? mergeEntry(parsed, prev) : parsed);
+  }
+  let carriedForward = 0;
+  for (const [id, prev] of existingById) {
+    if (!mergedById.has(id)) {
+      mergedById.set(id, prev);
+      carriedForward++;
+    }
+  }
+  const entries = Array.from(mergedById.values()).sort((a, b) => a.id.localeCompare(b.id));
+  if (existingById.size) {
+    console.log(
+      `Merge-preserving: ${byId.size} parsed from md, ${carriedForward} carried forward from existing registry.json, ${entries.length} total.`
+    );
+  }
 
   const total = entries.length + descopedCount;
   const out = {
