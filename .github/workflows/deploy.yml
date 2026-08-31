@@ -111,6 +111,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-runner, build-static, build-trigger]
     steps:
+      # Pin the app to THIS commit's immutable tag before deploying.
+      #
+      # Why: the Dokploy app's dockerImage is the FLOATING ":latest" tag. Docker
+      # Swarm compares the image STRING when a service is updated - an identical
+      # string is not a spec change, so it no-ops and never re-pulls, while the
+      # deploy call still returns success (task #56, seen 4x across the fleet).
+      # The per-commit tag is already built and pushed by the build jobs above;
+      # it was simply never pointed at.
+      - name: Pin runner image to this commit
+        env:
+          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+        run: |
+          curl -fsSL -X POST             -H "X-API-Key: ${DOKPLOY_API_TOKEN}"             -H "Content-Type: application/json"             "http://147.93.1.174:3000/api/application.update"             -d '{"applicationId":"${{ vars.QA_RUNNER_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}"}'
+
       - name: Trigger Dokploy redeploy (runner)
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -120,6 +134,12 @@ jobs:
             -H "Content-Type: application/json" \
             "http://147.93.1.174:3000/api/application.deploy" \
             -d '{"applicationId":"${{ vars.QA_RUNNER_APP_ID }}"}'
+      - name: Pin static image to this commit
+        env:
+          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+        run: |
+          curl -fsSL -X POST             -H "X-API-Key: ${DOKPLOY_API_TOKEN}"             -H "Content-Type: application/json"             "http://147.93.1.174:3000/api/application.update"             -d '{"applicationId":"${{ vars.QA_STATIC_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}"}'
+
       - name: Trigger Dokploy redeploy (static)
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -129,6 +149,12 @@ jobs:
             -H "Content-Type: application/json" \
             "http://147.93.1.174:3000/api/application.deploy" \
             -d '{"applicationId":"${{ vars.QA_STATIC_APP_ID }}"}'
+      - name: Pin trigger image to this commit
+        env:
+          DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
+        run: |
+          curl -fsSL -X POST             -H "X-API-Key: ${DOKPLOY_API_TOKEN}"             -H "Content-Type: application/json"             "http://147.93.1.174:3000/api/application.update"             -d '{"applicationId":"${{ vars.QA_TRIGGER_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}"}'
+
       - name: Trigger Dokploy redeploy (trigger)
         if: vars.QA_TRIGGER_APP_ID != ''
         env:
