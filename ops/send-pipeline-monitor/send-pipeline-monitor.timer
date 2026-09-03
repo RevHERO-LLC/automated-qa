@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the send-pipeline health monitor every 30 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=30min
+Persistent=true
+RandomizedDelaySec=60s
+
+[Install]
+WantedBy=timers.target

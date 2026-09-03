@@ -1,0 +1,13 @@
+[Unit]
+Description=Send-pipeline health monitor (outbound-email early-warning) — Slack on outage / weekday zero-sends
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/send-pipeline-monitor.env
+Environment=STATE_DIR=/var/lib/send-pipeline-monitor
+ExecStart=/usr/bin/python3 /usr/local/bin/send-pipeline-monitor.py
+StandardOutput=journal
+StandardError=journal
+User=root
