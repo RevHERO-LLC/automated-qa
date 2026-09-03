@@ -11,14 +11,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "[install] Starting send-pipeline-monitor installation..."
 
-# ── Ensure python3 + psycopg2 ────────────────────────────────────────────────
+# ── Dependencies: python3 + psql (postgresql-client). No psycopg2/pip needed. ─
 command -v python3 >/dev/null || { echo "[install] ERROR: python3 not found." >&2; exit 1; }
-if ! python3 -c 'import psycopg2' 2>/dev/null; then
-  echo "[install] Installing python3-psycopg2..."
-  (apt-get update -qq && apt-get install -y python3-psycopg2) \
-    || python3 -m pip install --break-system-packages psycopg2-binary
-fi
-python3 -c 'import psycopg2; print("[install] psycopg2 OK")'
+command -v psql >/dev/null || {
+  echo "[install] ERROR: psql (postgresql-client) not found. Install it, e.g.:" >&2
+  echo "         sudo apt-get install -y postgresql-client" >&2
+  exit 1
+}
+echo "[install] Deps OK: $(python3 --version 2>&1), $(psql --version)"
 
 # ── Copy the monitor script ──────────────────────────────────────────────────
 cp "${SCRIPT_DIR}/monitor.py" /usr/local/bin/send-pipeline-monitor.py
@@ -58,6 +58,6 @@ echo ""
 systemctl list-timers send-pipeline-monitor.timer --no-pager || true
 echo ""
 echo "[install] Manual test (validates DB + Slack path via TEST_ALERT):"
-echo "  sudo env \$(grep -v '^#' /etc/revhero/send-pipeline-monitor.env | xargs) TEST_ALERT=true python3 /usr/local/bin/send-pipeline-monitor.py"
+echo "  set -a; . /etc/revhero/send-pipeline-monitor.env; set +a; TEST_ALERT=true python3 /usr/local/bin/send-pipeline-monitor.py"
 echo "[install] Timer run logs:"
 echo "  journalctl -u send-pipeline-monitor.service --no-pager -n 50"
