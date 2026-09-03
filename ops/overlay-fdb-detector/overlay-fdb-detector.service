@@ -1,0 +1,13 @@
+[Unit]
+Description=LOG-ONLY Swarm overlay VTEP/FDB-gap detector — Slack on missing dst entries (cross-node partition signature)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/overlay-fdb-detector.env
+Environment=STATE_DIR=/var/lib/overlay-fdb-detector
+ExecStart=/usr/local/bin/check-overlay-fdb.sh
+StandardOutput=journal
+StandardError=journal
+User=root
