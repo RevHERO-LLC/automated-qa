@@ -212,3 +212,6 @@ automated-qa/
 ## License
 
 Internal — RevHERO-LLC / Anthropic Claude Code Agent.
+
+
+<!-- Security scan triggered at 2026-09-05 07:59:46 -->
