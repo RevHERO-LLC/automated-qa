@@ -1,0 +1,116 @@
+# Daily staging↔prod divergence detector (fleet-wide).
+#
+# Catches the recurring-conflict / prod-only-hotfix-never-back-merged pattern that
+# forced the 2026-09-08 fleet-wide reconcile (FE 128 / BFF 77 commits diverged;
+# staging silently missing live prod fixes #118 atomic-credit, #170/#171
+# stage-reorder). Doctrine: staging→main promotions are REAL MERGE commits, never
+# squash/cherry-pick — so `main` stays a descendant of `staging` and carries NO
+# content that staging lacks. See memory feedback_hotfix_promotion_merge_not_squash.
+#
+# Signal (per repo): GET /compare/staging...main → sum of `files[].additions` =
+# lines present on `main` but NOT on `staging`, measured from the merge-base. This
+# is 0 for a cleanly-reconciled repo (verified on all 17), 0 when staging is merely
+# ahead (normal — those show as deletions, not additions), and >0 EXACTLY when a
+# prod change never made it back to staging. It does NOT false-fire on a benign
+# staging→main merge commit (raw `behind_by` does — FE reads behind_by=1 with
+# identical trees), because a merge commit adds no main-only content.
+#
+# Posts a Slack alarm to the deploys channel ONLY when drift > 0 (quiet otherwise).
+# The fix for any flagged repo is a real merge, never a cherry-pick:
+#   git fetch && git checkout main && git merge origin/staging  (resolve) → PR → gh pr merge --merge
+# then back-merge main→staging so both sides match.
+name: staging-prod-drift-check
+
+on:
+  schedule:
+    - cron: '17 12 * * *' # 8:17 AM ET daily — after email-drift-check (6:13) and qa-staging (2 AM)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # QA_DISPATCH_TOKEN already exists on this repo for cross-repo workflow
+      # dispatch; it needs read access to the RevHERO-LLC repos below. If the
+      # first run 404s on private repos, the token lacks repo-read scope — swap in
+      # a fine-grained PAT with Contents:read on the org (see run logs).
+      GH_TOKEN: ${{ secrets.QA_DISPATCH_TOKEN }}
+    steps:
+      - name: Detect prod-only content missing from staging
+        id: drift
+        run: |
+          set -uo pipefail
+          if [[ -z "${GH_TOKEN}" ]]; then
+            echo "::error::QA_DISPATCH_TOKEN is not set on this repo"
+            exit 1
+          fi
+
+          # All deployed RevHERO-LLC services (GitHub repo names). Repos with no
+          # staging branch (e.g. analytics-service) are skipped gracefully.
+          REPOS="RevHero-users-service RevHero-user-fe-backend RevHero-FE-New \
+            RevHERO-Super-Admin-Portal RevHero-campaign-service RevHero-deals-actions-service \
+            RevHero-dealmover-v3 Revhero-Generic-Ai-Agent RevHero-cloud-documents-service \
+            RevHero-Activity-service RevHero-pipedrive-v3 RevHero-hubspot-service \
+            RevHero-email-ingress RevHero-sms-service RevHero-swarm-service \
+            RevHero-swarm-dealmover RevHero-booking-service RevHero-optimization-service \
+            RevHero-judy-service"
+
+          drift_count=0
+          drift_lines=""
+          skipped=""
+
+          for repo in $REPOS; do
+            if ! resp=$(gh api "repos/RevHERO-LLC/${repo}/compare/staging...main" 2>/tmp/err.txt); then
+              skipped="${skipped}\n  • ${repo} — $(head -c 100 /tmp/err.txt | tr '\n' ' ')"
+              continue
+            fi
+
+            additions=$(echo "$resp" | jq '[.files[]?.additions] | add // 0')
+            prod_only_commits=$(echo "$resp" | jq '.ahead_by // 0')     # commits on main not on staging
+            staging_ahead=$(echo "$resp" | jq '.behind_by // 0')        # commits on staging not on main (normal)
+
+            if [[ "${additions:-0}" -gt 0 ]]; then
+              drift_count=$((drift_count + 1))
+              files=$(echo "$resp" | jq -r '[.files[]? | select(.additions > 0) | .filename] | .[0:8] | join(", ")')
+              drift_lines="${drift_lines}\n  • *${repo}* — ${additions} line(s) on main not on staging, ${prod_only_commits} prod-only commit(s). Files: ${files}"
+              echo "DRIFT: ${repo} additions=${additions} prod_only_commits=${prod_only_commits}"
+            else
+              echo "ok: ${repo} (additions=0, staging_ahead=${staging_ahead})"
+            fi
+          done
+
+          echo "drift_count=${drift_count}" >> "$GITHUB_OUTPUT"
+          printf "%b" "$drift_lines" > /tmp/drift-lines.txt
+          printf "%b" "$skipped" > /tmp/skipped.txt
+          echo "=== drift_count=${drift_count} ==="
+          echo "--- skipped ---"; printf "%b\n" "$skipped"
+
+      - name: Post Slack alarm
+        if: steps.drift.outputs.drift_count != '0'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SLACK_WEBHOOK}" ]]; then
+            echo "::error::SLACK_WEBHOOK_DEPLOYS is not set"
+            exit 1
+          fi
+          lines=$(cat /tmp/drift-lines.txt)
+          headline=":rotating_light: *Staging↔prod DRIFT — ${{ steps.drift.outputs.drift_count }} repo(s) have prod-only code missing from staging*"
+          body=$(printf "A change is live on \`main\` (prod) but NOT on \`staging\` — a hotfix that was never merged back (the #118 / #170-171 pattern that regenerates every-deploy conflicts).\n\nReconcile with a REAL MERGE, never squash/cherry-pick:%b\n\n<%s|Workflow run>" "$lines" "${RUN_URL}")
+          jq -n --arg h "$headline" --arg b "$body" '{
+            text: $h,
+            blocks: [
+              { type: "section", text: { type: "mrkdwn", text: $h } },
+              { type: "section", text: { type: "mrkdwn", text: $b } }
+            ]
+          }' > /tmp/slack.json
+          curl -fsSL -X POST -H "Content-Type: application/json" -d @/tmp/slack.json "${SLACK_WEBHOOK}"
+
+      - name: All clean — no alarm
+        if: steps.drift.outputs.drift_count == '0'
+        run: echo "OK: every deployed repo's main is a clean descendant of staging (no prod-only content)."
