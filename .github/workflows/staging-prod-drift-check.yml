@@ -113,4 +113,5 @@ jobs:
 
       - name: All clean — no alarm
         if: steps.drift.outputs.drift_count == '0'
-        run: echo "OK: every deployed repo's main is a clean descendant of staging (no prod-only content)."
+        run: |
+          echo "OK: every deployed repo's main is a clean descendant of staging (no prod-only content)."
