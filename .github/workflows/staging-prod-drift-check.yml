@@ -33,18 +33,19 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      # QA_DISPATCH_TOKEN already exists on this repo for cross-repo workflow
-      # dispatch; it needs read access to the RevHERO-LLC repos below. If the
-      # first run 404s on private repos, the token lacks repo-read scope — swap in
-      # a fine-grained PAT with Contents:read on the org (see run logs).
-      GH_TOKEN: ${{ secrets.QA_DISPATCH_TOKEN }}
+      # FLEET_READ_TOKEN is a fine-grained PAT scoped to Contents:Read on the
+      # RevHERO-LLC repos below (least privilege — it can only read code, not push
+      # or change workflows). Create it in GitHub UI (no API mints fine-grained
+      # PATs) and add it as a repo secret. If a run 404s on private repos, the PAT
+      # is missing a repo from its resource list or lacks Contents:Read.
+      GH_TOKEN: ${{ secrets.FLEET_READ_TOKEN }}
     steps:
       - name: Detect prod-only content missing from staging
         id: drift
         run: |
           set -uo pipefail
           if [[ -z "${GH_TOKEN}" ]]; then
-            echo "::error::QA_DISPATCH_TOKEN is not set on this repo"
+            echo "::error::FLEET_READ_TOKEN is not set on this repo (add a fine-grained Contents:Read PAT)"
             exit 1
           fi
 
