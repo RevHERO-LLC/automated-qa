@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+#
+# periodic-job-heartbeat.sh — assert every known background job on prod actually ran.
+#
+# WHY THIS EXISTS (#269)
+# ---------------------
+# On 2026-09-11 a half-applied secret rotation broke every AI-personalized send for
+# three days. Nothing crashed and nothing alarmed. Reviewing the backlog through that
+# lens turned up FOUR separate background jobs that had silently stopped — swarm's
+# reconcile pass, email-ingress's nightly token refresh, activity retention, and
+# automated-qa's own email-drift-check. Every one was found by accident, by a human
+# who happened to look.
+#
+# A periodic job that stops has no natural signal: the logs simply contain one fewer
+# line, and nobody greps for a line that is absent. This script makes that absence
+# the alarm.
+#
+# HOW IT DECIDES  (the part worth understanding before editing)
+# -------------------------------------------------------------
+# The naive check — "did the marker appear in the last N hours?" — FALSE-ALARMS on
+# every redeploy. `docker service logs` is per-CONTAINER: when a service rolls, its
+# log history restarts from zero. Measured on prod 2026-09-14, four of five services
+# had less than an hour of history because they had been redeployed that afternoon,
+# while the interval we wanted to assert was 24h. A monitor built that way would cry
+# wolf after every deploy, get muted, and then be worth less than nothing.
+#
+# So the verdict is gated on CONTAINER UPTIME, giving three outcomes:
+#
+#   OK            marker seen inside the window                      -> job is alive
+#   DEAD          marker ABSENT *and* container older than the        -> ALERT
+#                 job's own interval (it has had a full chance to run)
+#   INDETERMINATE marker absent but container younger than the        -> no alert,
+#                 interval (it may simply not be due yet)                still printed
+#
+# INDETERMINATE is deliberately not an alert. A monitor that alarms when it does not
+# know is the same failure as one that stays silent when it does.
+#
+# 🚨 IT MUST ALERT ON ITS OWN FAILURE. email-drift-check only Slacks when it FINDS
+# drift, so when its credential went stale its HTTP 401 produced a red workflow that
+# nobody watched — for three days. `set -euo pipefail` here plus an `if: failure()`
+# Slack step in the calling workflow means this script dying is itself paged. A
+# heartbeat monitor that fails silently manufactures false confidence, which is
+# strictly worse than having no monitor at all.
+#
+# Runs on the self-hosted VPS2 runner, which is a swarm manager — hence plain
+# `docker service logs` with no SSH hop or credential of its own.
+
+set -euo pipefail
+
+SLACK_WEBHOOK="${SLACK_WEBHOOK:-}"
+TEST_ALERT="${TEST_ALERT:-false}"
+
+# job|service|marker|interval_minutes|log_window
+#
+# interval_minutes = how often the job SHOULD run; it is the uptime a container must
+#   exceed before a missing marker is treated as death rather than "not due yet".
+# log_window       = how far back to grep. Kept comfortably wider than the interval so
+#   a job that runs slightly late is not mistaken for one that never ran.
+#
+# Markers were calibrated against live prod logs rather than read out of the source,
+# because a marker that does not match what the DEPLOYED build prints is a monitor
+# that is green for the wrong reason.
+#
+# NOT COVERED YET — swarm agent reconcile (app-compress-bluetooth-sensor-pksr4y).
+# Prod swarm runs a build from before #259, which logs NOTHING when a cycle finds no
+# work — that silence is precisely the bug #259 fixed by adding an unconditional
+# all-zeros cycle line. Adding it here before that build reaches prod would give a
+# permanently-DEAD row the monitor cannot resolve, which trains people to ignore it.
+# Add the row once #259 is promoted; the fix is already on staging.
+JOBS=(
+  "activity-retention|revhero-activity-service-uxhhme|retention sweep removed|1440|26h"
+  "email-token-refresh|revhero-email-ingress-laa4mj|agent-token-refresh|1440|26h"
+  "siteforge-dispatcher|revhero-campaign-service-ydky5d|siteforge-dispatcher|10|30m"
+  "siteforge-cleanup|revhero-campaign-service-ydky5d|siteforge-cleanup|60|3h"
+  "dealmover-sweeper|revhero-deal-mover-vmzya0|Running sweeper|30|70m"
+)
+
+# uptime_minutes <service> — minutes since the RUNNING task started.
+#
+# Uses `docker service ps`, not `docker ps` + inspect: the latter only sees containers
+# on the local node, and on this cluster several of these services are scheduled
+# elsewhere (it returned an empty uptime for activity-service and email-ingress when
+# tried that way). `docker service ps` answers cluster-wide from any manager.
+uptime_minutes() {
+  local svc="$1" state
+  state=$(docker service ps "$svc" \
+            --filter desired-state=running \
+            --format '{{.CurrentState}}' 2>/dev/null | head -1 || true)
+  # e.g. "Running 45 minutes ago" / "Running 2 days ago" / "Running about an hour ago"
+  [ -z "$state" ] && { echo "-1"; return; }
+  local n unit
+  n=$(echo "$state" | grep -oE '[0-9]+' | head -1 || true)
+  unit=$(echo "$state" | grep -oE '(second|minute|hour|day|week|month)' | head -1 || true)
+  # "about an hour ago" / "a minute ago" carry no digit
+  [ -z "$n" ] && n=1
+  case "$unit" in
+    second) echo $(( n / 60 )) ;;
+    minute) echo "$n" ;;
+    hour)   echo $(( n * 60 )) ;;
+    day)    echo $(( n * 1440 )) ;;
+    week)   echo $(( n * 10080 )) ;;
+    month)  echo $(( n * 43200 )) ;;
+    *)      echo "-1" ;;
+  esac
+}
+
+dead=()
+indeterminate=()
+ok=()
+
+printf '%-22s %-40s %-9s %-9s %s\n' JOB SERVICE HITS UPTIME VERDICT
+printf '%s\n' "--------------------------------------------------------------------------------------------"
+
+for row in "${JOBS[@]}"; do
+  IFS='|' read -r job svc marker interval window <<< "$row"
+
+  hits=$(docker service logs "$svc" --since "$window" 2>&1 | grep -c -- "$marker" || true)
+  up=$(uptime_minutes "$svc")
+
+  if [ "$hits" -gt 0 ]; then
+    verdict="OK"; ok+=("$job")
+  elif [ "$up" -lt 0 ]; then
+    # The service itself is missing or not running — that is worse than a dead job.
+    verdict="DEAD (service not running)"; dead+=("$job: service $svc has no running task")
+  elif [ "$up" -ge "$interval" ]; then
+    verdict="DEAD"
+    dead+=("$job: no '$marker' in $svc for ${window}, container up ${up}m (interval ${interval}m)")
+  else
+    verdict="INDETERMINATE"
+    indeterminate+=("$job (container up ${up}m < interval ${interval}m — redeployed recently)")
+  fi
+
+  printf '%-22s %-40s %-9s %-9s %s\n' "$job" "${svc:0:40}" "$hits" "${up}m" "$verdict"
+done
+
+echo
+echo "ok=${#ok[@]} dead=${#dead[@]} indeterminate=${#indeterminate[@]}"
+
+if [ "$TEST_ALERT" = "true" ]; then
+  dead+=("TEST ALERT — manually dispatched, not a real finding. Proves the Slack path works.")
+fi
+
+[ ${#dead[@]} -eq 0 ] && { echo "All monitored periodic jobs are alive."; exit 0; }
+
+echo
+echo "::warning::${#dead[@]} periodic job(s) appear to have stopped"
+lines=$(printf '• %s\n' "${dead[@]}")
+echo "$lines"
+
+if [ -n "$SLACK_WEBHOOK" ]; then
+  payload=$(python3 -c '
+import json, sys
+print(json.dumps({"text": ":rotating_light: *Periodic job heartbeat — %d job(s) not running*\n\n%s\n\n_A background job stopping is silent by nature; this check exists because four of them did exactly that in Sept 2026._" % (int(sys.argv[1]), sys.argv[2])}))
+' "${#dead[@]}" "$lines")
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d "$payload" "$SLACK_WEBHOOK")
+  echo "slack HTTP $code"
+  # A non-2xx here must fail the run: an alert that was never delivered is the same
+  # as no alert, and this script's whole purpose is to not fail quietly.
+  if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+    echo "::error::Slack POST failed ($code)"
+    exit 1
+  fi
+  # Tell the workflow we already delivered our own alert, so its failure() handler
+  # does not post a SECOND message for the same run. The handler exists to catch the
+  # case where this script dies before reaching here (docker gone, marker lookup
+  # exploding) — the exact silent-death mode that let email-drift-check sit red for
+  # three days — not to re-announce findings we just sent.
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "alerted=true" >> "$GITHUB_OUTPUT"; fi
+else
+  echo "::error::SLACK_WEBHOOK is not set — findings could not be delivered"
+  exit 1
+fi
+
+exit 1
