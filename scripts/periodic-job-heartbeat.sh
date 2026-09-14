@@ -226,6 +226,59 @@ check_analytics_freshness() {
 
 check_analytics_freshness
 
+# ---------------------------------------------------------------------------------------------
+# ATLAS STORAGE -- quota is PER-CLUSTER, and prod + staging + staging-2 all share ONE free M0.
+#
+# On 2026-08-31 the shared cluster hit quota and PROD writes failed: 39,422 errors in six hours.
+# The reflex diagnosis was "staging filled it, so isolate staging". Measured 2026-09-14, that is
+# not what the data says:
+#     prod       75.0 MB storage   762,012 docs   <- 99.5% of usage
+#     staging     0.4 MB storage         806 docs
+#     staging-2   0.0 MB storage          35 docs
+# Isolating staging would free ~0.5% of usage. The real cause was PROD's own unbounded growth
+# while its retention sweeper sat disabled (re-armed 2026-09-14). So the protection that actually
+# matters is watching the cluster's headroom, not separating the lanes.
+#
+# M0 is 512 MB. Alert at 70% so there is time to act, rather than discovering it as write errors.
+ATLAS_LIMIT_MB="${ATLAS_LIMIT_MB:-512}"
+ATLAS_WARN_PCT="${ATLAS_WARN_PCT:-70}"
+
+check_atlas_storage() {
+  local total=0 detail="" svc env uri name base q mb
+  for svc in $(docker service ls --format '{{.Name}}' 2>/dev/null | grep -i activity); do
+    env=$(docker service inspect "$svc" --format '{{range .Spec.TaskTemplate.ContainerSpec.Env}}{{println .}}{{end}}' 2>/dev/null)
+    uri=$(printf '%s
+' "$env" | grep '^DB_URI=' | head -1 | cut -d= -f2-)
+    name=$(printf '%s
+' "$env" | grep '^DB_NAME=' | head -1 | cut -d= -f2-)
+    [ -z "$uri" ] || [ -z "$name" ] && continue
+    base="${uri%%\?*}"; base="${base%/}"
+    case "$uri" in *\?*) q="?${uri#*\?}";; *) q="";; esac
+    mb=$(timeout 60 docker run --rm mongo:7 mongosh "$base/$name$q" --quiet          --eval 'print((db.stats().storageSize/1048576).toFixed(1))' 2>/dev/null | grep -Eo '^[0-9.]+$' | head -1)
+    [ -z "$mb" ] && continue
+    total=$(awk -v a="$total" -v b="$mb" 'BEGIN{printf "%.1f", a+b}')
+    detail="$detail $name=${mb}MB"
+  done
+
+  if [ "$total" = "0" ]; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "atlas-storage" "shared M0 cluster" "?" "-" "SKIPPED (no reading)"
+    return
+  fi
+  local pct
+  pct=$(awk -v t="$total" -v l="$ATLAS_LIMIT_MB" 'BEGIN{printf "%.0f", (t/l)*100}')
+  if [ "$pct" -ge "$ATLAS_WARN_PCT" ] 2>/dev/null; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "atlas-storage" "shared M0 cluster" "${pct}%" "-" "NEAR QUOTA"
+    dead+=("atlas-storage: shared Atlas M0 is at ${pct}% of ${ATLAS_LIMIT_MB}MB (${total}MB used).$detail -- quota is PER-CLUSTER and prod shares it, so hitting it fails PROD writes (39,422 errors in 6h on 2026-08-31).")
+  else
+    printf '%-22s %-40s %-9s %-9s %s
+' "atlas-storage" "shared M0 cluster" "${pct}%" "-" "OK"
+  fi
+}
+
+check_atlas_storage
+
 echo
 echo "ok=${#ok[@]} dead=${#dead[@]} indeterminate=${#indeterminate[@]}"
 
