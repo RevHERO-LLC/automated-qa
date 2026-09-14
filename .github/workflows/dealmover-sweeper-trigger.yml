@@ -1,0 +1,68 @@
+# Drive the prod deal-mover sweeper — replacing an unidentified external scheduler
+# that broke the moment the internal secret was rotated.
+#
+# WHAT HAPPENED (2026-09-14)
+# --------------------------
+# Prod deal-mover historically ran with INTERNAL_SERVICES_WEBHOOK_SECRET UNSET, so its
+# auth fell through to the hardcoded literal — the one exfiltrated in #857. Some external
+# scheduler had been calling /v1/sweeper/run with that literal baked into the URL. When the
+# secret was finally set on prod, every one of those calls began returning 401 and THE PROD
+# SWEEPER SIMPLY STOPPED. Deals stop moving, and nothing announced it: the caller is outside
+# our infrastructure, so its failures are invisible here. It was caught only because the
+# periodic-job heartbeat monitor (#269) flagged dealmover-sweeper as DEAD.
+#
+# WHY THIS READS THE SECRET FROM THE CONTAINER
+# --------------------------------------------
+# The obvious fix — put the secret in a GitHub secret — recreates the exact failure it is
+# meant to cure: a copy of a credential that silently goes stale at the next rotation. That
+# is the same defect as the stale CHANGELOG_API_TOKEN and the stale automated-qa
+# INTERNAL_SECRET, both of which sat broken for months/days.
+#
+# So this asks the service for its OWN current secret at call time. There is no second copy
+# to drift, and a future rotation cannot break this trigger. It works because the runner is
+# a swarm manager on the same host — the same reason the heartbeat monitor needs no
+# credential either.
+name: dealmover-sweeper-trigger
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 minutes, matching the sweeper's intended cadence
+  workflow_dispatch:
+
+concurrency:
+  group: dealmover-sweeper-trigger
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: [self-hosted, vps2]
+    steps:
+      - name: Trigger prod sweeper
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+        run: |
+          set -uo pipefail
+          CID=$(docker ps -q --filter name=revhero-deal-mover-vmzya0 | head -1)
+          if [[ -z "$CID" ]]; then
+            echo "::error::prod deal-mover container not found — cannot sweep"; exit 1
+          fi
+          # Secret never leaves the container: wget runs inside it and expands the var there.
+          docker exec "$CID" sh -c \
+            'wget -q -T 240 -O /dev/null "http://127.0.0.1:8080/v1/sweeper/run?secret=$INTERNAL_SERVICES_WEBHOOK_SECRET"'
+          RC=$?
+          if [[ $RC -ne 0 ]]; then
+            echo "::error::sweeper call failed (wget rc=$RC)"
+            if [[ -n "${SLACK_WEBHOOK:-}" ]]; then
+              curl -s -X POST -H 'Content-Type: application/json' \
+                -d "{\"text\": \":rotating_light: *prod deal-mover sweeper trigger FAILED* (rc=$RC) — deals are not being scheduled. ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" \
+                "$SLACK_WEBHOOK" >/dev/null
+            fi
+            exit 1
+          fi
+          # Prove it actually ran, rather than trusting a 200.
+          sleep 5
+          if docker service logs revhero-deal-mover-vmzya0 --since 3m 2>&1 | grep -q "Sweeper finished"; then
+            docker service logs revhero-deal-mover-vmzya0 --since 3m 2>&1 | grep "Sweeper finished" | tail -1
+          else
+            echo "::warning::call succeeded but no 'Sweeper finished' line appeared in the last 3m"
+          fi
