@@ -30,6 +30,11 @@ concurrency:
 jobs:
   heartbeat:
     runs-on: [self-hosted, vps2]
+    # A HANG is not a failure, so `if: failure()` would never fire and the run would sit
+    # there silently until GitHub's 6-hour default — from a monitor, indistinguishable from
+    # "all healthy". Capping the job converts a hang into a failure, which DOES page.
+    # Generous vs the per-scan cap (6 jobs x 45s) so only a real wedge trips it.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
