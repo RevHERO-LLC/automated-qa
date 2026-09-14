@@ -45,7 +45,18 @@
 # Runs on the self-hosted VPS2 runner, which is a swarm manager — hence plain
 # `docker service logs` with no SSH hop or credential of its own.
 
-set -euo pipefail
+set -uo pipefail
+
+# Per-scan cap. `docker service logs --since 26h` can HANG INDEFINITELY: measured on prod
+# 2026-09-14, a 26h scan of revhero-email-ingress-laa4mj never returned (killed at 10s) while
+# `--since 2h` on the same service returned instantly. It is not task count (5 tasks) — the long
+# window itself is pathological on a high-volume service.
+#
+# Without this cap the monitor wedges on job 2 of 6 and reports NOTHING, which is the exact
+# silent failure it exists to catch: a hang is not a failure, so `if: failure()` never fires and
+# the run just sits there until the CI job timeout. A capped scan that reports TIMEOUT is
+# strictly better than a complete check that never finishes.
+LOG_SCAN_TIMEOUT="${LOG_SCAN_TIMEOUT:-45}"
 
 SLACK_WEBHOOK="${SLACK_WEBHOOK:-}"
 TEST_ALERT="${TEST_ALERT:-false}"
@@ -108,14 +119,38 @@ dead=()
 indeterminate=()
 ok=()
 
-printf '%-22s %-40s %-9s %-9s %s\n' JOB SERVICE HITS UPTIME VERDICT
+printf '%-22s %-40s %-9s %-9s %s\n' JOB SERVICE MARKER UPTIME VERDICT
 printf '%s\n' "--------------------------------------------------------------------------------------------"
 
 for row in "${JOBS[@]}"; do
   IFS='|' read -r job svc marker interval window <<< "$row"
 
-  hits=$(docker service logs "$svc" --since "$window" 2>&1 | grep -c -- "$marker" || true)
+  # grep -q -m1, NOT grep -c: we only need "did it run at least once", and -m1 lets grep exit
+  # at the FIRST match so docker's stream is closed immediately. `grep -c` reads the entire
+  # window even when the marker is on line one — on a high-volume service that is the whole
+  # cost. This makes the HEALTHY path fast and leaves the slow full read only for the case
+  # where the marker is genuinely absent, which is the case we are willing to spend time on.
+  timeout "$LOG_SCAN_TIMEOUT" docker service logs "$svc" --since "$window" 2>&1     | grep -q -m1 -- "$marker"
+  # Capture the WHOLE array in one statement: reading ${PIPESTATUS[0]} is itself a command and
+  # clobbers PIPESTATUS, so ${PIPESTATUS[1]} would then be unset (and fatal under set -u).
+  pipe=("${PIPESTATUS[@]}")
+  scan_rc=${pipe[0]:-0}   # docker/timeout: 124 = the scan was capped
+  grep_rc=${pipe[1]:-1}   # grep: 0 = marker found
+  hits=0
+  [ "$grep_rc" -eq 0 ] && hits=1
+  rc=0
+  [ "$scan_rc" -eq 124 ] && [ "$hits" -eq 0 ] && rc=124
   up=$(uptime_minutes "$svc")
+
+  if [ "$rc" -eq 124 ]; then
+    # The CHECK failed, which is different from the job being dead — and it must alert,
+    # because a monitor that cannot see is not a monitor.
+    verdict="TIMEOUT"
+    dead+=("$job: log scan of $svc exceeded ${LOG_SCAN_TIMEOUT}s — THE CHECK FAILED, the job's state is UNKNOWN (not necessarily dead)")
+    printf '%-22s %-40s %-9s %-9s %s
+' "$job" "${svc:0:40}" "?" "${up}m" "$verdict"
+    continue
+  fi
 
   if [ "$hits" -gt 0 ]; then
     verdict="OK"; ok+=("$job")
@@ -130,7 +165,7 @@ for row in "${JOBS[@]}"; do
     indeterminate+=("$job (container up ${up}m < interval ${interval}m — redeployed recently)")
   fi
 
-  printf '%-22s %-40s %-9s %-9s %s\n' "$job" "${svc:0:40}" "$hits" "${up}m" "$verdict"
+  printf '%-22s %-40s %-9s %-9s %s\n' "$job" "${svc:0:40}" "$([ "$hits" -gt 0 ] && echo seen || echo ABSENT)" "${up}m" "$verdict"
 done
 
 echo
