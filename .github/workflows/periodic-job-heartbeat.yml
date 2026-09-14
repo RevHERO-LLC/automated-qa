@@ -1,0 +1,63 @@
+# Assert that every known periodic background job on prod actually ran (#269).
+#
+# The Sept-2026 review found FOUR background jobs that had silently stopped — swarm's
+# reconcile pass, email-ingress's nightly token refresh, activity retention, and this
+# repo's own email-drift-check. None of them alarmed, because a job that stops simply
+# stops writing a log line, and nobody greps for a line that is absent.
+#
+# Runs on the self-hosted VPS2 runner because that host is a swarm MANAGER: it can ask
+# `docker service logs` / `docker service ps` about services scheduled on any node,
+# with no SSH hop and no credential of its own to go stale. That last part matters —
+# a stale credential is exactly what blinded email-drift-check for three days.
+name: periodic-job-heartbeat
+
+on:
+  schedule:
+    # 07:15 UTC, after deal-cadence-monitor (06:45) so the two do not contend for the
+    # single self-hosted runner.
+    - cron: '15 7 * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Force a test alert to prove the Slack path still works end to end'
+        type: boolean
+        default: false
+
+concurrency:
+  group: periodic-job-heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: [self-hosted, vps2]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check periodic jobs
+        id: check
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+          TEST_ALERT: ${{ inputs.test_alert }}
+        run: |
+          if [[ -z "${SLACK_WEBHOOK:-}" ]]; then
+            echo "::error::SLACK_WEBHOOK_DEPLOYS is not set — this monitor cannot deliver findings"
+            exit 1
+          fi
+          bash scripts/periodic-job-heartbeat.sh
+
+      # 🚨 THE POINT OF THIS STEP.
+      # email-drift-check only Slacked when it FOUND drift, so when its own credential
+      # went stale the resulting HTTP 401 produced a red workflow that nobody watched —
+      # for three days, while it was supposed to be watching prod. A monitor that fails
+      # silently is worse than no monitor, because it manufactures confidence.
+      #
+      # Guarded on `alerted != true` so a run that already Slacked its findings does not
+      # post twice; this fires only when the script died BEFORE it could report.
+      - name: Alert on the monitor's own failure
+        if: failure() && steps.check.outputs.alerted != 'true'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+        run: |
+          [[ -z "${SLACK_WEBHOOK:-}" ]] && exit 0
+          curl -s -X POST -H 'Content-Type: application/json' -d "{\"text\": \":warning: *periodic-job-heartbeat FAILED TO RUN* — the job monitor itself is broken, so prod background jobs are currently UNWATCHED. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" "$SLACK_WEBHOOK" >/dev/null
+          echo "self-failure alert sent"
