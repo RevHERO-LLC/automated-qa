@@ -25,8 +25,20 @@
 name: dealmover-sweeper-trigger
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'   # every 30 minutes, matching the sweeper's intended cadence
+  # SCHEDULE RETIRED 2026-09-14. The real caller was found: a Dokploy scheduled task,
+  # "Call Dealmover Sweeper Prod" (*/30, created 2026-04-17), whose script still carried the
+  # pre-rotation secret and therefore 401'd on every call since the rotation. That schedule has
+  # been fixed (current secret, X-Internal-Secret header) and VERIFIED firing:
+  #   [GIN] 17:30:02 | 200 | GET "/v1/sweeper/run"
+  #
+  # This workflow was a stand-in built while that caller was unidentified. Leaving its cron on
+  # would double-sweep every 30 minutes — harmless (each call is idempotent; already-processed
+  # stages hit the daily-cap branch) but two schedulers for one job is how the next person ends
+  # up debugging the wrong one.
+  #
+  # Kept dispatch-only: it reads the secret from the container at call time, so it still works
+  # when the Dokploy schedule's COPY of the secret goes stale at the next rotation — which is
+  # exactly the failure this whole thread started with.
   workflow_dispatch:
 
 concurrency:
