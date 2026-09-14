@@ -61,18 +61,18 @@ TEST_ALERT="${TEST_ALERT:-false}"
 # because a marker that does not match what the DEPLOYED build prints is a monitor
 # that is green for the wrong reason.
 #
-# NOT COVERED YET — swarm agent reconcile (app-compress-bluetooth-sensor-pksr4y).
-# Prod swarm runs a build from before #259, which logs NOTHING when a cycle finds no
-# work — that silence is precisely the bug #259 fixed by adding an unconditional
-# all-zeros cycle line. Adding it here before that build reaches prod would give a
-# permanently-DEAD row the monitor cannot resolve, which trains people to ignore it.
-# Add the row once #259 is promoted; the fix is already on staging.
+# Swarm agent reconcile IS now covered: #259 reached prod as b145a1c, which logs the
+# cycle unconditionally including the all-zeros case. Before that, an idle cycle printed
+# nothing at all — so "no marker" and "job dead" were the same observation, which is the
+# bug #259 fixed. Verified on prod before adding this row: TWO distinct 'reconcile cycle
+# complete' lines five minutes apart, because a boot-only run IS the failure mode here.
 JOBS=(
   "activity-retention|revhero-activity-service-uxhhme|retention sweep removed|1440|26h"
   "email-token-refresh|revhero-email-ingress-laa4mj|agent-token-refresh|1440|26h"
   "siteforge-dispatcher|revhero-campaign-service-ydky5d|siteforge-dispatcher|10|30m"
   "siteforge-cleanup|revhero-campaign-service-ydky5d|siteforge-cleanup|60|3h"
   "dealmover-sweeper|revhero-deal-mover-vmzya0|Running sweeper|30|70m"
+  "swarm-agent-reconcile|app-compress-bluetooth-sensor-pksr4y|reconcile cycle complete|5|20m"
 )
 
 # uptime_minutes <service> — minutes since the RUNNING task started.
