@@ -168,6 +168,64 @@ for row in "${JOBS[@]}"; do
   printf '%-22s %-40s %-9s %-9s %s\n' "$job" "${svc:0:40}" "$([ "$hits" -gt 0 ] && echo seen || echo ABSENT)" "${up}m" "$verdict"
 done
 
+# ---------------------------------------------------------------------------------------------
+# DATA FRESHNESS — a job can "run" and still deliver nothing.
+#
+# Every check above asks "did this job execute?". That is not the same as "did it work". The
+# analytics ingest pipeline proves the gap: the service was up, the collectors were firing, and
+# every single insert was failing with
+#   ERROR: no partition of relation "ai_calls" found for row (SQLSTATE 23514)
+# because daily partitions ran out. Measured 2026-09-14: newest row 2026-09-01, 313 HOURS STALE,
+# in BOTH prod and staging, for 13 days. Nothing alarmed, because the collectors are deliberately
+# fire-and-forget ("Don't retry. Don't block.") and the process-level checks all looked healthy.
+#
+# This is the same outage shape as 2026-06-21 -> 2026-08-02 (six weeks, zero signal). The repair
+# both times was a fixed-window partition backfill, which expires. A freshness check is what makes
+# the NEXT expiry visible on day one instead of day thirteen.
+#
+# Credentials are read from the running container at call time — no copy here to go stale, the
+# same reasoning as the sweeper trigger.
+ANALYTICS_STALE_HOURS="${ANALYTICS_STALE_HOURS:-24}"
+
+check_analytics_freshness() {
+  local cid host port db user pw age
+  cid=$(docker ps -q --filter name=app-connect-cross-platform-protocol | head -1)
+  if [ -z "$cid" ]; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "analytics-freshness" "internal-analytics" "?" "-" "SKIPPED (container not on this node)"
+    return
+  fi
+  host=$(docker exec "$cid" printenv ANALYTICS_DB_HOST 2>/dev/null)
+  port=$(docker exec "$cid" printenv ANALYTICS_DB_PORT 2>/dev/null)
+  db=$(docker exec "$cid" printenv ANALYTICS_DB_NAME 2>/dev/null)
+  user=$(docker exec "$cid" printenv ANALYTICS_DB_USER 2>/dev/null)
+  pw=$(docker exec "$cid" printenv ANALYTICS_DB_PASSWORD 2>/dev/null)
+  if [ -z "$host" ] || [ -z "$db" ] || [ -z "$user" ] || [ -z "$pw" ]; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "analytics-freshness" "internal-analytics" "?" "-" "SKIPPED (db config unreadable)"
+    return
+  fi
+  # NB: the tables live in the internal_analytics SCHEMA, and the timestamp column is `ts`,
+  # not created_at. An unqualified query fails with 'relation "ai_calls" does not exist'.
+  age=$(PGPASSWORD="$pw" timeout 45 psql -h "$host" -p "${port:-5432}" -U "$user" -d "$db" -tAX         -c "SELECT COALESCE(ROUND(EXTRACT(EPOCH FROM (NOW()-MAX(ts)))/3600)::text,'-1') FROM internal_analytics.ai_calls;" 2>/dev/null | tr -d ' ')
+  if [ -z "$age" ]; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "analytics-freshness" "internal-analytics" "?" "-" "TIMEOUT/ERROR"
+    dead+=("analytics-freshness: could not read max(ts) from internal_analytics.ai_calls — THE CHECK FAILED, freshness UNKNOWN")
+    return
+  fi
+  if [ "$age" -ge "$ANALYTICS_STALE_HOURS" ] 2>/dev/null; then
+    printf '%-22s %-40s %-9s %-9s %s
+' "analytics-freshness" "internal-analytics" "${age}h" "-" "STALE"
+    dead+=("analytics-freshness: newest internal_analytics.ai_calls row is ${age}h old (threshold ${ANALYTICS_STALE_HOURS}h). The service is UP and the collectors are firing — inserts are being REJECTED. Usual cause: daily partitions ran out (ERROR: no partition of relation \"ai_calls\" found for row).")
+  else
+    printf '%-22s %-40s %-9s %-9s %s
+' "analytics-freshness" "internal-analytics" "${age}h" "-" "OK"
+  fi
+}
+
+check_analytics_freshness
+
 echo
 echo "ok=${#ok[@]} dead=${#dead[@]} indeterminate=${#indeterminate[@]}"
 
