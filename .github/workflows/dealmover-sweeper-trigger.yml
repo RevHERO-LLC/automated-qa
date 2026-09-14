@@ -47,8 +47,17 @@ jobs:
             echo "::error::prod deal-mover container not found — cannot sweep"; exit 1
           fi
           # Secret never leaves the container: wget runs inside it and expands the var there.
+          #
+          # #278 - sent as a HEADER, not ?secret=. The query-param form is equally valid to
+          # the endpoint but is written into the GIN access log in PLAINTEXT on every call,
+          # e.g. GET "/v1/sweeper/run?secret=<the actual secret>". That is readable by anyone
+          # with log access and survives log retention long after a rotation - it is how the
+          # exfiltrated literal stayed casually visible. Rotating does NOT fix it: the next
+          # secret is logged the same way. Verified against the DEPLOYED build before
+          # switching - header -> 200, no auth -> 401 - so the endpoint genuinely accepts
+          # the header rather than ignoring auth altogether.
           docker exec "$CID" sh -c \
-            'wget -q -T 240 -O /dev/null "http://127.0.0.1:8080/v1/sweeper/run?secret=$INTERNAL_SERVICES_WEBHOOK_SECRET"'
+            'wget -q -T 240 -O /dev/null --header="X-Internal-Secret: $INTERNAL_SERVICES_WEBHOOK_SECRET" "http://127.0.0.1:8080/v1/sweeper/run"'
           RC=$?
           if [[ $RC -ne 0 ]]; then
             echo "::error::sweeper call failed (wget rc=$RC)"
