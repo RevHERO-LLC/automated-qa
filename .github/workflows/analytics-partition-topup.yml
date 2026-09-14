@@ -1,0 +1,41 @@
+name: analytics-partition-topup
+
+# internal_analytics tables are RANGE-partitioned by day. When partitions run out, every
+# insert is rejected and the fire-and-forget collectors swallow it -- a total, silent
+# pipeline outage. That has now happened twice (2026-06-21..2026-08-02, and
+# 2026-09-01..2026-09-14). pg_cron, which migration 000006 relies on to rotate partitions,
+# is not installed and not available on this Postgres build, so the rotator never ran.
+#
+# This job keeps a 14-day buffer ahead. It is CREATE-ONLY and never drops.
+#
+# Runs on the swarm manager: `docker service inspect` needs a manager, and only
+# revhero-workers is one.
+on:
+  schedule:
+    - cron: '20 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  topup:
+    runs-on: [self-hosted, vps2]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Top up analytics partitions
+        id: topup
+        run: bash scripts/analytics-partition-topup.sh
+
+      # The monitor must alert on its OWN failure, not only on findings. email-drift-check
+      # Slacks only when it detects drift, so when it started 401ing after the #857 rotation
+      # it produced a red workflow nobody watched -- for three days. A job that fails
+      # silently is worth less than none, because it manufactures false confidence.
+      - name: Alert on failure
+        if: failure()
+        run: |
+          if [ -z "${{ secrets.SLACK_WEBHOOK_DEPLOYS }}" ]; then
+            echo "::error::SLACK_WEBHOOK_DEPLOYS not set -- failure could not be delivered"
+            exit 0
+          fi
+          curl -sf -X POST -H 'Content-type: application/json' \
+            --data '{"text":":rotating_light: *analytics-partition-topup FAILED* — internal_analytics partitions may run out, which silently drops ALL analytics writes. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            "${{ secrets.SLACK_WEBHOOK_DEPLOYS }}" || echo "::error::Slack delivery failed"
