@@ -1,0 +1,60 @@
+{
+  "$comment": "Data contract for the weekly-analytics client-health digest. render.py FREEZES the format; only this DATA varies per run. runs/ is append-only. Deterministic: render bakes NO timestamp/random — week_label + all dates come from the DATA. collect.py emits this shape.",
+  "title": "string (report title)",
+  "week_label": "string — human week window, e.g. 'Sep 8 – Sep 14, 2026' (the DATA carries it; render never computes it)",
+  "week_start": "string (YYYY-MM-DD, inclusive)",
+  "week_end": "string (YYYY-MM-DD, inclusive)",
+  "summary": {
+    "clients_total": "int — all active tenants enumerated",
+    "clients_active": "int — tenants with activity this week or a baseline",
+    "clients_flagged": "int — tenants with >=1 red flag (incl. dropped-to-zero)",
+    "clients_no_data": "int — active tenants with no activity + no baseline"
+  },
+  "clients": [
+    {
+      "name": "string — company_name (tenant display)",
+      "parent_user_id": "int — users.id of the tenant owner (stable id, used for anchors + diff keying)",
+      "status": "active | dropped_to_zero | new | no_data",
+      "note": "string|null — free text for no_data / new / error rows",
+      "flags": [
+        {
+          "metric": "string — human metric name, e.g. 'Replies received'",
+          "direction": "down | up — the UNHEALTHY direction that tripped",
+          "this_week": "number",
+          "baseline": "number — prior-4-week trailing average",
+          "pct": "string — signed pct move, e.g. '-62%' or 'to zero'",
+          "severity": "warn | critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "string — stable metric key (messages_sent, replies_received, ...)",
+          "label": "string — display label",
+          "value": "number — this-week total (tenant-wide, all seats)",
+          "email": "number|null — email split (omit/null if not split)",
+          "sms": "number|null — sms split",
+          "baseline": "number|null — prior-4-week trailing average (null when new/no-baseline)",
+          "delta_pct": "string|null — signed pct vs baseline, e.g. '+12%' (null when no baseline)",
+          "flagged": "bool — this metric tripped a red flag",
+          "direction": "down | up | neutral"
+        }
+      ],
+      "funnel": {
+        "sent": "int",
+        "clicked": "int",
+        "booked": "int",
+        "completed": "int"
+      },
+      "derived": {
+        "actions_performed": "int|null — messages_sent + deals_won + deals_lost (summaryKpis.ts)",
+        "hours_saved": "string|number|null — computeHoursSaved (config-dependent; label default-weights)"
+      },
+      "completeness": {
+        "days_present": "int — snapshot days found for the week (expect 7)",
+        "days_expected": "int",
+        "warning": "string|null — e.g. '2 days missing — flags suppressed' (set when days_present<expected)"
+      }
+    }
+  ],
+  "method": "string — one-paragraph method + source note (read-only snapshots, 4-week trend, floors)"
+}

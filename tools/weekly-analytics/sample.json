@@ -1,0 +1,147 @@
+{
+  "title": "Weekly Client Analytics — Health Digest",
+  "week_label": "Sep 8 – Sep 14, 2026",
+  "week_start": "2026-09-08",
+  "week_end": "2026-09-14",
+  "summary": {
+    "clients_total": 7,
+    "clients_active": 5,
+    "clients_flagged": 3,
+    "clients_no_data": 1
+  },
+  "clients": [
+    {
+      "name": "Gazelle Capital",
+      "parent_user_id": 4021,
+      "status": "active",
+      "note": null,
+      "flags": [
+        {"metric": "Replies received", "direction": "down", "this_week": 4, "baseline": 21, "pct": "-81%", "severity": "critical"},
+        {"metric": "Meetings booked", "direction": "down", "this_week": 0, "baseline": 3.5, "pct": "-100%", "severity": "critical"},
+        {"metric": "Negative sentiment", "direction": "up", "this_week": 9, "baseline": 2.5, "pct": "+260%", "severity": "warn"}
+      ],
+      "metrics": [
+        {"key": "messages_sent", "label": "Messages sent", "value": 812, "email": 640, "sms": 172, "baseline": 905, "delta_pct": "-10%", "flagged": false, "direction": "down"},
+        {"key": "replies_received", "label": "Replies received", "value": 4, "email": 3, "sms": 1, "baseline": 21, "delta_pct": "-81%", "flagged": true, "direction": "down"},
+        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 2, "email": 2, "sms": 0, "baseline": 12, "delta_pct": "-83%", "flagged": true, "direction": "down"},
+        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 9, "email": 8, "sms": 1, "baseline": 2.5, "delta_pct": "+260%", "flagged": true, "direction": "up"},
+        {"key": "blocked", "label": "Blocked / bounced", "value": 14, "email": 14, "sms": 0, "baseline": 11, "delta_pct": "+27%", "flagged": false, "direction": "up"},
+        {"key": "links_clicked", "label": "Links clicked", "value": 33, "email": 33, "sms": 0, "baseline": 41, "delta_pct": "-20%", "flagged": false, "direction": "down"},
+        {"key": "meetings_booked", "label": "Meetings booked", "value": 0, "email": null, "sms": null, "baseline": 3.5, "delta_pct": "-100%", "flagged": true, "direction": "down"},
+        {"key": "meetings_completed", "label": "Meetings completed", "value": 0, "email": null, "sms": null, "baseline": 2.25, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "deals_won", "label": "Deals won", "value": 0, "email": null, "sms": null, "baseline": 0.75, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "deals_lost", "label": "Deals lost", "value": 1, "email": null, "sms": null, "baseline": 0.5, "delta_pct": "+100%", "flagged": false, "direction": "up"},
+        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": 4200, "delta_pct": "-100%", "flagged": false, "direction": "down"}
+      ],
+      "funnel": {"sent": 812, "clicked": 33, "booked": 0, "completed": 0},
+      "derived": {"actions_performed": 813, "hours_saved": "18.4 (default weights)"},
+      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+    },
+    {
+      "name": "Northwind Trading",
+      "parent_user_id": 3311,
+      "status": "dropped_to_zero",
+      "note": null,
+      "flags": [
+        {"metric": "Messages sent", "direction": "down", "this_week": 0, "baseline": 430, "pct": "to zero", "severity": "critical"},
+        {"metric": "Replies received", "direction": "down", "this_week": 0, "baseline": 14, "pct": "to zero", "severity": "critical"}
+      ],
+      "metrics": [
+        {"key": "messages_sent", "label": "Messages sent", "value": 0, "email": 0, "sms": 0, "baseline": 430, "delta_pct": "-100%", "flagged": true, "direction": "down"},
+        {"key": "replies_received", "label": "Replies received", "value": 0, "email": 0, "sms": 0, "baseline": 14, "delta_pct": "-100%", "flagged": true, "direction": "down"},
+        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 0, "email": 0, "sms": 0, "baseline": 7, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 0, "email": 0, "sms": 0, "baseline": 1.5, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "links_clicked", "label": "Links clicked", "value": 0, "email": 0, "sms": 0, "baseline": 22, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "meetings_booked", "label": "Meetings booked", "value": 0, "email": null, "sms": null, "baseline": 2, "delta_pct": "-100%", "flagged": false, "direction": "down"},
+        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": 1800, "delta_pct": "-100%", "flagged": false, "direction": "down"}
+      ],
+      "funnel": {"sent": 0, "clicked": 0, "booked": 0, "completed": 0},
+      "derived": {"actions_performed": 0, "hours_saved": "0 (default weights)"},
+      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+    },
+    {
+      "name": "Meridian Health Partners",
+      "parent_user_id": 5502,
+      "status": "active",
+      "note": null,
+      "flags": [
+        {"metric": "Messages sent", "direction": "down", "this_week": 210, "baseline": 640, "pct": "-67%", "severity": "warn"}
+      ],
+      "metrics": [
+        {"key": "messages_sent", "label": "Messages sent", "value": 210, "email": 150, "sms": 60, "baseline": 640, "delta_pct": "-67%", "flagged": true, "direction": "down"},
+        {"key": "replies_received", "label": "Replies received", "value": 12, "email": 9, "sms": 3, "baseline": 15, "delta_pct": "-20%", "flagged": false, "direction": "down"},
+        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 6, "email": 5, "sms": 1, "baseline": 8, "delta_pct": "-25%", "flagged": false, "direction": "down"},
+        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 2, "email": 2, "sms": 0, "baseline": 3, "delta_pct": "-33%", "flagged": false, "direction": "down"},
+        {"key": "links_clicked", "label": "Links clicked", "value": 28, "email": 28, "sms": 0, "baseline": 30, "delta_pct": "-7%", "flagged": false, "direction": "down"},
+        {"key": "meetings_booked", "label": "Meetings booked", "value": 4, "email": null, "sms": null, "baseline": 3, "delta_pct": "+33%", "flagged": false, "direction": "up"},
+        {"key": "meetings_completed", "label": "Meetings completed", "value": 3, "email": null, "sms": null, "baseline": 2, "delta_pct": "+50%", "flagged": false, "direction": "up"},
+        {"key": "deals_won", "label": "Deals won", "value": 2, "email": null, "sms": null, "baseline": 1.5, "delta_pct": "+33%", "flagged": false, "direction": "up"},
+        {"key": "revenue_generated", "label": "Revenue generated", "value": 9500, "email": null, "sms": null, "baseline": 7200, "delta_pct": "+32%", "flagged": false, "direction": "up"}
+      ],
+      "funnel": {"sent": 210, "clicked": 28, "booked": 4, "completed": 3},
+      "derived": {"actions_performed": 212, "hours_saved": "6.1 (default weights)"},
+      "completeness": {"days_present": 5, "days_expected": 7, "warning": "2 days missing — flags shown for reference; suppress if this recurs"}
+    },
+    {
+      "name": "Acme Robotics",
+      "parent_user_id": 6120,
+      "status": "active",
+      "note": null,
+      "flags": [],
+      "metrics": [
+        {"key": "messages_sent", "label": "Messages sent", "value": 1180, "email": 900, "sms": 280, "baseline": 1120, "delta_pct": "+5%", "flagged": false, "direction": "up"},
+        {"key": "replies_received", "label": "Replies received", "value": 47, "email": 38, "sms": 9, "baseline": 44, "delta_pct": "+7%", "flagged": false, "direction": "up"},
+        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 26, "email": 22, "sms": 4, "baseline": 24, "delta_pct": "+8%", "flagged": false, "direction": "up"},
+        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 4, "email": 4, "sms": 0, "baseline": 5, "delta_pct": "-20%", "flagged": false, "direction": "down"},
+        {"key": "links_clicked", "label": "Links clicked", "value": 61, "email": 61, "sms": 0, "baseline": 58, "delta_pct": "+5%", "flagged": false, "direction": "up"},
+        {"key": "meetings_booked", "label": "Meetings booked", "value": 7, "email": null, "sms": null, "baseline": 6, "delta_pct": "+17%", "flagged": false, "direction": "up"},
+        {"key": "meetings_completed", "label": "Meetings completed", "value": 5, "email": null, "sms": null, "baseline": 4.5, "delta_pct": "+11%", "flagged": false, "direction": "up"},
+        {"key": "deals_won", "label": "Deals won", "value": 3, "email": null, "sms": null, "baseline": 2.5, "delta_pct": "+20%", "flagged": false, "direction": "up"},
+        {"key": "revenue_generated", "label": "Revenue generated", "value": 14200, "email": null, "sms": null, "baseline": 12800, "delta_pct": "+11%", "flagged": false, "direction": "up"}
+      ],
+      "funnel": {"sent": 1180, "clicked": 61, "booked": 7, "completed": 5},
+      "derived": {"actions_performed": 1186, "hours_saved": "31.7 (default weights)"},
+      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+    },
+    {
+      "name": "Bright Harbor Advisors",
+      "parent_user_id": 7440,
+      "status": "new",
+      "note": "Launched 2026-09-02 — fewer than 2 baseline weeks, flags suppressed until baseline forms.",
+      "flags": [],
+      "metrics": [
+        {"key": "messages_sent", "label": "Messages sent", "value": 340, "email": 300, "sms": 40, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
+        {"key": "replies_received", "label": "Replies received", "value": 11, "email": 10, "sms": 1, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
+        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 5, "email": 5, "sms": 0, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
+        {"key": "meetings_booked", "label": "Meetings booked", "value": 2, "email": null, "sms": null, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
+        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"}
+      ],
+      "funnel": {"sent": 340, "clicked": 15, "booked": 2, "completed": 0},
+      "derived": {"actions_performed": 340, "hours_saved": "7.8 (default weights)"},
+      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+    },
+    {
+      "name": "Cobalt Logistics",
+      "parent_user_id": 8090,
+      "status": "no_data",
+      "note": "Active account, no activity recorded and no prior baseline — not launched or paused.",
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "completeness": {"days_present": 0, "days_expected": 7, "warning": null}
+    },
+    {
+      "name": "Vertex Manufacturing",
+      "parent_user_id": 9015,
+      "status": "error",
+      "note": "Metric query failed (timeout). Rendered as error; other clients unaffected. Re-run from committed runs/ JSON.",
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "completeness": {"days_present": 0, "days_expected": 7, "warning": null}
+    }
+  ],
+  "method": "Read-only weekly digest. Per client, metrics are SUM(internal_analytics.daily_analytics_snapshots) over the report week (tenant-wide, all seats). Baseline = trailing 4-week average of each metric. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 baseline weeks render without flags (“new”); weeks with < 7 snapshot-days are noted and flag-suppressed to avoid false churn alerts from an incomplete precalc."
+}
