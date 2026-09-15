@@ -58,10 +58,17 @@ jobs:
             RevHero-Activity-service RevHero-pipedrive-v3 RevHero-hubspot-service \
             RevHero-email-ingress RevHero-sms-service RevHero-swarm-service \
             RevHero-swarm-dealmover RevHero-booking-service RevHero-optimization-service \
-            RevHero-judy-service"
+            RevHero-judy-service RevHero-analytics-service"
+
+          # analytics-service was absent from this list until 2026-09-15, on the stale belief
+          # that it had no staging branch — the same belief that kept it out of CLAUDE.md as
+          # "not yet deployed". It has both, and it is live on prod.
+          BACKLOG_MAX_DAYS="${BACKLOG_MAX_DAYS:-14}"
 
           code_drift=0
           ci_drift=0
+          backlog=0
+          backlog_lines=""
           code_lines=""
           ci_lines=""
           skipped=""
@@ -83,6 +90,47 @@ jobs:
             numstat=$(git -C "$d" diff origin/staging origin/main --numstat 2>/dev/null)
             mainfiles=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ && $1 > 0 {print $3}')
             totlines=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ {s += $1} END {print s + 0}')
+
+            # --- UNPROMOTED STAGING BACKLOG: the direction this check never covered ---
+            # Everything above answers "does prod carry content staging lacks" — a hotfix that
+            # never went back. It is silent on the opposite failure: staging sitting unpromoted
+            # for weeks. analytics-service diverged from main on 2026-07-22 and nobody noticed
+            # for EIGHT WEEKS, because its main-only content was a single README line, correctly
+            # classed CI/docs and correctly not alarmed. The check was right; it was half a check.
+            #
+            # Reuses the SAME tip diff rather than an API three-dot compare: numstat col2 =
+            # lines DELETED going staging→main = content staging has that main lacks. A tip diff
+            # is immune to the parallel-SHA false alarm documented in the header.
+            #
+            # Gated on how long the branches have BEEN APART (merge-base age), not on when main
+            # last moved. Tested against the real analytics-service divergence: main's newest
+            # commit was only 4 DAYS old — a CI-only commit (the #857 workflow removal) had
+            # touched main on 2026-09-11 — while the actual code backlog was EIGHT WEEKS old.
+            # A "main last moved" proxy reads that as healthy and stays silent. Merge-base age
+            # measures the thing we actually care about and cannot be reset by an unrelated commit.
+            #
+            # Needs history, and the clone above is --depth=1, so deepen first. Bounded and
+            # best-effort: if the deepen fails the repo is skipped for THIS signal rather than
+            # silently reported as having no backlog.
+            stagefiles=$(echo "$numstat" | awk '$2 ~ /^[0-9]+$/ && $2 > 0 {print $3}')
+            stagelines=$(echo "$numstat" | awk '$2 ~ /^[0-9]+$/ {s += $2} END {print s + 0}')
+            stagecode=$(echo "$stagefiles" | grep -vE '^(\.github/|README|LICENSE|\.gitignore|\.gitattributes)|\.md$' || true)
+            if [[ -n "$stagecode" ]]; then
+              git -C "$d" fetch -q --deepen=200 origin main staging >/dev/null 2>&1 || true
+              mb=$(git -C "$d" merge-base origin/main origin/staging 2>/dev/null || true)
+              if [[ -z "$mb" ]]; then
+                echo "backlog-indeterminate: ${repo} (no merge-base within 200 commits)"
+                main_age=-1
+              else
+                main_age=$(( ( $(date +%s) - $(git -C "$d" log -1 --format=%ct "$mb") ) / 86400 ))
+              fi
+              if (( main_age >= BACKLOG_MAX_DAYS )); then
+                backlog=$((backlog + 1))
+                bfl=$(echo "$stagecode" | head -6 | paste -sd', ' -)
+                backlog_lines="${backlog_lines}\n  • *${repo}* — ${stagelines} staging-only line(s) unpromoted; branches apart ${main_age}d; files: ${bfl}"
+                echo "BACKLOG: ${repo} (${stagelines} staging-only lines, branches apart ${main_age}d)"
+              fi
+            fi
 
             if [[ -z "$mainfiles" ]]; then
               echo "ok: ${repo} (no main-only content)"
@@ -108,12 +156,14 @@ jobs:
           {
             echo "code_drift=${code_drift}"
             echo "ci_drift=${ci_drift}"
+            echo "backlog=${backlog}"
           } >> "$GITHUB_OUTPUT"
           printf "%b" "$code_lines" > /tmp/code-lines.txt
           printf "%b" "$ci_lines" > /tmp/ci-lines.txt
 
           echo "=== code_drift=${code_drift}  ci_drift=${ci_drift} ==="
           echo "--- ci-only drift (not Slack-alarmed) ---"; printf "%b\n" "$ci_lines"
+          echo "--- unpromoted staging backlog (main stale >= ${BACKLOG_MAX_DAYS}d) ---"; printf "%b\n" "$backlog_lines"
           echo "--- skipped ---"; printf "%b\n" "$skipped"
 
       - name: Post Slack alarm (code drift only)
