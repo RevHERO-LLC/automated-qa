@@ -1,0 +1,9 @@
+[Unit]
+Description=cloud-documents upload round-trip probe (upload, then fetch back)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/revhero/upload-health-probe.env
+ExecStart=/usr/local/bin/upload-health-probe.sh
