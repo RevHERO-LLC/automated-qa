@@ -40,6 +40,8 @@ STATUS_BADGE = {
     "new": ("neutral", "New — no baseline"),
     "no_data": ("neutral", "No data"),
     "dormant": ("neutral", "Dormant"),
+    "paused": ("neutral", "Paused"),
+    "inactive": ("neutral", "Inactive"),
     "error": ("bad", "Error"),
 }
 
@@ -234,10 +236,10 @@ def render(d, prev=None):
                        key=lambda c: (-len(c.get("flags", [])), str(c.get("name", "")).lower()))
     healthy = sorted([c for c in clients if not _attn(c) and c.get("status") in ("active", "new")],
                      key=lambda c: str(c.get("name", "")).lower())
-    dormant = sorted([c for c in clients if c.get("status") == "dormant"],
-                     key=lambda c: str(c.get("name", "")).lower())
-    nodata = sorted([c for c in clients if c.get("status") == "no_data"],
-                    key=lambda c: str(c.get("name", "")).lower())
+    paused = sorted([c for c in clients if c.get("status") == "paused"],
+                    key=lambda c: -(c.get("open_deals") or 0))
+    inactive = sorted([c for c in clients if c.get("status") in ("inactive", "no_data", "dormant")],
+                      key=lambda c: str(c.get("name", "")).lower())
 
     attention_html = "".join(
         _client_card(c,
@@ -253,20 +255,26 @@ def render(d, prev=None):
     def _mini_list(rows):
         return "".join(f"<li>{esc(c.get('name'))} <span class='muted'>{esc((c.get('note') or ''))}</span></li>" for c in rows)
 
-    dormant_html = ""
-    if dormant:
-        dormant_html = f"""
-    <h2>Dormant <span class="count">{len(dormant)}</span></h2>
-    <p class="lead">Active accounts with no running campaign — not sending, not flagged.</p>
-    <details class="fold"><summary>Show {len(dormant)} dormant client(s)</summary>
-    <ul class="nodata-list">{_mini_list(dormant)}</ul></details>"""
+    paused_html = ""
+    if paused:
+        prows = "".join(
+            f'<tr><td>{esc(c.get("name"))}</td>'
+            f'<td class="num">{_num(c.get("open_deals"))}</td>'
+            f'<td>{esc(c.get("last_active") or "—")}</td>'
+            f'<td>{"⚠ active, no sends" if c.get("has_active_campaign") else "off"}</td></tr>'
+            for c in paused)
+        paused_html = f"""
+    <h2>Paused <span class="count">{len(paused)}</span></h2>
+    <p class="lead">Real clients (open deals or a recent send) not sending this week — campaigns paused/quiet. Not flagged.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Client</th><th class="num">Open deals</th><th>Last active</th><th>Campaigns</th></tr></thead><tbody>{prows}</tbody></table></div>"""
 
-    nodata_html = ""
-    if nodata:
-        nodata_html = f"""
-    <h2>No data / not launched <span class="count">{len(nodata)}</span></h2>
-    <p class="lead">Active campaign but no analytics activity yet — not flagged, listed for awareness.</p>
-    <ul class="nodata-list">{_mini_list(nodata)}</ul>"""
+    inactive_html = ""
+    if inactive:
+        inactive_html = f"""
+    <h2>Inactive / not launched <span class="count">{len(inactive)}</span></h2>
+    <p class="lead">No open deals and no recent activity — test / never-launched accounts.</p>
+    <details class="fold"><summary>Show {len(inactive)} inactive account(s)</summary>
+    <ul class="nodata-list">{_mini_list(inactive)}</ul></details>"""
 
     diff_note = ""
     if prev:
@@ -347,8 +355,8 @@ details.fold ul.nodata-list{{padding:0 4px}}
 <div class="status">
   <span class="badge neutral">{_num(s.get('clients_active'))} active senders</span>
   <span class="badge bad">{_num(s.get('clients_flagged'))} off-trend</span>
-  <span class="badge neutral">{_num(s.get('clients_dormant'))} dormant</span>
-  <span class="badge neutral">{_num(s.get('clients_no_data'))} no data</span>
+  <span class="badge neutral">{_num(s.get('clients_paused'))} paused</span>
+  <span class="badge neutral">{_num(s.get('clients_inactive'))} inactive</span>
 </div>
 {alert_html}
 <h2>Needs attention <span class="count">{len(attention)}</span></h2>
@@ -357,8 +365,8 @@ details.fold ul.nodata-list{{padding:0 4px}}
 
 <h2>Active senders <span class="count">{len(healthy)}</span></h2>
 {healthy_html}
-{dormant_html}
-{nodata_html}
+{paused_html}
+{inactive_html}
 
 <div class="method">{esc(d.get('method'))}</div>
 </div>

@@ -5,18 +5,21 @@
   "week_end": "2026-09-06",
   "summary": {
     "clients_total": 24,
-    "clients_active": 9,
+    "clients_active": 7,
     "clients_flagged": 6,
-    "clients_no_data": 2,
-    "clients_dormant": 12
+    "clients_paused": 5,
+    "clients_inactive": 11
   },
   "clients": [
     {
       "name": "Acme Robotics",
       "parent_user_id": 1001,
-      "status": "dormant",
-      "note": "No active campaign; last active Aug 24, 2026.",
+      "status": "paused",
+      "note": "Real client (20,021 open deals) — not sending this week (campaigns off; last active Aug 24, 2026).",
       "has_active_campaign": false,
+      "open_deals": 20021,
+      "real_client": true,
+      "last_active": "Aug 24, 2026",
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -98,6 +101,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": true,
+      "open_deals": 1114,
+      "real_client": true,
       "flags": [
         {
           "metric": "Messages sent",
@@ -380,180 +385,17 @@
     {
       "name": "Bright Harbor Advisors",
       "parent_user_id": 1003,
-      "status": "active",
-      "note": null,
+      "status": "paused",
+      "note": "Real client (37 open deals) — not sending this week (⚠ campaign active but no sends this week; last active Aug 3, 2026).",
       "has_active_campaign": true,
+      "open_deals": 37,
+      "real_client": true,
+      "last_active": "Aug 3, 2026",
       "flags": [],
-      "metrics": [
-        {
-          "key": "messages_sent",
-          "label": "Messages sent",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "replies_received",
-          "label": "Replies received",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "positive_sentiment",
-          "label": "Positive sentiment",
-          "value": 1,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 1,
-          "sms": 0
-        },
-        {
-          "key": "negative_sentiment",
-          "label": "Negative sentiment",
-          "value": 58,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "up",
-          "email": 58,
-          "sms": 0
-        },
-        {
-          "key": "blocked",
-          "label": "Blocked / bounced",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "up",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "links_clicked",
-          "label": "Links clicked",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "meetings_booked",
-          "label": "Meetings booked",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_completed",
-          "label": "Meetings completed",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_cancelled",
-          "label": "Meetings cancelled",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_no_showed",
-          "label": "Meetings no-showed",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "deals_won",
-          "label": "Deals won",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "deals_lost",
-          "label": "Deals lost",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "revenue_generated",
-          "label": "Revenue generated",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": null,
-          "sms": null
-        }
-      ],
-      "funnel": {
-        "sent": 0,
-        "clicked": 0,
-        "booked": 0,
-        "completed": 0
-      },
-      "derived": {
-        "actions_performed": 0,
-        "hours_saved": "0.0 (default weights)"
-      },
-      "campaigns": [
-        {
-          "id": null,
-          "name": "(no campaign)",
-          "is_active": false,
-          "sent": 0,
-          "replies": 0,
-          "positive": 1,
-          "negative": 58,
-          "clicked": 0,
-          "booked": 0,
-          "won": 0,
-          "revenue": 0
-        }
-      ],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
       "series": {
         "weeks": [
           "Jul 13",
@@ -627,9 +469,12 @@
     {
       "name": "Meridian Health",
       "parent_user_id": 1004,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -708,9 +553,12 @@
     {
       "name": "Vertex Manufacturing",
       "parent_user_id": 1005,
-      "status": "no_data",
-      "note": "Active campaign, but no analytics activity recorded yet.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": true,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -792,6 +640,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": true,
+      "open_deals": 40512,
+      "real_client": true,
       "flags": [
         {
           "metric": "Messages sent",
@@ -1048,6 +898,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": false,
+      "open_deals": 2392,
+      "real_client": true,
       "flags": [
         {
           "metric": "Messages sent",
@@ -1317,6 +1169,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": false,
+      "open_deals": 698,
+      "real_client": true,
       "flags": [
         {
           "metric": "Replies received",
@@ -1591,9 +1445,12 @@
     {
       "name": "Harbor Point Media",
       "parent_user_id": 1009,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "paused",
+      "note": "Real client (23 open deals) — not sending this week (campaigns off).",
       "has_active_campaign": false,
+      "open_deals": 23,
+      "real_client": true,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -1672,9 +1529,12 @@
     {
       "name": "Cascade Systems",
       "parent_user_id": 1010,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -1753,9 +1613,12 @@
     {
       "name": "Ironwood Group",
       "parent_user_id": 1011,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -1837,6 +1700,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": true,
+      "open_deals": 107538,
+      "real_client": true,
       "flags": [
         {
           "metric": "Messages sent",
@@ -2124,9 +1989,12 @@
     {
       "name": "Crestview Realty",
       "parent_user_id": 1013,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2205,180 +2073,17 @@
     {
       "name": "Silverline SaaS",
       "parent_user_id": 1014,
-      "status": "active",
-      "note": null,
+      "status": "paused",
+      "note": "Real client (8 open deals) — not sending this week (⚠ campaign active but no sends this week; last active Aug 3, 2026).",
       "has_active_campaign": true,
+      "open_deals": 8,
+      "real_client": true,
+      "last_active": "Aug 3, 2026",
       "flags": [],
-      "metrics": [
-        {
-          "key": "messages_sent",
-          "label": "Messages sent",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "replies_received",
-          "label": "Replies received",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "positive_sentiment",
-          "label": "Positive sentiment",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "negative_sentiment",
-          "label": "Negative sentiment",
-          "value": 1,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "up",
-          "email": 1,
-          "sms": 0
-        },
-        {
-          "key": "blocked",
-          "label": "Blocked / bounced",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "up",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "links_clicked",
-          "label": "Links clicked",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": 0,
-          "sms": 0
-        },
-        {
-          "key": "meetings_booked",
-          "label": "Meetings booked",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_completed",
-          "label": "Meetings completed",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_cancelled",
-          "label": "Meetings cancelled",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "meetings_no_showed",
-          "label": "Meetings no-showed",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "deals_won",
-          "label": "Deals won",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "deals_lost",
-          "label": "Deals lost",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "neutral",
-          "email": null,
-          "sms": null
-        },
-        {
-          "key": "revenue_generated",
-          "label": "Revenue generated",
-          "value": 0,
-          "baseline": null,
-          "delta_pct": null,
-          "flagged": false,
-          "direction": "down",
-          "email": null,
-          "sms": null
-        }
-      ],
-      "funnel": {
-        "sent": 0,
-        "clicked": 0,
-        "booked": 0,
-        "completed": 0
-      },
-      "derived": {
-        "actions_performed": 0,
-        "hours_saved": "0.0 (default weights)"
-      },
-      "campaigns": [
-        {
-          "id": null,
-          "name": "(no campaign)",
-          "is_active": false,
-          "sent": 0,
-          "replies": 0,
-          "positive": 0,
-          "negative": 1,
-          "clicked": 0,
-          "booked": 0,
-          "won": 0,
-          "revenue": 0
-        }
-      ],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
       "series": {
         "weeks": [
           "Jul 13",
@@ -2452,9 +2157,12 @@
     {
       "name": "Redwood Labs",
       "parent_user_id": 1015,
-      "status": "dormant",
-      "note": "No active campaign; last active Aug 3, 2026.",
+      "status": "paused",
+      "note": "Real client (349 open deals) — not sending this week (campaigns off; last active Aug 3, 2026).",
       "has_active_campaign": false,
+      "open_deals": 349,
+      "real_client": true,
+      "last_active": "Aug 3, 2026",
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2533,9 +2241,12 @@
     {
       "name": "Trailhead Marketing",
       "parent_user_id": 1016,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2614,9 +2325,12 @@
     {
       "name": "Copperfield Inc",
       "parent_user_id": 1017,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2695,9 +2409,12 @@
     {
       "name": "Lumen Digital",
       "parent_user_id": 1018,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2776,9 +2493,12 @@
     {
       "name": "Northgate Legal",
       "parent_user_id": 1019,
-      "status": "no_data",
-      "note": "Active campaign, but no analytics activity recorded yet.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": true,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2857,9 +2577,12 @@
     {
       "name": "Pinecrest Foods",
       "parent_user_id": 1020,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -2938,9 +2661,12 @@
     {
       "name": "Quill and Co",
       "parent_user_id": 1021,
-      "status": "dormant",
-      "note": "No active campaign; no recent sends.",
+      "status": "inactive",
+      "note": "No open deals and no recent sends — not launched / inactive.",
       "has_active_campaign": false,
+      "open_deals": 0,
+      "real_client": false,
+      "last_active": null,
       "flags": [],
       "metrics": [],
       "funnel": null,
@@ -3022,6 +2748,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": true,
+      "open_deals": 148268,
+      "real_client": true,
       "flags": [
         {
           "metric": "Replies received",
@@ -3398,6 +3126,8 @@
       "status": "active",
       "note": null,
       "has_active_campaign": true,
+      "open_deals": 106,
+      "real_client": true,
       "flags": [],
       "metrics": [
         {
@@ -3671,5 +3401,5 @@
       }
     }
   ],
-  "method": "Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) over the report week, tenant-wide (all seats). Baseline = trailing 4-week average over weeks with activity; the trend sparkline covers 8 weeks. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 active baseline weeks render without flags (“new”); clients with no active campaign and no current sends are shown as “dormant”, not flagged. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows are sparse; a global day-coverage guard suppresses all flags if the report week looks like a pipeline gap."
+  "method": "Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) over the report week, tenant-wide (all seats). Baseline = trailing 4-week average over weeks with activity; the trend sparkline covers 8 weeks. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 active baseline weeks render without flags (“new”). A real client (open deals OR a send within 6 weeks) that isn’t sending this week is shown as “paused” (not flagged); accounts with no open deals and no recent sends are “inactive”. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows are sparse; a global day-coverage guard suppresses all flags if the report week looks like a pipeline gap."
 }

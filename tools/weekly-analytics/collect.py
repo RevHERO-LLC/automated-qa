@@ -53,6 +53,9 @@ FLOOR_SENDS = 10              # baseline messages_sent below this -> skip send-d
 FLOOR_REPLIES = 3             # baseline replies below this -> skip reply/sentiment flags
 GLOBAL_MIN_RATIO = 0.35       # report-week total vol < this * baseline avg -> pipeline-gap alert
 PER_CAMPAIGN_CAP = 8         # max campaigns listed per client (rest folded into "+N more")
+RECENT_SEND_WEEKS = 6        # a client counts as a "real client" if it sent within this many weeks
+# "real client" = has open deals OR sent recently. A real client not sending this week -> "paused"
+# (NOT "dormant"/flagged). A non-real client (no open deals + no recent sends) -> "inactive".
 
 MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -222,6 +225,25 @@ def fetch_campaign_meta(dsn, pids):
     return meta, active_pids
 
 
+def fetch_open_deals(dsn, pids):
+    """{parent_user_id: open_deal_count} — 'real client' signal (status OPEN, uppercase)."""
+    out = {}
+    if not pids:
+        return out
+    conn = psycopg2.connect(dsn)
+    try:
+        conn.set_session(readonly=True, autocommit=True)
+        with conn.cursor() as cur:
+            cur.execute("SELECT parent_user_id, count(*) FROM deals "
+                        "WHERE parent_user_id = ANY(%s) AND status = 'OPEN' GROUP BY parent_user_id",
+                        (list(pids),))
+            for pid, cnt in cur.fetchall():
+                out[pid] = int(cnt)
+    finally:
+        conn.close()
+    return out
+
+
 def _agg_weeks(campaign_map):
     """Collapse {campaign_id: {wk: row}} -> {wk: {metric: total, 'days': maxdays}} (client totals)."""
     weeks = {}
@@ -242,7 +264,7 @@ def _has_activity(row):
     return bool(row) and (_num(row.get("messages_sent", 0)) > 0 or _num(row.get("replies_received", 0)) > 0)
 
 
-def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign,
+def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_deals,
                    report_wk, baseline_mondays, series_mondays, suppress_flags):
     weeks = _agg_weeks(campaign_map)
     report = weeks.get(report_wk)
@@ -255,19 +277,24 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign,
     def tw(key):
         return _num(report.get(key, 0)) if report else 0
 
-    ever_activity = any(_has_activity(r) for r in weeks.values())
+    # ---- "real client" = has open deals OR sent within RECENT_SEND_WEEKS ----
+    recent_send = any(_num((weeks.get(w) or {}).get("messages_sent", 0)) > 0
+                      for w in series_mondays[-RECENT_SEND_WEEKS:])
+    real_client = (open_deals > 0) or recent_send
 
-    # ---- status (dormant = active account w/ no active campaign + not sending now) ----
-    if report is None and baseline_active == 0 and not ever_activity:
-        status = "no_data" if has_active_campaign else "dormant"
-    elif (not has_active_campaign) and not _has_activity(report):
-        status = "dormant"
-    elif _has_activity(report) and baseline_active < MIN_BASELINE_WEEKS:
-        status = "new"
-    elif (not _has_activity(report)) and baseline_active >= MIN_BASELINE_WEEKS and not suppress_flags:
-        status = "dropped_to_zero"
-    else:
+    # ---- status ----
+    #   sends this week             -> active / new (+ flags via the metric loop)
+    #   incomplete week + real      -> active (don't demote a real client on missing data)
+    #   real client, no sends       -> paused   (real client, campaigns paused / quiet — NOT flagged)
+    #   not a real client, no sends -> inactive (no open deals + no recent sends: test / never-launched)
+    if _has_activity(report):
+        status = "new" if baseline_active < MIN_BASELINE_WEEKS else "active"
+    elif suppress_flags and real_client:
         status = "active"
+    elif real_client:
+        status = "paused"
+    else:
+        status = "inactive"
 
     # ---- 8-week trend series (client totals per SERIES_KEYS) ----
     series = {"weeks": [], "data": {k: [] for k in SERIES_KEYS}}
@@ -277,18 +304,22 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign,
         for k in SERIES_KEYS:
             series["data"][k].append(_num(row.get(k, 0)))
 
-    if status in ("no_data", "dormant"):
+    if status in ("paused", "inactive"):
         last_active = None
         for w in sorted(weeks.keys(), reverse=True):
             if _has_activity(weeks[w]):
                 last_active = f"{MONTHS[w.month]} {w.day}, {w.year}"
                 break
-        note = ("Active campaign, but no analytics activity recorded yet."
-                if status == "no_data"
-                else ("No active campaign" + (f"; last active {last_active}" if last_active else "; no recent sends") + "."))
+        if status == "paused":
+            camp = ("⚠ campaign active but no sends this week" if has_active_campaign else "campaigns off")
+            note = (f"Real client ({open_deals:,} open deals) — not sending this week ({camp}"
+                    + (f"; last active {last_active}" if last_active else "") + ").")
+        else:
+            note = "No open deals and no recent sends — not launched / inactive."
         return {
             "name": name, "parent_user_id": pid, "status": status, "note": note,
-            "has_active_campaign": has_active_campaign,
+            "has_active_campaign": has_active_campaign, "open_deals": open_deals,
+            "real_client": real_client, "last_active": last_active,
             "flags": [], "metrics": [], "funnel": None, "derived": None,
             "campaigns": [], "series": series,
             "completeness": {"days_present": (tw("days") if report else 0), "days_expected": 7, "warning": None},
@@ -372,7 +403,7 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign,
 
     return {
         "name": name, "parent_user_id": pid, "status": status, "note": None,
-        "has_active_campaign": has_active_campaign,
+        "has_active_campaign": has_active_campaign, "open_deals": open_deals, "real_client": real_client,
         "flags": flags_out, "metrics": metrics_out,
         "funnel": {"sent": ms, "clicked": tw("links_clicked"),
                    "booked": tw("meetings_booked"), "completed": tw("meetings_completed")},
@@ -391,9 +422,11 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
     hi = report_start + dt.timedelta(days=7)
 
     clients = fetch_clients(users_dsn)
+    pids = [c["parent_user_id"] for c in clients]
     snaps = fetch_snapshots(analytics_dsn, lo, hi)
     coverage = fetch_week_coverage(analytics_dsn, lo, hi)
-    cmeta, active_campaign_pids = fetch_campaign_meta(campaign_dsn, [c["parent_user_id"] for c in clients])
+    cmeta, active_campaign_pids = fetch_campaign_meta(campaign_dsn, pids)
+    open_deals_by_pid = fetch_open_deals(campaign_dsn, pids)
 
     # ---- global completeness guard (day-coverage primary, volume backstop) ----
     report_dates = coverage.get(report_wk, set())
@@ -434,20 +467,21 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
         pid = c["parent_user_id"]
         try:
             out.append(analyze_client(c["name"], pid, snaps.get(pid, {}), cmeta,
-                                      pid in active_campaign_pids, report_wk, baseline_mondays,
-                                      series_mondays, suppress))
+                                      pid in active_campaign_pids, open_deals_by_pid.get(pid, 0),
+                                      report_wk, baseline_mondays, series_mondays, suppress))
         except Exception as e:
             out.append({"name": c["name"], "parent_user_id": pid, "status": "error",
                         "note": f"Collection failed for this client: {type(e).__name__}: {e}",
                         "has_active_campaign": pid in active_campaign_pids,
+                        "open_deals": open_deals_by_pid.get(pid, 0), "real_client": None,
                         "flags": [], "metrics": [], "funnel": None, "derived": None,
                         "campaigns": [], "series": None,
                         "completeness": {"days_present": 0, "days_expected": 7, "warning": None}})
 
     flagged = sum(1 for c in out if c.get("flags"))
-    no_data = sum(1 for c in out if c.get("status") == "no_data")
-    dormant = sum(1 for c in out if c.get("status") == "dormant")
-    active = sum(1 for c in out if c.get("status") in ("active", "dropped_to_zero", "new"))
+    inactive = sum(1 for c in out if c.get("status") == "inactive")
+    paused = sum(1 for c in out if c.get("status") == "paused")
+    active = sum(1 for c in out if c.get("status") in ("active", "new"))
 
     doc = {
         "title": title,
@@ -455,7 +489,7 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
         "week_start": report_start.isoformat(),
         "week_end": report_end.isoformat(),
         "summary": {"clients_total": len(out), "clients_active": active, "clients_flagged": flagged,
-                    "clients_no_data": no_data, "clients_dormant": dormant},
+                    "clients_paused": paused, "clients_inactive": inactive},
         "clients": out,
         "method": (f"Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) "
                    f"over the report week, tenant-wide (all seats). Baseline = trailing {BASELINE_WEEKS}-week "
@@ -464,8 +498,9 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
                    f"sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor "
                    f"(baseline ≥ {FLOOR_SENDS} sends / ≥ {FLOOR_REPLIES} replies), or drops to zero after prior "
                    f"activity. Clients with < {MIN_BASELINE_WEEKS} active baseline weeks render without flags "
-                   f"(“new”); clients with no active campaign and no current sends are shown as “dormant”, not "
-                   f"flagged. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows "
+                   f"(“new”). A real client (open deals OR a send within {RECENT_SEND_WEEKS} weeks) that isn’t "
+                   f"sending this week is shown as “paused” (not flagged); accounts with no open deals and no "
+                   f"recent sends are “inactive”. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows "
                    f"are sparse; a global day-coverage guard suppresses all flags if the report week looks like a "
                    f"pipeline gap."),
     }
