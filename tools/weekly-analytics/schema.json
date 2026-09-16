@@ -7,18 +7,21 @@
   "week_end": "string (YYYY-MM-DD, inclusive)",
   "summary": {
     "clients_total": "int — all active tenants enumerated",
-    "clients_active": "int — active SENDERS (status active/new/dropped_to_zero)",
-    "clients_flagged": "int — tenants with >=1 red flag (incl. dropped-to-zero)",
-    "clients_no_data": "int — active campaign but no analytics activity yet",
-    "clients_dormant": "int — active accounts with no running campaign (not sending)"
+    "clients_active": "int — active SENDERS (sent this week; status active/new)",
+    "clients_flagged": "int — tenants with >=1 red flag",
+    "clients_paused": "int — real clients (open deals OR a send within RECENT_SEND_WEEKS) not sending this week",
+    "clients_inactive": "int — no open deals AND no recent sends (test / never-launched)"
   },
   "clients": [
     {
       "name": "string — company_name (tenant display)",
       "parent_user_id": "int — users.id of the tenant owner (stable id, used for anchors + diff keying)",
-      "status": "active | dropped_to_zero | new | no_data | dormant | error",
+      "status": "active | new | paused | inactive | error",
       "has_active_campaign": "bool — the tenant has >=1 automation_campaign with is_active=true",
-      "note": "string|null — free text for no_data / dormant / new / error rows",
+      "open_deals": "int — count of deals with status OPEN (a 'real client' signal)",
+      "real_client": "bool|null — has open deals OR sent within RECENT_SEND_WEEKS (null on error rows)",
+      "last_active": "string|null — last week with activity, e.g. 'Aug 24, 2026' (set on paused/inactive)",
+      "note": "string|null — free text for paused / inactive / error rows",
       "flags": [
         {
           "metric": "string — human metric name, e.g. 'Replies received'",
