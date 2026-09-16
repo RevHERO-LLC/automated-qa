@@ -1,6 +1,7 @@
 {
   "$comment": "Data contract for the weekly-analytics client-health digest. render.py FREEZES the format; only this DATA varies per run. runs/ is append-only. Deterministic: render bakes NO timestamp/random — week_label + all dates come from the DATA. collect.py emits this shape.",
   "title": "string (report title)",
+  "alert": "string|absent — OPTIONAL top-level red banner. Set by the collector's global precalc-gap guard when the report-week volume is far below the trailing average (likely a pipeline gap); when present, all red flags are suppressed. Omit in the normal case.",
   "week_label": "string — human week window, e.g. 'Sep 8 – Sep 14, 2026' (the DATA carries it; render never computes it)",
   "week_start": "string (YYYY-MM-DD, inclusive)",
   "week_end": "string (YYYY-MM-DD, inclusive)",

@@ -192,6 +192,8 @@ def render(d, prev=None):
     if prev:
         diff_note = f' · <span class="muted">diff vs {esc(prev.get("week_label",""))}</span>'
 
+    alert_html = f'<div class="alert">{esc(d.get("alert"))}</div>' if d.get("alert") else ""
+
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -245,6 +247,7 @@ tr.flagged td{{background:var(--redbg)}} tr.flagged td:first-child{{color:var(--
 ul.nodata-list{{list-style:none;padding:0;margin:0;columns:2;gap:16px}}
 ul.nodata-list li{{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:0 0 8px;font-size:13.5px;break-inside:avoid}}
 .allok{{background:var(--greenbg);border:1px solid var(--greenln);color:var(--green);border-radius:12px;padding:16px 18px;font-weight:600}}
+.alert{{background:var(--redbg);border:1px solid var(--redln);border-left:4px solid var(--red);color:var(--red);border-radius:10px;padding:13px 16px;margin:0 0 20px;font-size:14px;font-weight:600}}
 .method{{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);margin-top:40px;padding-top:14px}}
 @media(max-width:640px){{ul.nodata-list{{columns:1}}}}
 </style></head><body><div class="wrap">
@@ -255,7 +258,7 @@ ul.nodata-list li{{background:var(--panel);border:1px solid var(--line);border-r
   <span class="badge bad">{_num(s.get('clients_flagged'))} off-trend</span>
   <span class="badge neutral">{_num(s.get('clients_no_data'))} no data</span>
 </div>
-
+{alert_html}
 <h2>Needs attention <span class="count">{len(attention)}</span></h2>
 <p class="lead">Clients whose metrics moved off their 4-week trend (or dropped to zero). Reds first.</p>
 {attention_html}
