@@ -39,8 +39,13 @@ STATUS_BADGE = {
     "dropped_to_zero": ("bad", "Dropped to zero"),
     "new": ("neutral", "New — no baseline"),
     "no_data": ("neutral", "No data"),
+    "dormant": ("neutral", "Dormant"),
     "error": ("bad", "Error"),
 }
+
+SERIES_LABELS = [("messages_sent", "Sent"), ("replies_received", "Replies"),
+                 ("positive_sentiment", "Positive"), ("meetings_booked", "Booked"),
+                 ("revenue_generated", "Revenue")]
 
 
 def _delta_cell(m):
@@ -110,6 +115,68 @@ def _derived(dv):
     return f'<div class="chips">{"".join(bits)}</div>' if bits else ""
 
 
+def _sparkline(values, color):
+    """Deterministic inline SVG sparkline. Rounded coords -> byte-stable output."""
+    vals = [float(v) if isinstance(v, (int, float)) else 0.0 for v in (values or [])]
+    if not vals:
+        return ""
+    w, h, pad = 132, 30, 4
+    n = len(vals)
+    vmax, vmin = max(vals), min(vals)
+    span = (vmax - vmin) or 1.0
+
+    def x(i):
+        return pad + (w - 2 * pad) * (i / (n - 1) if n > 1 else 0.5)
+
+    def y(v):
+        return h - pad - (h - 2 * pad) * ((v - vmin) / span)
+
+    pts = " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in enumerate(vals))
+    lx, ly = x(n - 1), y(vals[-1])
+    return (f'<svg class="spark" viewBox="0 0 {w} {h}" preserveAspectRatio="none" aria-hidden="true">'
+            f'<polyline fill="none" stroke="{color}" stroke-width="1.5" stroke-linejoin="round" '
+            f'stroke-linecap="round" points="{pts}"/>'
+            f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="2.2" fill="{color}"/></svg>')
+
+
+def _trend_block(series):
+    if not series or not series.get("weeks"):
+        return ""
+    data = series.get("data", {})
+    cards = []
+    for key, lbl in SERIES_LABELS:
+        vals = data.get(key, [])
+        last = vals[-1] if vals else 0
+        trend = (vals[-1] - vals[0]) if len(vals) >= 2 else 0
+        color = "var(--green)" if trend > 0 else ("var(--red)" if trend < 0 else "var(--muted)")
+        cards.append(f'<div class="tcard"><div class="tlbl">{esc(lbl)}</div>'
+                     f'{_sparkline(vals, color)}<div class="tval">{_num(last)}</div></div>')
+    wk0, wkn = esc(series["weeks"][0]), esc(series["weeks"][-1])
+    return (f'<div class="trend"><div class="trend-h">Trend · {wk0} → {wkn}</div>'
+            f'<div class="tgrid">{"".join(cards)}</div></div>')
+
+
+def _campaign_table(campaigns):
+    real = [c for c in (campaigns or []) if c.get("sent") is not None]
+    if not campaigns:
+        return ""
+    rows = []
+    for c in campaigns:
+        if c.get("sent") is None:  # the "+N more" fold row
+            rows.append(f'<tr><td colspan="7" class="muted">{esc(c.get("name"))}</td></tr>')
+            continue
+        dot = '<span class="cdot on">●</span>' if c.get("is_active") else '<span class="cdot off">○</span>'
+        rows.append(
+            f'<tr><td>{dot} {esc(c.get("name"))}</td>'
+            f'<td class="num">{_num(c.get("sent"))}</td><td class="num">{_num(c.get("replies"))}</td>'
+            f'<td class="num">{_num(c.get("positive"))}</td><td class="num">{_num(c.get("booked"))}</td>'
+            f'<td class="num">{_num(c.get("won"))}</td><td class="num">{_num(c.get("revenue"))}</td></tr>')
+    return (f'<details class="campaigns"><summary>By campaign · {len(real)}</summary>'
+            '<div class="tbl-wrap"><table><thead><tr><th>Campaign</th><th class="num">Sent</th>'
+            '<th class="num">Repl</th><th class="num">Pos</th><th class="num">Book</th>'
+            f'<th class="num">Won</th><th class="num">Rev</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
+
+
 def _client_card(c, newly_flagged=False, cleared=False):
     scls, slabel = STATUS_BADGE.get(c.get("status"), ("neutral", esc(c.get("status"))))
     flagged = bool(c.get("flags"))
@@ -139,7 +206,8 @@ def _client_card(c, newly_flagged=False, cleared=False):
             '<th class="num">&Delta;</th></tr></thead><tbody>'
             f"{rows}</tbody></table></div>"
         )
-        body = _flag_list(c.get("flags")) + comp_warn + table + _funnel(c.get("funnel")) + _derived(c.get("derived"))
+        body = (_flag_list(c.get("flags")) + comp_warn + table + _funnel(c.get("funnel"))
+                + _derived(c.get("derived")) + _trend_block(c.get("series")) + _campaign_table(c.get("campaigns")))
 
     return f"""
       <div class="{card_cls}" id="client-{esc(c.get('parent_user_id'))}">
@@ -159,12 +227,14 @@ def render(d, prev=None):
     now_flagged = {c.get("parent_user_id") for c in d.get("clients", []) if c.get("flags")}
 
     clients = d.get("clients", [])
-    # attention = flagged or dropped-to-zero, most-flags first (stable within by name)
+    # attention = flagged / dropped-to-zero / error, most-flags first (stable within by name)
     def _attn(c):
-        return bool(c.get("flags")) or c.get("status") == "dropped_to_zero"
+        return bool(c.get("flags")) or c.get("status") in ("dropped_to_zero", "error")
     attention = sorted([c for c in clients if _attn(c)],
                        key=lambda c: (-len(c.get("flags", [])), str(c.get("name", "")).lower()))
-    healthy = sorted([c for c in clients if not _attn(c) and c.get("status") != "no_data"],
+    healthy = sorted([c for c in clients if not _attn(c) and c.get("status") in ("active", "new")],
+                     key=lambda c: str(c.get("name", "")).lower())
+    dormant = sorted([c for c in clients if c.get("status") == "dormant"],
                      key=lambda c: str(c.get("name", "")).lower())
     nodata = sorted([c for c in clients if c.get("status") == "no_data"],
                     key=lambda c: str(c.get("name", "")).lower())
@@ -180,13 +250,23 @@ def render(d, prev=None):
                      cleared=(prev is not None and c.get("parent_user_id") not in now_flagged and c.get("parent_user_id") in prev_flagged))
         for c in healthy)
 
+    def _mini_list(rows):
+        return "".join(f"<li>{esc(c.get('name'))} <span class='muted'>{esc((c.get('note') or ''))}</span></li>" for c in rows)
+
+    dormant_html = ""
+    if dormant:
+        dormant_html = f"""
+    <h2>Dormant <span class="count">{len(dormant)}</span></h2>
+    <p class="lead">Active accounts with no running campaign — not sending, not flagged.</p>
+    <details class="fold"><summary>Show {len(dormant)} dormant client(s)</summary>
+    <ul class="nodata-list">{_mini_list(dormant)}</ul></details>"""
+
     nodata_html = ""
     if nodata:
-        items = "".join(f"<li>{esc(c.get('name'))} <span class='muted'>{esc((c.get('note') or ''))}</span></li>" for c in nodata)
         nodata_html = f"""
     <h2>No data / not launched <span class="count">{len(nodata)}</span></h2>
-    <p class="lead">Active accounts with no activity this week and no prior baseline — not flagged, listed for awareness.</p>
-    <ul class="nodata-list">{items}</ul>"""
+    <p class="lead">Active campaign but no analytics activity yet — not flagged, listed for awareness.</p>
+    <ul class="nodata-list">{_mini_list(nodata)}</ul>"""
 
     diff_note = ""
     if prev:
@@ -249,13 +329,25 @@ ul.nodata-list li{{background:var(--panel);border:1px solid var(--line);border-r
 .allok{{background:var(--greenbg);border:1px solid var(--greenln);color:var(--green);border-radius:12px;padding:16px 18px;font-weight:600}}
 .alert{{background:var(--redbg);border:1px solid var(--redln);border-left:4px solid var(--red);color:var(--red);border-radius:10px;padding:13px 16px;margin:0 0 20px;font-size:14px;font-weight:600}}
 .method{{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);margin-top:40px;padding-top:14px}}
+.trend{{border-top:1px solid var(--line);padding:12px 16px 14px}}
+.trend-h{{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:8px}}
+.tgrid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}}
+.tcard{{background:color-mix(in srgb,var(--panel),var(--ink) 3%);border:1px solid var(--line);border-radius:8px;padding:8px 10px}}
+.tlbl{{font-size:11px;color:var(--muted)}} .tval{{font-size:15px;font-weight:700;margin-top:2px}}
+svg.spark{{display:block;width:100%;height:30px;margin:3px 0}}
+details.campaigns,details.fold{{border-top:1px solid var(--line)}}
+details.campaigns summary,details.fold summary{{cursor:pointer;padding:11px 16px;font-weight:600;font-size:13.5px;color:var(--accent)}}
+details.campaigns .tbl-wrap{{padding-top:0}}
+.cdot{{font-size:10px;vertical-align:middle}} .cdot.on{{color:var(--green)}} .cdot.off{{color:var(--muted)}}
+details.fold ul.nodata-list{{padding:0 4px}}
 @media(max-width:640px){{ul.nodata-list{{columns:1}}}}
 </style></head><body><div class="wrap">
 <h1>{esc(d.get('title', 'Weekly Analytics'))}</h1>
 <p class="sub">Week of {esc(d.get('week_label'))}{diff_note}</p>
 <div class="status">
-  <span class="badge neutral">{_num(s.get('clients_active'))} active clients</span>
+  <span class="badge neutral">{_num(s.get('clients_active'))} active senders</span>
   <span class="badge bad">{_num(s.get('clients_flagged'))} off-trend</span>
+  <span class="badge neutral">{_num(s.get('clients_dormant'))} dormant</span>
   <span class="badge neutral">{_num(s.get('clients_no_data'))} no data</span>
 </div>
 {alert_html}
@@ -263,8 +355,9 @@ ul.nodata-list li{{background:var(--panel);border:1px solid var(--line);border-r
 <p class="lead">Clients whose metrics moved off their 4-week trend (or dropped to zero). Reds first.</p>
 {attention_html}
 
-<h2>All active clients <span class="count">{len(healthy)}</span></h2>
+<h2>Active senders <span class="count">{len(healthy)}</span></h2>
 {healthy_html}
+{dormant_html}
 {nodata_html}
 
 <div class="method">{esc(d.get('method'))}</div>

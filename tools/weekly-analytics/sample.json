@@ -1,147 +1,3675 @@
 {
-  "title": "Weekly Client Analytics — Health Digest",
-  "week_label": "Sep 8 – Sep 14, 2026",
-  "week_start": "2026-09-08",
-  "week_end": "2026-09-14",
+  "title": "Weekly Client Analytics — Health Digest (sample)",
+  "week_label": "Aug 31 – Sep 6, 2026",
+  "week_start": "2026-08-31",
+  "week_end": "2026-09-06",
   "summary": {
-    "clients_total": 7,
-    "clients_active": 5,
-    "clients_flagged": 3,
-    "clients_no_data": 1
+    "clients_total": 24,
+    "clients_active": 9,
+    "clients_flagged": 6,
+    "clients_no_data": 2,
+    "clients_dormant": 12
   },
   "clients": [
     {
-      "name": "Gazelle Capital",
-      "parent_user_id": 4021,
-      "status": "active",
-      "note": null,
-      "flags": [
-        {"metric": "Replies received", "direction": "down", "this_week": 4, "baseline": 21, "pct": "-81%", "severity": "critical"},
-        {"metric": "Meetings booked", "direction": "down", "this_week": 0, "baseline": 3.5, "pct": "-100%", "severity": "critical"},
-        {"metric": "Negative sentiment", "direction": "up", "this_week": 9, "baseline": 2.5, "pct": "+260%", "severity": "warn"}
-      ],
-      "metrics": [
-        {"key": "messages_sent", "label": "Messages sent", "value": 812, "email": 640, "sms": 172, "baseline": 905, "delta_pct": "-10%", "flagged": false, "direction": "down"},
-        {"key": "replies_received", "label": "Replies received", "value": 4, "email": 3, "sms": 1, "baseline": 21, "delta_pct": "-81%", "flagged": true, "direction": "down"},
-        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 2, "email": 2, "sms": 0, "baseline": 12, "delta_pct": "-83%", "flagged": true, "direction": "down"},
-        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 9, "email": 8, "sms": 1, "baseline": 2.5, "delta_pct": "+260%", "flagged": true, "direction": "up"},
-        {"key": "blocked", "label": "Blocked / bounced", "value": 14, "email": 14, "sms": 0, "baseline": 11, "delta_pct": "+27%", "flagged": false, "direction": "up"},
-        {"key": "links_clicked", "label": "Links clicked", "value": 33, "email": 33, "sms": 0, "baseline": 41, "delta_pct": "-20%", "flagged": false, "direction": "down"},
-        {"key": "meetings_booked", "label": "Meetings booked", "value": 0, "email": null, "sms": null, "baseline": 3.5, "delta_pct": "-100%", "flagged": true, "direction": "down"},
-        {"key": "meetings_completed", "label": "Meetings completed", "value": 0, "email": null, "sms": null, "baseline": 2.25, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "deals_won", "label": "Deals won", "value": 0, "email": null, "sms": null, "baseline": 0.75, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "deals_lost", "label": "Deals lost", "value": 1, "email": null, "sms": null, "baseline": 0.5, "delta_pct": "+100%", "flagged": false, "direction": "up"},
-        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": 4200, "delta_pct": "-100%", "flagged": false, "direction": "down"}
-      ],
-      "funnel": {"sent": 812, "clicked": 33, "booked": 0, "completed": 0},
-      "derived": {"actions_performed": 813, "hours_saved": "18.4 (default weights)"},
-      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+      "name": "Acme Robotics",
+      "parent_user_id": 1001,
+      "status": "dormant",
+      "note": "No active campaign; last active Aug 24, 2026.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1541,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            16,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
     },
     {
       "name": "Northwind Trading",
-      "parent_user_id": 3311,
-      "status": "dropped_to_zero",
-      "note": null,
-      "flags": [
-        {"metric": "Messages sent", "direction": "down", "this_week": 0, "baseline": 430, "pct": "to zero", "severity": "critical"},
-        {"metric": "Replies received", "direction": "down", "this_week": 0, "baseline": 14, "pct": "to zero", "severity": "critical"}
-      ],
-      "metrics": [
-        {"key": "messages_sent", "label": "Messages sent", "value": 0, "email": 0, "sms": 0, "baseline": 430, "delta_pct": "-100%", "flagged": true, "direction": "down"},
-        {"key": "replies_received", "label": "Replies received", "value": 0, "email": 0, "sms": 0, "baseline": 14, "delta_pct": "-100%", "flagged": true, "direction": "down"},
-        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 0, "email": 0, "sms": 0, "baseline": 7, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 0, "email": 0, "sms": 0, "baseline": 1.5, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "links_clicked", "label": "Links clicked", "value": 0, "email": 0, "sms": 0, "baseline": 22, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "meetings_booked", "label": "Meetings booked", "value": 0, "email": null, "sms": null, "baseline": 2, "delta_pct": "-100%", "flagged": false, "direction": "down"},
-        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": 1800, "delta_pct": "-100%", "flagged": false, "direction": "down"}
-      ],
-      "funnel": {"sent": 0, "clicked": 0, "booked": 0, "completed": 0},
-      "derived": {"actions_performed": 0, "hours_saved": "0 (default weights)"},
-      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
-    },
-    {
-      "name": "Meridian Health Partners",
-      "parent_user_id": 5502,
+      "parent_user_id": 1002,
       "status": "active",
       "note": null,
+      "has_active_campaign": true,
       "flags": [
-        {"metric": "Messages sent", "direction": "down", "this_week": 210, "baseline": 640, "pct": "-67%", "severity": "warn"}
+        {
+          "metric": "Messages sent",
+          "direction": "down",
+          "this_week": 44,
+          "baseline": 346.8,
+          "pct": "-87%",
+          "severity": "critical"
+        },
+        {
+          "metric": "Replies received",
+          "direction": "down",
+          "this_week": 1,
+          "baseline": 5.0,
+          "pct": "-80%",
+          "severity": "critical"
+        },
+        {
+          "metric": "Positive sentiment",
+          "direction": "down",
+          "this_week": 1,
+          "baseline": 2.2,
+          "pct": "-56%",
+          "severity": "warn"
+        }
       ],
       "metrics": [
-        {"key": "messages_sent", "label": "Messages sent", "value": 210, "email": 150, "sms": 60, "baseline": 640, "delta_pct": "-67%", "flagged": true, "direction": "down"},
-        {"key": "replies_received", "label": "Replies received", "value": 12, "email": 9, "sms": 3, "baseline": 15, "delta_pct": "-20%", "flagged": false, "direction": "down"},
-        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 6, "email": 5, "sms": 1, "baseline": 8, "delta_pct": "-25%", "flagged": false, "direction": "down"},
-        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 2, "email": 2, "sms": 0, "baseline": 3, "delta_pct": "-33%", "flagged": false, "direction": "down"},
-        {"key": "links_clicked", "label": "Links clicked", "value": 28, "email": 28, "sms": 0, "baseline": 30, "delta_pct": "-7%", "flagged": false, "direction": "down"},
-        {"key": "meetings_booked", "label": "Meetings booked", "value": 4, "email": null, "sms": null, "baseline": 3, "delta_pct": "+33%", "flagged": false, "direction": "up"},
-        {"key": "meetings_completed", "label": "Meetings completed", "value": 3, "email": null, "sms": null, "baseline": 2, "delta_pct": "+50%", "flagged": false, "direction": "up"},
-        {"key": "deals_won", "label": "Deals won", "value": 2, "email": null, "sms": null, "baseline": 1.5, "delta_pct": "+33%", "flagged": false, "direction": "up"},
-        {"key": "revenue_generated", "label": "Revenue generated", "value": 9500, "email": null, "sms": null, "baseline": 7200, "delta_pct": "+32%", "flagged": false, "direction": "up"}
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 44,
+          "baseline": 346.8,
+          "delta_pct": "-87%",
+          "flagged": true,
+          "direction": "down",
+          "email": 44,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 1,
+          "baseline": 5.0,
+          "delta_pct": "-80%",
+          "flagged": true,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 1,
+          "baseline": 2.2,
+          "delta_pct": "-56%",
+          "flagged": true,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 1,
+          "baseline": 2.2,
+          "delta_pct": "-56%",
+          "flagged": false,
+          "direction": "up",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 1,
+          "baseline": 16.5,
+          "delta_pct": "-94%",
+          "flagged": false,
+          "direction": "up",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.8,
+          "delta_pct": "-100%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 1,
+          "baseline": 3.0,
+          "delta_pct": "-67%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
       ],
-      "funnel": {"sent": 210, "clicked": 28, "booked": 4, "completed": 3},
-      "derived": {"actions_performed": 212, "hours_saved": "6.1 (default weights)"},
-      "completeness": {"days_present": 5, "days_expected": 7, "warning": "2 days missing — flags shown for reference; suppress if this recurs"}
-    },
-    {
-      "name": "Acme Robotics",
-      "parent_user_id": 6120,
-      "status": "active",
-      "note": null,
-      "flags": [],
-      "metrics": [
-        {"key": "messages_sent", "label": "Messages sent", "value": 1180, "email": 900, "sms": 280, "baseline": 1120, "delta_pct": "+5%", "flagged": false, "direction": "up"},
-        {"key": "replies_received", "label": "Replies received", "value": 47, "email": 38, "sms": 9, "baseline": 44, "delta_pct": "+7%", "flagged": false, "direction": "up"},
-        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 26, "email": 22, "sms": 4, "baseline": 24, "delta_pct": "+8%", "flagged": false, "direction": "up"},
-        {"key": "negative_sentiment", "label": "Negative sentiment", "value": 4, "email": 4, "sms": 0, "baseline": 5, "delta_pct": "-20%", "flagged": false, "direction": "down"},
-        {"key": "links_clicked", "label": "Links clicked", "value": 61, "email": 61, "sms": 0, "baseline": 58, "delta_pct": "+5%", "flagged": false, "direction": "up"},
-        {"key": "meetings_booked", "label": "Meetings booked", "value": 7, "email": null, "sms": null, "baseline": 6, "delta_pct": "+17%", "flagged": false, "direction": "up"},
-        {"key": "meetings_completed", "label": "Meetings completed", "value": 5, "email": null, "sms": null, "baseline": 4.5, "delta_pct": "+11%", "flagged": false, "direction": "up"},
-        {"key": "deals_won", "label": "Deals won", "value": 3, "email": null, "sms": null, "baseline": 2.5, "delta_pct": "+20%", "flagged": false, "direction": "up"},
-        {"key": "revenue_generated", "label": "Revenue generated", "value": 14200, "email": null, "sms": null, "baseline": 12800, "delta_pct": "+11%", "flagged": false, "direction": "up"}
+      "funnel": {
+        "sent": 44,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 45,
+        "hours_saved": "2.3 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5010,
+          "name": "Q3 Outbound",
+          "is_active": true,
+          "sent": 44,
+          "replies": 1,
+          "positive": 1,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
       ],
-      "funnel": {"sent": 1180, "clicked": 61, "booked": 7, "completed": 5},
-      "derived": {"actions_performed": 1186, "hours_saved": "31.7 (default weights)"},
-      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            1,
+            127,
+            336,
+            839,
+            296,
+            127,
+            125,
+            44
+          ],
+          "replies_received": [
+            0,
+            3,
+            10,
+            8,
+            7,
+            4,
+            1,
+            1
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            10,
+            2,
+            4,
+            2,
+            1,
+            1
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
     },
     {
       "name": "Bright Harbor Advisors",
-      "parent_user_id": 7440,
-      "status": "new",
-      "note": "Launched 2026-09-02 — fewer than 2 baseline weeks, flags suppressed until baseline forms.",
+      "parent_user_id": 1003,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
       "flags": [],
       "metrics": [
-        {"key": "messages_sent", "label": "Messages sent", "value": 340, "email": 300, "sms": 40, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
-        {"key": "replies_received", "label": "Replies received", "value": 11, "email": 10, "sms": 1, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
-        {"key": "positive_sentiment", "label": "Positive sentiment", "value": 5, "email": 5, "sms": 0, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
-        {"key": "meetings_booked", "label": "Meetings booked", "value": 2, "email": null, "sms": null, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"},
-        {"key": "revenue_generated", "label": "Revenue generated", "value": 0, "email": null, "sms": null, "baseline": null, "delta_pct": null, "flagged": false, "direction": "neutral"}
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 1,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 58,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 58,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
       ],
-      "funnel": {"sent": 340, "clicked": 15, "booked": 2, "completed": 0},
-      "derived": {"actions_performed": 340, "hours_saved": "7.8 (default weights)"},
-      "completeness": {"days_present": 7, "days_expected": 7, "warning": null}
+      "funnel": {
+        "sent": 0,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 0,
+        "hours_saved": "0.0 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 1,
+          "negative": 58,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            25,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            2,
+            1
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
     },
     {
-      "name": "Cobalt Logistics",
-      "parent_user_id": 8090,
-      "status": "no_data",
-      "note": "Active account, no activity recorded and no prior baseline — not launched or paused.",
+      "name": "Meridian Health",
+      "parent_user_id": 1004,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
       "flags": [],
       "metrics": [],
       "funnel": null,
       "derived": null,
-      "completeness": {"days_present": 0, "days_expected": 7, "warning": null}
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
     },
     {
       "name": "Vertex Manufacturing",
-      "parent_user_id": 9015,
-      "status": "error",
-      "note": "Metric query failed (timeout). Rendered as error; other clients unaffected. Re-run from committed runs/ JSON.",
+      "parent_user_id": 1005,
+      "status": "no_data",
+      "note": "Active campaign, but no analytics activity recorded yet.",
+      "has_active_campaign": true,
       "flags": [],
       "metrics": [],
       "funnel": null,
       "derived": null,
-      "completeness": {"days_present": 0, "days_expected": 7, "warning": null}
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Cobalt Logistics",
+      "parent_user_id": 1006,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
+      "flags": [
+        {
+          "metric": "Messages sent",
+          "direction": "down",
+          "this_week": 0,
+          "baseline": 25.0,
+          "pct": "to zero",
+          "severity": "critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 0,
+          "baseline": 25.0,
+          "delta_pct": "-100%",
+          "flagged": true,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 4,
+          "baseline": 3.5,
+          "delta_pct": "+14%",
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 4
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 10,
+          "baseline": 3.5,
+          "delta_pct": "+186%",
+          "flagged": false,
+          "direction": "down",
+          "email": 8,
+          "sms": 2
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 6,
+          "baseline": 5.0,
+          "delta_pct": "+20%",
+          "flagged": false,
+          "direction": "up",
+          "email": 6,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 0,
+          "baseline": 0.5,
+          "delta_pct": "-100%",
+          "flagged": false,
+          "direction": "up",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 0,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 0,
+        "hours_saved": "0.0 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 4,
+          "positive": 10,
+          "negative": 6,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            19,
+            0,
+            0,
+            96,
+            1,
+            3,
+            0,
+            0
+          ],
+          "replies_received": [
+            1,
+            0,
+            1,
+            6,
+            1,
+            1,
+            6,
+            4
+          ],
+          "positive_sentiment": [
+            1,
+            2,
+            4,
+            6,
+            1,
+            1,
+            6,
+            10
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Summit Ventures",
+      "parent_user_id": 1007,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": false,
+      "flags": [
+        {
+          "metric": "Messages sent",
+          "direction": "down",
+          "this_week": 28,
+          "baseline": 243.8,
+          "pct": "-89%",
+          "severity": "critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 28,
+          "baseline": 243.8,
+          "delta_pct": "-89%",
+          "flagged": true,
+          "direction": "down",
+          "email": 28,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 1,
+          "baseline": 0.5,
+          "delta_pct": "+100%",
+          "flagged": false,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 2,
+          "baseline": 3.5,
+          "delta_pct": "-43%",
+          "flagged": false,
+          "direction": "up",
+          "email": 2,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 20,
+          "baseline": 181.5,
+          "delta_pct": "-89%",
+          "flagged": false,
+          "direction": "up",
+          "email": 20,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 1,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 28,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 29,
+        "hours_saved": "1.5 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5060,
+          "name": "Q3 Outbound",
+          "is_active": false,
+          "sent": 28,
+          "replies": 1,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            236,
+            276,
+            245,
+            218,
+            28
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 2,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Ridgeline Partners",
+      "parent_user_id": 1008,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": false,
+      "flags": [
+        {
+          "metric": "Replies received",
+          "direction": "down",
+          "this_week": 1,
+          "baseline": 6.5,
+          "pct": "-85%",
+          "severity": "critical"
+        },
+        {
+          "metric": "Positive sentiment",
+          "direction": "down",
+          "this_week": 48,
+          "baseline": 127.5,
+          "pct": "-62%",
+          "severity": "critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 1,
+          "baseline": 6.5,
+          "delta_pct": "-85%",
+          "flagged": true,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 48,
+          "baseline": 127.5,
+          "delta_pct": "-62%",
+          "flagged": true,
+          "direction": "down",
+          "email": 48,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 30,
+          "baseline": 82.0,
+          "delta_pct": "-63%",
+          "flagged": false,
+          "direction": "up",
+          "email": 30,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 0,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 0,
+        "hours_saved": "0.0 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5070,
+          "name": "Q3 Outbound",
+          "is_active": false,
+          "sent": 0,
+          "replies": 1,
+          "positive": 2,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 46,
+          "negative": 30,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            10,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            23,
+            3,
+            0,
+            8,
+            6,
+            5,
+            7,
+            1
+          ],
+          "positive_sentiment": [
+            92,
+            118,
+            99,
+            170,
+            124,
+            113,
+            103,
+            48
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Harbor Point Media",
+      "parent_user_id": 1009,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            4,
+            1,
+            13,
+            3,
+            1,
+            1,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Cascade Systems",
+      "parent_user_id": 1010,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Ironwood Group",
+      "parent_user_id": 1011,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Beacon Analytics",
+      "parent_user_id": 1012,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
+      "flags": [
+        {
+          "metric": "Messages sent",
+          "direction": "down",
+          "this_week": 246,
+          "baseline": 1496.2,
+          "pct": "-84%",
+          "severity": "critical"
+        },
+        {
+          "metric": "Replies received",
+          "direction": "down",
+          "this_week": 5,
+          "baseline": 40.2,
+          "pct": "-88%",
+          "severity": "critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 246,
+          "baseline": 1496.2,
+          "delta_pct": "-84%",
+          "flagged": true,
+          "direction": "down",
+          "email": 246,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 5,
+          "baseline": 40.2,
+          "delta_pct": "-88%",
+          "flagged": true,
+          "direction": "down",
+          "email": 5,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 207,
+          "baseline": 267.2,
+          "delta_pct": "-23%",
+          "flagged": false,
+          "direction": "down",
+          "email": 207,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 160,
+          "baseline": 197.0,
+          "delta_pct": "-19%",
+          "flagged": false,
+          "direction": "up",
+          "email": 160,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 3,
+          "baseline": 103.8,
+          "delta_pct": "-97%",
+          "flagged": false,
+          "direction": "up",
+          "email": 3,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.2,
+          "delta_pct": "-100%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 1,
+          "baseline": 6.2,
+          "delta_pct": "-84%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 246,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 247,
+        "hours_saved": "12.4 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5110,
+          "name": "Q3 Outbound",
+          "is_active": false,
+          "sent": 244,
+          "replies": 4,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 2,
+          "replies": 0,
+          "positive": 205,
+          "negative": 159,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5111,
+          "name": "Reactivation",
+          "is_active": false,
+          "sent": 0,
+          "replies": 1,
+          "positive": 2,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            797,
+            1709,
+            2244,
+            2387,
+            1814,
+            1310,
+            474,
+            246
+          ],
+          "replies_received": [
+            15,
+            48,
+            58,
+            79,
+            51,
+            24,
+            7,
+            5
+          ],
+          "positive_sentiment": [
+            159,
+            216,
+            266,
+            264,
+            283,
+            239,
+            283,
+            207
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Crestview Realty",
+      "parent_user_id": 1013,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Silverline SaaS",
+      "parent_user_id": 1014,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
+      "flags": [],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 1,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": null,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 0,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 0,
+        "hours_saved": "0.0 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            2,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            9,
+            14,
+            10,
+            8,
+            3,
+            5,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 5,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Redwood Labs",
+      "parent_user_id": 1015,
+      "status": "dormant",
+      "note": "No active campaign; last active Aug 3, 2026.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            353,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            14,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            8,
+            20,
+            50,
+            32,
+            25,
+            27,
+            45,
+            26
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Trailhead Marketing",
+      "parent_user_id": 1016,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Copperfield Inc",
+      "parent_user_id": 1017,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Lumen Digital",
+      "parent_user_id": 1018,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Northgate Legal",
+      "parent_user_id": 1019,
+      "status": "no_data",
+      "note": "Active campaign, but no analytics activity recorded yet.",
+      "has_active_campaign": true,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Pinecrest Foods",
+      "parent_user_id": 1020,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Quill and Co",
+      "parent_user_id": 1021,
+      "status": "dormant",
+      "note": "No active campaign; no recent sends.",
+      "has_active_campaign": false,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Aspenwood Homes",
+      "parent_user_id": 1022,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
+      "flags": [
+        {
+          "metric": "Replies received",
+          "direction": "down",
+          "this_week": 6,
+          "baseline": 12.2,
+          "pct": "-51%",
+          "severity": "warn"
+        },
+        {
+          "metric": "Positive sentiment",
+          "direction": "down",
+          "this_week": 28,
+          "baseline": 49.8,
+          "pct": "-44%",
+          "severity": "warn"
+        },
+        {
+          "metric": "Blocked / bounced",
+          "direction": "up",
+          "this_week": 293,
+          "baseline": 137.2,
+          "pct": "+113%",
+          "severity": "critical"
+        }
+      ],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 3555,
+          "baseline": 1749.5,
+          "delta_pct": "+103%",
+          "flagged": false,
+          "direction": "down",
+          "email": 3555,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 6,
+          "baseline": 12.2,
+          "delta_pct": "-51%",
+          "flagged": true,
+          "direction": "down",
+          "email": 6,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 28,
+          "baseline": 49.8,
+          "delta_pct": "-44%",
+          "flagged": true,
+          "direction": "down",
+          "email": 28,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 24,
+          "baseline": 38.2,
+          "delta_pct": "-37%",
+          "flagged": false,
+          "direction": "up",
+          "email": 24,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 293,
+          "baseline": 137.2,
+          "delta_pct": "+113%",
+          "flagged": true,
+          "direction": "up",
+          "email": 293,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 1,
+          "baseline": 5.2,
+          "delta_pct": "-81%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 3555,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 3556,
+        "hours_saved": "177.8 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5210,
+          "name": "Q3 Outbound",
+          "is_active": true,
+          "sent": 663,
+          "replies": 1,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5211,
+          "name": "Reactivation",
+          "is_active": true,
+          "sent": 504,
+          "replies": 1,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5212,
+          "name": "New Leads",
+          "is_active": false,
+          "sent": 432,
+          "replies": 0,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5213,
+          "name": "Event Follow-up",
+          "is_active": true,
+          "sent": 368,
+          "replies": 3,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5214,
+          "name": "Webinar Nurture",
+          "is_active": false,
+          "sent": 357,
+          "replies": 0,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5215,
+          "name": "Cold Outreach",
+          "is_active": true,
+          "sent": 319,
+          "replies": 1,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5216,
+          "name": "Referral Push",
+          "is_active": true,
+          "sent": 275,
+          "replies": 0,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": 5217,
+          "name": "Renewal Drive",
+          "is_active": false,
+          "sent": 223,
+          "replies": 0,
+          "positive": 0,
+          "negative": 0,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "+5 more campaign(s)",
+          "is_active": false,
+          "sent": null,
+          "replies": null,
+          "positive": null,
+          "negative": null,
+          "clicked": null,
+          "booked": null,
+          "won": null,
+          "revenue": null
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            1708,
+            1598,
+            3611,
+            1414,
+            856,
+            1191,
+            3537,
+            3555
+          ],
+          "replies_received": [
+            7,
+            5,
+            3,
+            6,
+            3,
+            6,
+            34,
+            6
+          ],
+          "positive_sentiment": [
+            36,
+            15,
+            54,
+            38,
+            54,
+            60,
+            47,
+            28
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 7,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Everest Consulting",
+      "parent_user_id": 1023,
+      "status": "active",
+      "note": null,
+      "has_active_campaign": true,
+      "flags": [],
+      "metrics": [
+        {
+          "key": "messages_sent",
+          "label": "Messages sent",
+          "value": 51,
+          "baseline": 51.3,
+          "delta_pct": "-1%",
+          "flagged": false,
+          "direction": "down",
+          "email": 51,
+          "sms": 0
+        },
+        {
+          "key": "replies_received",
+          "label": "Replies received",
+          "value": 1,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 1,
+          "sms": 0
+        },
+        {
+          "key": "positive_sentiment",
+          "label": "Positive sentiment",
+          "value": 0,
+          "baseline": 0.3,
+          "delta_pct": "-100%",
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "negative_sentiment",
+          "label": "Negative sentiment",
+          "value": 3,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "up",
+          "email": 3,
+          "sms": 0
+        },
+        {
+          "key": "blocked",
+          "label": "Blocked / bounced",
+          "value": 4,
+          "baseline": 4.0,
+          "delta_pct": "+0%",
+          "flagged": false,
+          "direction": "up",
+          "email": 4,
+          "sms": 0
+        },
+        {
+          "key": "links_clicked",
+          "label": "Links clicked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": 0,
+          "sms": 0
+        },
+        {
+          "key": "meetings_booked",
+          "label": "Meetings booked",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_completed",
+          "label": "Meetings completed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_cancelled",
+          "label": "Meetings cancelled",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "meetings_no_showed",
+          "label": "Meetings no-showed",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_won",
+          "label": "Deals won",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "deals_lost",
+          "label": "Deals lost",
+          "value": 1,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
+        },
+        {
+          "key": "revenue_generated",
+          "label": "Revenue generated",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "down",
+          "email": null,
+          "sms": null
+        }
+      ],
+      "funnel": {
+        "sent": 51,
+        "clicked": 0,
+        "booked": 0,
+        "completed": 0
+      },
+      "derived": {
+        "actions_performed": 52,
+        "hours_saved": "2.6 (default weights)"
+      },
+      "campaigns": [
+        {
+          "id": 5220,
+          "name": "Q3 Outbound",
+          "is_active": true,
+          "sent": 51,
+          "replies": 1,
+          "positive": 0,
+          "negative": 1,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        },
+        {
+          "id": null,
+          "name": "(no campaign)",
+          "is_active": false,
+          "sent": 0,
+          "replies": 0,
+          "positive": 0,
+          "negative": 2,
+          "clicked": 0,
+          "booked": 0,
+          "won": 0,
+          "revenue": 0
+        }
+      ],
+      "series": {
+        "weeks": [
+          "Jul 13",
+          "Jul 20",
+          "Jul 27",
+          "Aug 3",
+          "Aug 10",
+          "Aug 17",
+          "Aug 24",
+          "Aug 31"
+        ],
+        "data": {
+          "messages_sent": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            102,
+            52,
+            51
+          ],
+          "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "positive_sentiment": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "meetings_booked": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "revenue_generated": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "completeness": {
+        "days_present": 2,
+        "days_expected": 7,
+        "warning": null
+      }
+    },
+    {
+      "name": "Fallbrook Systems",
+      "parent_user_id": 1999,
+      "status": "error",
+      "note": "Collection failed for this client: OperationalError: timeout. Others unaffected.",
+      "has_active_campaign": true,
+      "flags": [],
+      "metrics": [],
+      "funnel": null,
+      "derived": null,
+      "campaigns": [],
+      "series": null,
+      "completeness": {
+        "days_present": 0,
+        "days_expected": 7,
+        "warning": null
+      }
     }
   ],
-  "method": "Read-only weekly digest. Per client, metrics are SUM(internal_analytics.daily_analytics_snapshots) over the report week (tenant-wide, all seats). Baseline = trailing 4-week average of each metric. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 baseline weeks render without flags (“new”); weeks with < 7 snapshot-days are noted and flag-suppressed to avoid false churn alerts from an incomplete precalc."
+  "method": "Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) over the report week, tenant-wide (all seats). Baseline = trailing 4-week average over weeks with activity; the trend sparkline covers 8 weeks. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 active baseline weeks render without flags (“new”); clients with no active campaign and no current sends are shown as “dormant”, not flagged. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows are sparse; a global day-coverage guard suppresses all flags if the report week looks like a pipeline gap."
 }

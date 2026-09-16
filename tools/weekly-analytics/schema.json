@@ -7,16 +7,18 @@
   "week_end": "string (YYYY-MM-DD, inclusive)",
   "summary": {
     "clients_total": "int — all active tenants enumerated",
-    "clients_active": "int — tenants with activity this week or a baseline",
+    "clients_active": "int — active SENDERS (status active/new/dropped_to_zero)",
     "clients_flagged": "int — tenants with >=1 red flag (incl. dropped-to-zero)",
-    "clients_no_data": "int — active tenants with no activity + no baseline"
+    "clients_no_data": "int — active campaign but no analytics activity yet",
+    "clients_dormant": "int — active accounts with no running campaign (not sending)"
   },
   "clients": [
     {
       "name": "string — company_name (tenant display)",
       "parent_user_id": "int — users.id of the tenant owner (stable id, used for anchors + diff keying)",
-      "status": "active | dropped_to_zero | new | no_data",
-      "note": "string|null — free text for no_data / new / error rows",
+      "status": "active | dropped_to_zero | new | no_data | dormant | error",
+      "has_active_campaign": "bool — the tenant has >=1 automation_campaign with is_active=true",
+      "note": "string|null — free text for no_data / dormant / new / error rows",
       "flags": [
         {
           "metric": "string — human metric name, e.g. 'Replies received'",
@@ -54,6 +56,24 @@
         "days_present": "int — snapshot days found for the week (expect 7)",
         "days_expected": "int",
         "warning": "string|null — e.g. '2 days missing — flags suppressed' (set when days_present<expected)"
+      },
+      "campaigns": [
+        {
+          "id": "int|null — automation_campaign id (null = unattributed bucket, or the '+N more' fold row)",
+          "name": "string — campaign name (from revhero_prod_campaign)",
+          "is_active": "bool — campaign is_active NOW (may differ from the report week for backfills)",
+          "sent": "number|null", "replies": "number|null", "positive": "number|null",
+          "negative": "number|null", "clicked": "number|null", "booked": "number|null",
+          "won": "number|null", "revenue": "number|null"
+        }
+      ],
+      "series": {
+        "weeks": ["string — short week labels, oldest->newest (e.g. 'Aug 3')"],
+        "data": {
+          "messages_sent": ["number — weekly totals aligned to weeks[]"],
+          "replies_received": ["number"], "positive_sentiment": ["number"],
+          "meetings_booked": ["number"], "revenue_generated": ["number"]
+        }
       }
     }
   ],
