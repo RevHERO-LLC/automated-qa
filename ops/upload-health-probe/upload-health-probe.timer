@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the cloud-documents upload round-trip probe hourly
+
+[Timer]
+# Hourly is enough: this catches configuration drift (bucket policy, Block Public
+# Access, a rotated key), which changes on human timescales, not per-request faults.
+OnBootSec=10min
+OnUnitActiveSec=1h
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
