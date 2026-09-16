@@ -1,0 +1,138 @@
+# Weekly Analytics Report — internal client-health digest.
+#
+# Every Monday, for the PREVIOUS complete calendar week (Mon-Sun), collect every
+# active client's analytics, red-flag metrics off their prior-4-week trend, render a
+# self-contained HTML digest, and post it to Slack channel C0C2YB9SDB2 (HTML file
+# upload + Block Kit summary).
+#
+# Pipeline (all in tools/weekly-analytics/):
+#   collect.py  -> runs/<week>.json   (read-only SUM of public.daily_analytics_snapshots
+#                                       + client enum from revhero_prod_users)
+#   render.py   -> report.html        (deterministic, self-contained)
+#   post_slack.py                     (files.getUploadURLExternal flow + chat.postMessage)
+#
+# Runner: self-hosted — it reaches the databases over the WireGuard overlay
+# (10.8.0.4); GitHub-hosted runners cannot. Same pattern as scrape-reconciler.yml.
+#
+# runs/<week>.json is uploaded as a 90-day ARTIFACT (not git-committed to main — this
+# repo is PR-only for main; the artifact is the durable per-run store + re-post source).
+#
+# Required repo secrets (see tools/weekly-analytics/README.md):
+#   ANALYTICS_DB_DSN          postgresql://revhero:<pw>@10.8.0.4:5432/revhero_prod_analytics
+#   USERS_DB_DSN              postgresql://revhero:<pw>@10.8.0.4:5432/revhero_prod_users
+#   SLACK_ANALYTICS_BOT_TOKEN xoxb-...  (bot 'salesnotification'; files:write + chat:write; must be in the channel)
+#   SLACK_WEBHOOK_DEPLOYS     (optional) fallback text alert target on job failure
+#
+# Manual run: workflow_dispatch with dry_run=true generates + uploads the artifact but
+# does NOT post to Slack; week_start=YYYY-MM-DD backfills a specific past week.
+name: Weekly Analytics Report
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"   # Mondays 13:00 UTC (~09:00 ET) — previous complete week
+  workflow_dispatch:
+    inputs:
+      week_start:
+        description: "Monday of the report week (YYYY-MM-DD). Blank = previous complete week."
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run? (true = generate + upload artifact, do NOT post to Slack)."
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-analytics-report
+  cancel-in-progress: false
+
+env:
+  SLACK_ANALYTICS_CHANNEL: C0C2YB9SDB2
+
+jobs:
+  report:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install --quiet psycopg2-binary requests
+
+      - name: Guard required secrets
+        env:
+          ANALYTICS_DB_DSN: ${{ secrets.ANALYTICS_DB_DSN }}
+          USERS_DB_DSN: ${{ secrets.USERS_DB_DSN }}
+          SLACK_ANALYTICS_BOT_TOKEN: ${{ secrets.SLACK_ANALYTICS_BOT_TOKEN }}
+        run: |
+          set -uo pipefail
+          missing=0
+          for v in ANALYTICS_DB_DSN USERS_DB_DSN SLACK_ANALYTICS_BOT_TOKEN; do
+            if [ -z "${!v:-}" ]; then echo "::error::secret $v is not set in the automated-qa repo"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || exit 1
+
+      - name: Collect + render
+        id: gen
+        env:
+          ANALYTICS_DB_DSN: ${{ secrets.ANALYTICS_DB_DSN }}
+          USERS_DB_DSN: ${{ secrets.USERS_DB_DSN }}
+        run: |
+          set -euo pipefail
+          cd tools/weekly-analytics
+          WS="${{ github.event.inputs.week_start }}"
+          if [ -n "$WS" ]; then
+            python collect.py --week-start "$WS" --out /tmp/wa.json
+          else
+            python collect.py --out /tmp/wa.json
+          fi
+          WEEK=$(python -c "import json;print(json.load(open('/tmp/wa.json'))['week_start'])")
+          echo "week=$WEEK" >> "$GITHUB_OUTPUT"
+          mkdir -p runs
+          cp /tmp/wa.json "runs/$WEEK.json"
+          python render.py "runs/$WEEK.json" > "$GITHUB_WORKSPACE/report.html"
+          echo "Generated weekly-analytics report for week $WEEK"
+
+      - name: Post to Slack
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          SLACK_ANALYTICS_BOT_TOKEN: ${{ secrets.SLACK_ANALYTICS_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd tools/weekly-analytics
+          python post_slack.py \
+            --data "runs/${{ steps.gen.outputs.week }}.json" \
+            --html "$GITHUB_WORKSPACE/report.html" \
+            --channel "$SLACK_ANALYTICS_CHANNEL"
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-analytics-${{ steps.gen.outputs.week }}
+          path: |
+            tools/weekly-analytics/runs/${{ steps.gen.outputs.week }}.json
+            report.html
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Fallback alert on failure
+        if: ${{ failure() }}
+        env:
+          WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOYS }}
+        run: |
+          set -uo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "SLACK_WEBHOOK_DEPLOYS not set — skipping fallback alert (job still marked failed)."
+            exit 0
+          fi
+          curl -s -X POST -H 'Content-type: application/json' \
+            --data '{"text":":x: Weekly Analytics Report workflow FAILED — check the GitHub Actions run logs."}' \
+            "$WEBHOOK" >/dev/null || echo "fallback alert curl failed (non-fatal)"
