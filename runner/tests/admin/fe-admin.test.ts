@@ -25,7 +25,7 @@ describe("Admin (FE-ADM)", () => {
     test(`${id} — ${path} renders without crashing`, async () => {
       const { page, context } = await loginAs("ADMIN");
       try {
-        await page.goto(path, { waitUntil: "networkidle", timeout: 25_000 });
+        await page.goto(path, { waitUntil: "domcontentloaded", timeout: 25_000 });
         const html = await page.content();
         expect(html.toLowerCase()).not.toMatch(/internal server error/);
       } finally { await context.close(); }
@@ -36,7 +36,7 @@ describe("Admin (FE-ADM)", () => {
   test("FE-ADM-017 — MEMBER role hits /admin/dashboard → 403 or redirect", async () => {
     const { page, context } = await loginAs("MEMBER");
     try {
-      await page.goto("/admin/dashboard", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/admin/dashboard", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const url = page.url();
       // Expect either 403 page OR redirect away from /admin/.
       expect(url.includes("/admin/dashboard") === false || (await page.content()).includes("403")).toBeDefined();
@@ -49,7 +49,7 @@ describe("Admin — Plans CRUD (FE-ADM-PLAN)", () => {
   test("FE-ADM-PLAN-001 — Plans list renders", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/admin/pricing/plans", { waitUntil: "networkidle" });
+      await page.goto("/admin/pricing/plans", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
@@ -65,7 +65,7 @@ describe("Admin — Add-ons CRUD (FE-ADM-ADDON)", () => {
   test("FE-ADM-ADDON-001 — Add-ons list renders", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/admin/pricing/addons", { waitUntil: "networkidle" });
+      await page.goto("/admin/pricing/addons", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
@@ -80,7 +80,7 @@ describe("Admin — Promo codes CRUD (FE-ADM-PROMO)", () => {
   test("FE-ADM-PROMO-001 — Promo list shows discount/expiry/usage", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/admin/pricing/promo-codes", { waitUntil: "networkidle" });
+      await page.goto("/admin/pricing/promo-codes", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }

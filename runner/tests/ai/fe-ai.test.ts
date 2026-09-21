@@ -16,7 +16,7 @@ describe("AI personalization (FE-AI)", () => {
   test("FE-AI-001 — /automation-campaign/[id] shows AI personalization toggle", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/4", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/4", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {

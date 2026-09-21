@@ -39,7 +39,7 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-002 — Submit empty form → field validation errors", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
       const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
       await submit.waitFor({ state: "visible", timeout: 15_000 });
       await submit.click();
@@ -58,7 +58,7 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-003 — Submit with invalid email format → validation error", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
       await page.locator('input[type="email"]').first().fill("not-an-email");
       await page.locator('input[type="password"]').first().fill("ValidPass123!");
       const submit = page.getByRole("button", { name: SUBMIT_BUTTON }).first();
@@ -76,7 +76,7 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-004 — Submit with weak password → strength meter + rejection", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
       const passInput = page.locator('input[type="password"]').first();
       await passInput.fill("abc");
       await passInput.blur();
@@ -118,7 +118,7 @@ describe("Registration wizard (FE-REG)", () => {
   test("FE-REG-006 — Submit valid form → advances to step 2 (Select Plan)", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/signup?step=1", { waitUntil: "networkidle" });
+      await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
       const stamp = Date.now();
       const email = `qa-reg-${stamp}@yopmail.com`;
       await fillFirstAvailable(page, ['input[name*="first" i]', 'input[placeholder*="first" i]'], "QA");

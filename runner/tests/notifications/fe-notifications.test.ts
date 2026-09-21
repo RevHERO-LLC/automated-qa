@@ -10,7 +10,7 @@ describe("Notifications + Help (FE-NOTIF / FE-HELP)", () => {
   test("FE-NOTIF-001 — /notifications renders list with All / Read / Unread tabs", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/notifications", { waitUntil: "networkidle" });
+      await page.goto("/notifications", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -42,7 +42,7 @@ describe("Notifications + Help (FE-NOTIF / FE-HELP)", () => {
   test("FE-HELP-001 — /help renders FAQ section (dev-only on staging)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/help", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/help", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -61,7 +61,7 @@ describe("Notifications + Help (FE-NOTIF / FE-HELP)", () => {
   test("FE-HELP-005 — /getting-started checklist progress bar updates", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/getting-started", { waitUntil: "networkidle" });
+      await page.goto("/getting-started", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {

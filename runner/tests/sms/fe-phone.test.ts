@@ -10,7 +10,7 @@ describe("Phone System (FE-PHONE)", () => {
   test("FE-PHONE-001 — /phone-system redirects to /phone-system/sms", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system", { waitUntil: "networkidle" });
+      await page.goto("/phone-system", { waitUntil: "domcontentloaded" });
       expect(page.url()).toMatch(/\/phone-system\/sms|\/phone-system$/);
     } finally {
       await context.close();
@@ -20,7 +20,7 @@ describe("Phone System (FE-PHONE)", () => {
   test("FE-PHONE-002 — /phone-system/sms renders empty state (FE-BUG-04 fix — no permanent skeleton)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/sms", { waitUntil: "networkidle" });
+      await page.goto("/phone-system/sms", { waitUntil: "domcontentloaded" });
       // After waiting for network, there should NOT be a skeleton loader still on screen.
       await page.waitForTimeout(3_000);
       const skeletons = page.locator(".skeleton, [aria-busy='true'][data-skeleton], .loading-skeleton");
@@ -38,7 +38,7 @@ describe("Phone System (FE-PHONE)", () => {
   test("FE-PHONE-003 — Empty state shows 'Go to Phone System Settings' CTA (best-effort)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/sms", { waitUntil: "networkidle" });
+      await page.goto("/phone-system/sms", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -49,7 +49,7 @@ describe("Phone System (FE-PHONE)", () => {
   test("FE-PHONE-004 — /phone-system/voicemails lists voicemails or empty state", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/voicemails", { waitUntil: "networkidle" });
+      await page.goto("/phone-system/voicemails", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {

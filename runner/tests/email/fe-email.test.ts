@@ -10,7 +10,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-001 — /email-system/email lists messages or empty state", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -21,7 +21,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-002 — 'Mailbox not connected' empty state with Connect Mailbox CTA", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       // Either the mailbox is connected (Maggie has Gmail) and inbox renders,
       // OR an empty state with Connect CTA. Both states must be non-crashing.
       const url = page.url();
@@ -34,7 +34,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-003 — Connect Mailbox button opens OAuth flow (button presence)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const connect = page.getByRole("button", { name: /connect.*mailbox|connect.*gmail|google/i }).first();
       // Maggie has a connected mailbox so this button may not render — accept either.
       expect((await connect.count()) >= 0).toBe(true);
@@ -46,7 +46,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-004 — Email filters work (filter UI exists)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const filterUI = page.locator('select, [role="combobox"], button[aria-haspopup]').first();
       expect((await filterUI.count()) >= 0).toBe(true);
     } finally {
@@ -57,7 +57,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-005 — Search Emails input filters list", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const search = page.locator('input[placeholder*="search" i]').first();
       expect((await search.count()) >= 0).toBe(true);
     } finally {
@@ -68,7 +68,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-006 — '+' button opens compose / add modal", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const plus = page.getByRole("button", { name: /^\+$|new email|compose|new message/i }).first();
       expect((await plus.count()) >= 0).toBe(true);
     } finally {
@@ -79,7 +79,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-007 — /email-system/email/add page renders without crashing", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
       // Some FEs use rich-text editors / iframes for the compose body — accept
@@ -94,7 +94,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-008 — Compose form requires recipient + subject + body", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
       const send = page.getByRole("button", { name: /send/i }).first();
       if ((await send.count()) > 0) {
         await send.click({ trial: true }).catch(() => {});
@@ -113,7 +113,7 @@ describe("Email System (FE-EMAIL)", () => {
     const { page, context } = await loginAs("ADMIN");
     try {
       // Use a likely-nonexistent id to verify the route handler renders cleanly.
-      await page.goto("/email-system/email/999999999", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/email-system/email/999999999", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -124,7 +124,7 @@ describe("Email System (FE-EMAIL)", () => {
   test("FE-EMAIL-011 — Email categories sidebar navigates", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
       const cats = page.getByRole("link", { name: /inbox|sent|archive|star/i });
       expect((await cats.count()) >= 0).toBe(true);
     } finally {

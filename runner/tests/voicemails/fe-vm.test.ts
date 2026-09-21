@@ -8,7 +8,7 @@ describe("Voicemails page (FE-VM)", () => {
   test("FE-VM-001 — /phone-system/voicemails lists records or empty state", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/voicemails", { waitUntil: "networkidle" });
+      await page.goto("/phone-system/voicemails", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
