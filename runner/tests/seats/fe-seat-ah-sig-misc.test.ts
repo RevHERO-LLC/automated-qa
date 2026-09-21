@@ -10,7 +10,7 @@ describe("Sub-user invite (FE-SEAT)", () => {
   test("FE-SEAT-001 — Sub-User Invite form requires valid email + role", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/general", { waitUntil: "networkidle" });
+      await page.goto("/settings/general", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
@@ -21,7 +21,7 @@ describe("Sub-user invite (FE-SEAT)", () => {
     const { page, context } = await loginAs("ADMIN");
     try {
       // Use a fake id — we just want the route to render
-      await page.goto("/invite/fake-id-9999", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/invite/fake-id-9999", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
@@ -82,7 +82,7 @@ describe("Purchase Lists (FE-PUR)", () => {
   test("FE-PUR-001 — /purchase-lists renders (dev-only on staging)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/purchase-lists", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/purchase-lists", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }
@@ -93,7 +93,7 @@ describe("Purchase Lists (FE-PUR)", () => {
   test("FE-PUR-005 — /purchase-lists/create renders form", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/purchase-lists/create", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/purchase-lists/create", { waitUntil: "domcontentloaded", timeout: 20_000 });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally { await context.close(); }

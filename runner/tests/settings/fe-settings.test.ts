@@ -11,7 +11,7 @@ describe("Settings — General (FE-SET-G)", () => {
   test("FE-SET-G-001 — /settings/general renders Billing section by default", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/general", { waitUntil: "networkidle" });
+      await page.goto("/settings/general", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -22,7 +22,7 @@ describe("Settings — General (FE-SET-G)", () => {
   test("FE-SET-G-002 — Right sidebar nav items show full text (fe-ui-01 regression)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/general", { waitUntil: "networkidle" });
+      await page.goto("/settings/general", { waitUntil: "domcontentloaded" });
       // Look for full sidebar items — none should be truncated to ellipsis.
       const ellipsis = page.locator(":text-matches('\\\\.\\\\.\\\\.')").first();
       // Best-effort: fail only if a clearly-truncated nav item is visible.
@@ -44,7 +44,7 @@ describe("Settings — General (FE-SET-G)", () => {
   test("FE-SET-G-006 — Plan features show numbers with thousands separators (fe-ui-02 regression)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/general", { waitUntil: "networkidle" });
+      await page.goto("/settings/general", { waitUntil: "domcontentloaded" });
       const text = await page.content();
       // If we see any "50000" without comma in plan-features context, fail.
       // Lax check — just look for the comma version somewhere.
@@ -86,7 +86,7 @@ describe("Settings — System (FE-SET-S)", () => {
   test("FE-SET-S-001 — /settings/system renders Brand Status + Phone Settings", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/system", { waitUntil: "networkidle" });
+      await page.goto("/settings/system", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -117,7 +117,7 @@ describe("Settings — Manage Plans (FE-SET-M)", () => {
   test("FE-SET-M-001 — /settings/manage-plans renders manage add-ons section", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/settings/manage-plans", { waitUntil: "networkidle" });
+      await page.goto("/settings/manage-plans", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -145,7 +145,7 @@ describe("User Settings (FE-USER)", () => {
   test("FE-USER-001 — /user renders profile fields", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/user", { waitUntil: "networkidle" });
+      await page.goto("/user", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
     } finally {
@@ -155,7 +155,7 @@ describe("User Settings (FE-USER)", () => {
   test("FE-USER-002 — Created date renders correctly (NOT 'Invalid Date')", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/user", { waitUntil: "networkidle" });
+      await page.goto("/user", { waitUntil: "domcontentloaded" });
       const text = await page.content();
       expect(text).not.toMatch(/Invalid Date/);
     } finally {

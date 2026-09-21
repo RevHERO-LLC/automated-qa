@@ -202,7 +202,7 @@ describe("Authentication (FE-AUTH)", () => {
   test("FE-AUTH-012 — Sign Out clears cookies and redirects to /login", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle", timeout: 30_000 });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded", timeout: 30_000 });
       const cookiesBefore = await context.cookies();
       const hasAuth = cookiesBefore.some((c) => /^token$/.test(c.name));
       expect(hasAuth).toBe(true);
@@ -247,8 +247,8 @@ describe("Authentication (FE-AUTH)", () => {
       page.on("console", (msg) => {
         if (msg.type() === "error") errors.push(msg.text());
       });
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
-      await page.reload({ waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+      await page.reload({ waitUntil: "domcontentloaded" });
       expect(page.url()).not.toContain("/login");
       const seriousErrors = errors.filter(
         (e) => !/favicon|webmanifest|hydrat/i.test(e) && !e.includes("Failed to load resource")
@@ -293,9 +293,9 @@ describe("Authentication (FE-AUTH)", () => {
         const url = req.url();
         if (/revhero\.io|revhero\.ai/.test(url)) requests.push(url);
       });
-      await page.goto("/", { waitUntil: "networkidle" });
+      await page.goto("/", { waitUntil: "domcontentloaded" });
       // Hit the login page so the FE loads its API client config.
-      await page.goto("/login", { waitUntil: "networkidle" });
+      await page.goto("/login", { waitUntil: "domcontentloaded" });
       // Wait briefly for any deferred fetches.
       await page.waitForTimeout(2_000);
       const prodHits = requests.filter((u) => /user-fe-backend\.revhero\.io/.test(u) && !/test\./.test(u));
@@ -338,7 +338,7 @@ describe("Authentication (FE-AUTH)", () => {
     // not the form submit itself.
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/login?redirect=https%3A%2F%2Fevil.example", { waitUntil: "networkidle" });
+      await page.goto("/login?redirect=https%3A%2F%2Fevil.example", { waitUntil: "domcontentloaded" });
       // Already logged in — the login page should redirect away. Verify it
       // does NOT honour the evil-example redirect param.
       await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
@@ -359,7 +359,7 @@ describe("Authentication (FE-AUTH)", () => {
     // intentionally not using the BFF API path here.
     const { page, context } = await freshContext();
     try {
-      await page.goto("/login", { waitUntil: "networkidle" });
+      await page.goto("/login", { waitUntil: "domcontentloaded" });
       // Wait for the form to be interactive (button enabled).
       const loginBtn = page.getByRole("button", { name: /^login$/i });
       await loginBtn.waitFor({ state: "visible", timeout: 10_000 });

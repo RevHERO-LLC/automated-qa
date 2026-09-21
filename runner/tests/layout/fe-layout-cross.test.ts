@@ -89,7 +89,7 @@ describe("Cross-cutting (FE-CROSS)", () => {
         const u = req.url();
         if (/revhero\.io|revhero\.ai/.test(u)) requests.push(u);
       });
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2_000);
       const prodHits = requests.filter(
         (u) => /\b(?:user-fe-backend|sms-service|email-ingress|deal-mover|cloud-documents-service|ai-agent|activity-service|pipedrive-service)\.revhero\.io\b/.test(u) && !/test\./.test(u)

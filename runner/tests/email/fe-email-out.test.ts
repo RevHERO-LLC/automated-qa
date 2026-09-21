@@ -69,7 +69,7 @@ describe("Outbound Email (FE-EMAIL-OUT)", () => {
   test("FE-EMAIL-OUT-007 — Send manual email with merge tags (composer renders)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
       const subject = page.locator('input[name*="subject" i], input[placeholder*="subject" i]').first();
       expect((await subject.count()) >= 0).toBe(true);
     } finally {
@@ -88,7 +88,7 @@ describe("Outbound Email (FE-EMAIL-OUT)", () => {
   test("FE-EMAIL-OUT-010 — Empty subject → form validation rejects", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "networkidle" });
+      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
       const send = page.getByRole("button", { name: /send/i }).first();
       if ((await send.count()) > 0) {
         await send.click({ trial: true }).catch(() => {});

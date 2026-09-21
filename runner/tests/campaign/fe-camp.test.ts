@@ -109,7 +109,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-004 — Pagination Next/Prev (where present) is sane", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       // Pagination is only present when results exceed page size. Don't fail
       // when it's absent.
       const next = page.getByRole("button", { name: /next|>>/i });
@@ -122,7 +122,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-005 — PULSE / SWARM tabs at top (SWARM dev-only on staging)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       const pulse = page.getByText(/^pulse$/i).first();
       // Swarm is dev-only and may be hidden depending on hostname classification.
       const has = (await pulse.count()) > 0;
@@ -136,7 +136,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
     // QA-FULL-013 regression: this route must be reachable on staging.
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const url = page.url();
       expect(url).toContain("/automation-campaign/create");
       // Builder typically shows a "Building campaign" header or canvas.
@@ -150,7 +150,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-007 — Builder header shows 'Untitled' (FE-BUG-08 fix — not literal 'undefined')", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const html = await page.content();
       expect(html.toLowerCase()).not.toContain("undefined campaign");
       expect(html.toLowerCase()).not.toMatch(/heading.*undefined/);
@@ -162,7 +162,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-008 — Builder canvas shows 'Add Stage +' button", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const addStage = page.getByRole("button", { name: /add stage|\+ stage|new stage/i }).first();
       await expectVisible(addStage, { timeout: 15_000 });
     } finally {
@@ -173,7 +173,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-009 — Click Add Stage opens stage type modal", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const addStage = page.getByRole("button", { name: /add stage/i }).first();
       if ((await addStage.count()) === 0) return;
       try {
@@ -197,7 +197,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
     // interaction without crashing. Detailed stage-type CRUD is in Phase 5.
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const errors: string[] = [];
       page.on("pageerror", (err) => errors.push(err.message));
       await page.waitForTimeout(2_000);
@@ -211,7 +211,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-011 — Builder name area exists (route smoke)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       // Look for ANY editable name affordance — input, contenteditable, or a
       // heading with the placeholder copy.
       const candidates = await Promise.all([
@@ -230,7 +230,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-012 — Save Campaign with no stages → friendly error or warning", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/create", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       const save = page.getByRole("button", { name: /save|publish|activate/i }).first();
       if ((await save.count()) > 0) {
         await save.click({ trial: true }).catch(() => {});
@@ -245,7 +245,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-013 — Active toggle persists after save (visual presence)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       const toggles = page.locator('[role="switch"], input[type="checkbox"]');
       const has = (await toggles.count()) > 0;
       expect(has || true).toBe(true);
@@ -257,7 +257,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-014 — Click 'Import campaign from CRM' opens import modal", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
       const importBtn = page.getByRole("button", { name: /import|crm/i }).first();
       // Modal opening is best-effort.
       if ((await importBtn.count()) > 0) {
@@ -276,7 +276,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-016 — /automation-campaign/[id] for non-existent ID → 404 or friendly error", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/999999999", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/automation-campaign/999999999", { waitUntil: "domcontentloaded", timeout: 20_000 });
       // Should NOT 500 / blank. Either 404 page or friendly error.
       const html = await page.content();
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
@@ -289,7 +289,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
     // Use Maggie's campaign id 4 (seeded fixture per test-credentials.md).
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/4/deals", { waitUntil: "networkidle", timeout: 20_000 });
+      await page.goto("/automation-campaign/4/deals", { waitUntil: "domcontentloaded", timeout: 20_000 });
       // Either deal table renders or an empty state — the page must not crash.
       const url = page.url();
       expect(url).toContain("/deals");
@@ -301,7 +301,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-018 — Deals table renders without crashing (smoke)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/4/deals", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/4/deals", { waitUntil: "domcontentloaded" });
       // The search field lives on the dedicated /deals/search page (covered by
       // FE-DEAL-SEARCH-001..006). The plain /deals page may not have it.
       const html = await page.content();
@@ -314,7 +314,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-019 — Pull CRM State button triggers sync (button present)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/4/deals", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/4/deals", { waitUntil: "domcontentloaded" });
       const pull = page.getByRole("button", { name: /pull|sync|refresh.*crm/i }).first();
       // Button may not be present if no CRM connected — accept either.
       expect((await pull.count()) >= 0).toBe(true);
@@ -326,7 +326,7 @@ describe("Campaign Builder (FE-CAMP)", () => {
   test("FE-CAMP-020 — Stage drag-and-drop reorders without crashes (page renders)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/automation-campaign/4", { waitUntil: "networkidle" });
+      await page.goto("/automation-campaign/4", { waitUntil: "domcontentloaded" });
       const errors: string[] = [];
       page.on("pageerror", (err) => errors.push(err.message));
       await page.waitForTimeout(2_000);

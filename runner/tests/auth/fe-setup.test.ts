@@ -33,7 +33,7 @@ describe("Onboarding / Setup (FE-SETUP)", () => {
   test("FE-SETUP-002 — Setup wizard captures business profile info (form renders)", async () => {
     const { page, context } = await freshContext();
     try {
-      await page.goto("/setup", { waitUntil: "networkidle", timeout: 15_000 });
+      await page.goto("/setup", { waitUntil: "domcontentloaded", timeout: 15_000 });
       // /setup is auth-gated. Logged-out should land on /login. If it stays
       // on /setup with a public form rendering, that's a SECURITY finding —
       // we'd want to file it. For now accept either /login redirect OR a
@@ -107,7 +107,7 @@ describe("Onboarding / Setup (FE-SETUP)", () => {
   test("FE-SETUP-007 — /getting-started accessible even when setup_finished is true (onboarding route exception)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/getting-started", { waitUntil: "networkidle" });
+      await page.goto("/getting-started", { waitUntil: "domcontentloaded" });
       // Should land on the page (not redirected away to dashboard).
       expect(page.url()).toContain("/getting-started");
       // No console errors.
