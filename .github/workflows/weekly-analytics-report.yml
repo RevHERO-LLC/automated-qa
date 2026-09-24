@@ -70,11 +70,12 @@ jobs:
         env:
           ANALYTICS_DB_DSN: ${{ secrets.ANALYTICS_DB_DSN }}
           USERS_DB_DSN: ${{ secrets.USERS_DB_DSN }}
+          CAMPAIGN_DB_DSN: ${{ secrets.CAMPAIGN_DB_DSN }}
           SLACK_ANALYTICS_BOT_TOKEN: ${{ secrets.SLACK_ANALYTICS_BOT_TOKEN }}
         run: |
           set -uo pipefail
           missing=0
-          for v in ANALYTICS_DB_DSN USERS_DB_DSN SLACK_ANALYTICS_BOT_TOKEN; do
+          for v in ANALYTICS_DB_DSN USERS_DB_DSN CAMPAIGN_DB_DSN SLACK_ANALYTICS_BOT_TOKEN; do
             if [ -z "${!v:-}" ]; then echo "::error::secret $v is not set in the automated-qa repo"; missing=1; fi
           done
           [ "$missing" = 0 ] || exit 1
@@ -84,6 +85,7 @@ jobs:
         env:
           ANALYTICS_DB_DSN: ${{ secrets.ANALYTICS_DB_DSN }}
           USERS_DB_DSN: ${{ secrets.USERS_DB_DSN }}
+          CAMPAIGN_DB_DSN: ${{ secrets.CAMPAIGN_DB_DSN }}
         run: |
           set -euo pipefail
           cd tools/weekly-analytics
