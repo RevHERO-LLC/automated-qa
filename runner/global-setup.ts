@@ -17,13 +17,13 @@
 // already on disk.
 import type { AuthRole } from "./fixtures/auth.js";
 import { prewarmLogin, closeBrowser } from "./fixtures/auth.js";
+import { prewarmAllRoles } from "./lib/prewarm.js";
 
 const ROLES: readonly AuthRole[] = ["ADMIN", "PAID_ADMIN", "MEMBER", "SUPER_ADMIN"];
 
 export default async function setup(): Promise<() => Promise<void>> {
-  for (const role of ROLES) {
-    await prewarmLogin(role);
-  }
+  // Fail-open (lib/prewarm.ts): a role that can't be warmed is skipped, never fatal to the run.
+  await prewarmAllRoles(ROLES, (role) => prewarmLogin(role));
   return async () => {
     await closeBrowser();
   };
