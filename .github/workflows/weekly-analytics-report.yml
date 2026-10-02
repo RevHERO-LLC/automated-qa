@@ -12,7 +12,7 @@
 #   post_slack.py                     (files.getUploadURLExternal flow + chat.postMessage)
 #
 # Runner: self-hosted — it reaches the databases over the WireGuard overlay
-# (10.8.0.4); GitHub-hosted runners cannot. Same pattern as scrape-reconciler.yml.
+# (10.8.0.4); GitHub-hosted runners cannot. Same pattern as deal-cadence-monitor.yml.
 #
 # runs/<week>.json is uploaded as a 90-day ARTIFACT (not git-committed to main — this
 # repo is PR-only for main; the artifact is the durable per-run store + re-post source).
