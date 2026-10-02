@@ -18,7 +18,9 @@ name: Deal-cadence monitor
 
 on:
   schedule:
-    - cron: "45 6 * * *"   # 06:45 UTC daily — free slot after scrape-reconciler (06:30)
+    - cron: "45 6 * * *"   # 06:45 UTC daily (originally a free slot after scrape-reconciler's
+                            # 06:30 run; that job was removed 2026-10-02 as redundant dead
+                            # weight — see #79. Time kept as-is; no other job depends on it.)
   workflow_dispatch:
     inputs:
       test_alert:
