@@ -15,8 +15,10 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { getAreaUrls, getCredentials } from "../lib/context.js";
+import { withSessionLock, lockPathFor } from "../lib/session-lock.js";
+import { retryWithBudget, RetryBudgetExceededError } from "../lib/retry.js";
 
-type AuthRole = "ADMIN" | "PAID_ADMIN" | "MEMBER" | "SUPER_ADMIN";
+export type AuthRole = "ADMIN" | "PAID_ADMIN" | "MEMBER" | "SUPER_ADMIN";
 
 let browser: Browser | null = null;
 
@@ -102,27 +104,60 @@ async function ensureAuthedRender(page: Page, timeoutMs = 12_000): Promise<boole
   return !page.url().includes("/login");
 }
 
-export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext; page: Page }> {
+// Builds a context from a given (already-parsed) storageState and verifies
+// it still renders authed. Returns null — closing the context it opened —
+// if the state doesn't actually land logged in, so callers can fall back to
+// a real login without ever handing a test a logged-out page. Shared by the
+// happy-path cache hit below and by the post-lock double-check, so there is
+// exactly one place that knows how to "try a cached state."
+async function tryContextFromState(
+  state: unknown
+): Promise<{ context: BrowserContext; page: Page } | null> {
   const b = await getBrowser();
+  const baseURL = getAreaUrls().base;
+  const context = await b.newContext({
+    baseURL,
+    storageState: state as any,
+    viewport: { width: 1440, height: 900 }
+  });
+  const page = await context.newPage();
+  await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
+  if (await ensureAuthedRender(page)) return { context, page };
+  await context.close();
+  return null;
+}
+
+export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext; page: Page }> {
   const sp = sessionPath(role);
   const cached = readStorageStateOrNull(sp);
-  const reuse = cached !== null;
-  const baseURL = getAreaUrls().base;
-  const context = await b.newContext(
-    reuse
-      ? { baseURL, storageState: cached as any, viewport: { width: 1440, height: 900 } }
-      : { baseURL, viewport: { width: 1440, height: 900 } }
-  );
-  const page = await context.newPage();
-
-  let needsLogin = !reuse;
-  if (reuse) {
-    // Validate the cached session still works AND the FE renders the authed
-    // layout; if not, rebuild.
-    await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
-    if (!(await ensureAuthedRender(page))) needsLogin = true;
+  if (cached !== null) {
+    const hit = await tryContextFromState(cached);
+    if (hit) return hit;
   }
-  if (needsLogin) {
+
+  // Cache missing, unreadable, or no longer authenticated. vitest's
+  // fileParallelism runs test FILES as separate OS processes, so without a
+  // cross-process lock here, every worker process that hits a cold/expired
+  // cache for the SAME role at the same moment (e.g. right after the runner
+  // service moves nodes and SESSION_DIR — a node-local volume — comes up
+  // empty) would log in concurrently. Each of those is a separate hit
+  // against LoginMaxAttemptsPerEmail=10 (15m window), which is exactly the
+  // 429 storm that took down the 2026-09-30 run. Serialize on a per-role
+  // lockfile instead: only the first process to acquire it actually logs in.
+  const lockPath = lockPathFor(SESSION_DIR, role);
+  return withSessionLock(lockPath, async () => {
+    // Double-check AFTER acquiring the lock: another process may have logged
+    // in and written a fresh state for this role while we were waiting.
+    const refreshed = readStorageStateOrNull(sp);
+    if (refreshed !== null) {
+      const hit = await tryContextFromState(refreshed);
+      if (hit) return hit;
+    }
+
+    const b = await getBrowser();
+    const baseURL = getAreaUrls().base;
+    const context = await b.newContext({ baseURL, viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
     await performLoginViaApi(context, role);
     await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
     // Verify the session actually landed before returning. A cookie-propagation
@@ -145,37 +180,50 @@ export async function loginAs(role: AuthRole): Promise<{ context: BrowserContext
       // Best-effort persistence — a failed write means the next test re-logs in.
       console.warn(`[auth] storage state write failed for ${role}:`, err);
     }
-  }
-  return { context, page };
+    return { context, page };
+  });
 }
 
-async function performLoginViaApi(context: BrowserContext, role: AuthRole): Promise<void> {
+// Result of a single, non-retrying login POST. 429 is reported rather than
+// thrown so callers can decide how to wait — the worker-side fallback
+// (performLoginViaApi, one capped retry) and globalSetup's prewarmLogin
+// (a real multi-minute budget) each wait very differently, but neither
+// should duplicate the request/cookie-setting logic below to do it.
+export type LoginAttemptResult = { ok: true } | { ok: false; retryAfterMs: number | null };
+
+function parseRetryAfterMs(headerValue: string | undefined, bodySeconds: unknown): number | null {
+  if (headerValue !== undefined) {
+    const secs = Number(headerValue);
+    if (Number.isFinite(secs) && secs > 0) return secs * 1000;
+  }
+  if (typeof bodySeconds === "number" && bodySeconds > 0) return bodySeconds * 1000;
+  return null;
+}
+
+async function attemptLoginOnce(context: BrowserContext, role: AuthRole): Promise<LoginAttemptResult> {
   const creds = getCredentials(role);
   const bff = getAreaUrls().bff;
-  let res = await context.request.post(`${bff}/v1/auth/login`, {
+  const res = await context.request.post(`${bff}/v1/auth/login`, {
     data: { email: creds.email, password: creds.password },
     headers: { "content-type": "application/json", accept: "application/json" }
   });
 
-  // The BFF rate-limits login attempts per email (LoginMaxAttemptsPerEmail = 10
-  // per 6m20s window). Prior test runs may have polluted the budget. If we hit
-  // 429, wait the server-suggested retry_after and try once more — but cap the
-  // wait at 60s so a rogue test doesn't hang the suite indefinitely.
   if (res.status() === 429) {
-    let retrySec = 30;
-    try {
-      const body = (await res.json()) as any;
-      const suggested = body?.data?.retry_after_seconds ?? body?.retry_after_seconds;
-      if (typeof suggested === "number" && suggested > 0) retrySec = Math.min(suggested + 2, 60);
-    } catch {
-      /* ignore json parse */
+    // "Retry-After" names the standard HTTP header for this; the BFF also
+    // echoes the same figure as retry_after_seconds in the JSON body (see
+    // RevHero-user-fe-backend auth.handler.go). Prefer the header — it's
+    // what the name refers to — and fall back to the body field.
+    const headerVal = res.headers()["retry-after"];
+    let bodySeconds: unknown;
+    if (headerVal === undefined) {
+      try {
+        const body = (await res.json()) as any;
+        bodySeconds = body?.data?.retry_after_seconds ?? body?.retry_after_seconds;
+      } catch {
+        /* ignore json parse */
+      }
     }
-    console.log(`[auth] BFF login returned 429 for ${role}; sleeping ${retrySec}s before retry`);
-    await new Promise((r) => setTimeout(r, retrySec * 1000));
-    res = await context.request.post(`${bff}/v1/auth/login`, {
-      data: { email: creds.email, password: creds.password },
-      headers: { "content-type": "application/json", accept: "application/json" }
-    });
+    return { ok: false, retryAfterMs: parseRetryAfterMs(headerVal, bodySeconds) };
   }
 
   if (!res.ok()) {
@@ -237,6 +285,152 @@ async function performLoginViaApi(context: BrowserContext, role: AuthRole): Prom
       },
       { tokenValue: token }
     );
+  }
+
+  return { ok: true };
+}
+
+async function performLoginViaApi(context: BrowserContext, role: AuthRole): Promise<void> {
+  // The BFF rate-limits login attempts per email (LoginMaxAttemptsPerEmail =
+  // 10 per 15-MINUTE window; LoginMaxAttemptsPerIP = 30 — see
+  // RevHero-user-fe-backend revhero.contract.go). Prior test runs may have
+  // polluted the budget. If we hit 429, wait the server-suggested retry and
+  // try once more — capped at 60s so a rogue test doesn't hang the suite
+  // indefinitely. This single capped retry is only a last-resort fallback for
+  // the rare worker-side cache-miss/expiry (loginAs wraps it in a
+  // cross-process lock so at most one worker process ever gets here per
+  // role); the real rate-limit window is absorbed up front by globalSetup's
+  // prewarmLogin, which budgets up to 16 minutes per role before the suite
+  // even starts.
+  let result = await attemptLoginOnce(context, role);
+  if (!result.ok) {
+    const waitMs = Math.min(result.retryAfterMs ?? 30_000, 60_000);
+    console.log(`[auth] BFF login returned 429 for ${role}; sleeping ${Math.round(waitMs / 1000)}s before retry`);
+    await new Promise((r) => setTimeout(r, waitMs));
+    result = await attemptLoginOnce(context, role);
+    if (!result.ok) {
+      throw new Error(
+        `[auth] loginAs(${role}) hit the BFF login rate limit (429) twice in a row; giving up after one retry.`
+      );
+    }
+  }
+}
+
+// --- globalSetup support -----------------------------------------------
+//
+// vitest's globalSetup (runner/global-setup.ts) logs every role in SERIALLY
+// before any worker process starts, so workers never race each other into
+// the BFF's login rate limit on a cold SESSION_DIR. The pieces below are
+// split so the retry/budget/cache ORCHESTRATION (runRoleLoginBudget) can be
+// unit-tested with a stubbed attempt() and no browser or network at all;
+// prewarmLogin is the thin wrapper that supplies the real Playwright/fs deps.
+
+const FRESHNESS_MARGIN_MS = 30 * 60_000; // require 30min of runway left
+const DEFAULT_PREWARM_BUDGET_MS = 16 * 60_000; // "at most 16 minutes" per role
+
+// A cached storageState is worth reusing only if its auth cookie still has
+// enough life left to outlast a full suite run — otherwise globalSetup would
+// "successfully" skip the login and hand workers a session that expires
+// mid-run.
+export function isStorageStateFresh(state: unknown, marginMs = FRESHNESS_MARGIN_MS): boolean {
+  if (!state || typeof state !== "object") return false;
+  const cookies = (state as { cookies?: unknown }).cookies;
+  if (!Array.isArray(cookies)) return false;
+  const token = cookies.find((c: any) => c && c.name === "token");
+  if (!token || typeof token.expires !== "number" || token.expires <= 0) return false;
+  return token.expires * 1000 > Date.now() + marginMs;
+}
+
+function envPrewarmBudgetMs(): number | null {
+  const raw = process.env.QA_LOGIN_PREWARM_BUDGET_MS;
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export type RunRoleLoginBudgetOptions = {
+  // Total time to spend waiting out 429s before giving up. Defaults to the
+  // QA_LOGIN_PREWARM_BUDGET_MS env var if set, else 16 minutes. Tests shorten
+  // this directly via the option (that's the intended seam — see
+  // tests/unit/login-budget.test.ts) rather than via real wall-clock waits.
+  // `| undefined` throughout (not just `?:`): exactOptionalPropertyTypes
+  // requires it wherever a value forwarded here (e.g. prewarmLogin passing
+  // its own opts.budgetMs straight through) might itself be `undefined`.
+  budgetMs?: number | undefined;
+  readCached?: (() => unknown | null) | undefined;
+  isFresh?: ((state: unknown) => boolean) | undefined;
+  onSuccess?: (() => Promise<void> | void) | undefined;
+  onSkip?: (() => void) | undefined;
+  onWait?: ((waitMs: number, attempt: number, honoredRetryAfter: boolean) => void) | undefined;
+  sleep?: ((ms: number) => Promise<void>) | undefined;
+  now?: (() => number) | undefined;
+};
+
+// Pure retry/budget/cache orchestration for warming one role's session ahead
+// of the suite. Deliberately knows nothing about Playwright — `attempt` is
+// injected, which is what lets tests exercise the real backoff/budget logic
+// with a stub and no network (see prewarmLogin below for the production
+// wiring).
+export async function runRoleLoginBudget(
+  role: AuthRole,
+  attempt: () => Promise<LoginAttemptResult>,
+  opts: RunRoleLoginBudgetOptions = {}
+): Promise<void> {
+  const readCached = opts.readCached ?? (() => null);
+  const isFresh = opts.isFresh ?? isStorageStateFresh;
+  const cached = readCached();
+  if (cached !== null && isFresh(cached)) {
+    opts.onSkip?.();
+    return;
+  }
+
+  const budgetMs = opts.budgetMs ?? envPrewarmBudgetMs() ?? DEFAULT_PREWARM_BUDGET_MS;
+  try {
+    await retryWithBudget<void>(
+      async () => {
+        const result = await attempt();
+        if (result.ok) return { done: true, value: undefined };
+        return { done: false, retryAfterMs: result.retryAfterMs };
+      },
+      { budgetMs, sleep: opts.sleep, now: opts.now, onWait: opts.onWait }
+    );
+  } catch (err) {
+    if (err instanceof RetryBudgetExceededError) {
+      throw new Error(
+        `[auth] prewarmLogin(${role}) could not log in within the ${Math.round(budgetMs / 60_000)}-minute ` +
+          `budget — the BFF login rate limit (LoginMaxAttemptsPerEmail=10 per 15m window) is still active ` +
+          `after ${err.attempts} attempt(s). Giving up on this role for globalSetup; loginAs(${role})'s own ` +
+          `cross-process lock remains as a per-test fallback.`
+      );
+    }
+    throw err;
+  }
+
+  await opts.onSuccess?.();
+}
+
+// Real Playwright wiring around runRoleLoginBudget: used by
+// runner/global-setup.ts to pre-warm one role's cached session before any
+// worker process starts.
+export async function prewarmLogin(role: AuthRole, opts: { budgetMs?: number } = {}): Promise<void> {
+  const sp = sessionPath(role);
+  const b = await getBrowser();
+  const context = await b.newContext({ baseURL: getAreaUrls().base });
+  try {
+    await runRoleLoginBudget(role, () => attemptLoginOnce(context, role), {
+      budgetMs: opts.budgetMs,
+      readCached: () => readStorageStateOrNull(sp),
+      onSkip: () =>
+        console.log(`[auth] prewarmLogin(${role}): cached session still has runway — skipping login`),
+      onWait: (waitMs, attempt, honored) =>
+        console.log(
+          `[auth] prewarmLogin(${role}): BFF returned 429 (attempt ${attempt + 1}); ` +
+            `waiting ${Math.round(waitMs / 1000)}s (${honored ? "honoring Retry-After" : "exponential backoff"})`
+        ),
+      onSuccess: () => writeStorageStateAtomic(context, sp)
+    });
+  } finally {
+    await context.close();
   }
 }
 

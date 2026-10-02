@@ -14,6 +14,12 @@ export default defineConfig({
     isolate: true,
     retry: 0,
     reporters: ["default"],
+    // Logs in every role SERIALLY, once per whole run, before any worker
+    // process starts — see global-setup.ts for why (429 storms from
+    // fileParallelism's separate worker processes all hitting a cold cache
+    // at once). setupFiles below still runs per test FILE as before; this
+    // runs once for the entire run, in its own process.
+    globalSetup: ["./global-setup.ts"],
     setupFiles: ["./fixtures/setup.ts"],
     globals: false,
     sequence: {

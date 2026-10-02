@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run --reporter=./lib/reporter.ts",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:p0": "QA_TAG_FILTER=p0 vitest run --reporter=./lib/reporter.ts",
     "test:smoke": "QA_TAG_FILTER=smoke vitest run --reporter=./lib/reporter.ts",
     "test:debug": "vitest run --reporter=verbose --reporter=./lib/reporter.ts",
