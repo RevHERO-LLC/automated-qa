@@ -8,8 +8,18 @@ the deployment, prod keeps running the previous image silently.
 ## What it does
 
 Every 5 minutes on the **swarm manager (VPS2)**, for every service whose image
-is `ghcr.io/revhero-llc/*` (auto-discovered — covers all prod *and* staging
-services, present and future; nats/redis/traefik are skipped):
+is `ghcr.io/revhero-llc/*` **or `registry.revhero.io/revhero-llc/*`**
+(auto-discovered; covers all prod *and* staging services, present and future;
+nats/redis/traefik and the registry's own public image are skipped):
+
+> Since P6 #84 (2026-10-05) the fleet pulls from the self-hosted registry
+> `registry.revhero.io`. Its tags are pulled with a dedicated READ-ONLY login
+> (`dokploy-pull` robot) kept in `REGISTRY_DOCKER_CONFIG`
+> (`/etc/revhero/reconciler-docker`), never in root's `~/.docker/config.json`.
+> Lane-2 stays on ghcr.io until it is migrated. After the ghcr.io credential is
+> revoked, its pulls fail and those services are skipped with a WARN, never
+> healed. `DRY_RUN=1` logs "would heal" without updating or alerting. A full
+> pass over about 68 services takes about 4 min.
 
 1. `docker pull <tag>` (manifest-only when unchanged) and compare:
    - **tier 1:** registry image `Created` vs the running task `CreatedAt`
@@ -46,6 +56,11 @@ ssh root@147.93.1.174 '
   chmod +x /usr/local/bin/image-freshness-reconciler.sh
   # reuse the overlay-healer Slack webhook
   grep ^SLACK_WEBHOOK= /etc/revhero/overlay-routing-healer.env > /etc/revhero/image-freshness-reconciler.env
+  # read-only registry login for registry.revhero.io tags (pipe the dokploy-pull
+  # password in over stdin; never put it on a command line):
+  #   install -d -m 700 /etc/revhero/reconciler-docker
+  #   DOCKER_CONFIG=/etc/revhero/reconciler-docker docker login registry.revhero.io -u dokploy-pull --password-stdin
+  echo REGISTRY_DOCKER_CONFIG=/etc/revhero/reconciler-docker >> /etc/revhero/image-freshness-reconciler.env
   systemctl daemon-reload
   systemctl enable --now image-freshness-reconciler.timer
 '
