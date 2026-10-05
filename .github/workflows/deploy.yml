@@ -108,7 +108,9 @@ jobs:
           cache-to: type=gha,mode=max
 
   redeploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    env:
+      PIN_REGISTRY: registry.revhero.io
     needs: [build-runner, build-static, build-trigger]
     permissions:
       contents: read
@@ -123,6 +125,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to registry.revhero.io (P6 #84: Zot robot account, no GitHub token)
+        uses: docker/login-action@v3
+        with:
+          registry: registry.revhero.io
+          username: ${{ secrets.REGISTRY_PUSH_USER }}
+          password: ${{ secrets.REGISTRY_PUSH_PASSWORD }}
       # Pin each app to THIS commit's immutable image tag before redeploying.
       # Why: the apps run the FLOATING ":latest" tag. Swarm compares the image
       # STRING on service update -- an unchanged string means no spec change, so it
@@ -140,6 +148,11 @@ jobs:
             echo "not pullable yet (attempt $i/36); retrying in 5s"; sleep 5
           done
           echo "::error::$IMAGE was still not pullable after 180s"; exit 1
+      - name: Copy the runner image to registry.revhero.io (digest-preserving)
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create --tag "${{ env.PIN_REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}"
+          docker buildx imagetools inspect "${{ env.PIN_REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}" >/dev/null
       - name: Pin runner image to this commit
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -148,7 +161,7 @@ jobs:
             -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
             -H "Content-Type: application/json" \
             "http://147.93.1.174:3000/api/application.update" \
-            -d '{"applicationId":"${{ vars.QA_RUNNER_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}"}'
+            -d '{"applicationId":"${{ vars.QA_RUNNER_APP_ID }}","dockerImage":"${{ env.PIN_REGISTRY }}/${{ env.RUNNER_IMAGE }}:${{ github.sha }}"}'
       - name: Trigger Dokploy redeploy (runner)
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -167,6 +180,11 @@ jobs:
             echo "not pullable yet (attempt $i/36); retrying in 5s"; sleep 5
           done
           echo "::error::$IMAGE was still not pullable after 180s"; exit 1
+      - name: Copy the static image to registry.revhero.io (digest-preserving)
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create --tag "${{ env.PIN_REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}"
+          docker buildx imagetools inspect "${{ env.PIN_REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}" >/dev/null
       - name: Pin static image to this commit
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -175,7 +193,7 @@ jobs:
             -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
             -H "Content-Type: application/json" \
             "http://147.93.1.174:3000/api/application.update" \
-            -d '{"applicationId":"${{ vars.QA_STATIC_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}"}'
+            -d '{"applicationId":"${{ vars.QA_STATIC_APP_ID }}","dockerImage":"${{ env.PIN_REGISTRY }}/${{ env.STATIC_IMAGE }}:${{ github.sha }}"}'
       - name: Trigger Dokploy redeploy (static)
         env:
           DOKPLOY_API_TOKEN: ${{ secrets.DOKPLOY_API_TOKEN }}
@@ -195,6 +213,12 @@ jobs:
             echo "not pullable yet (attempt $i/36); retrying in 5s"; sleep 5
           done
           echo "::error::$IMAGE was still not pullable after 180s"; exit 1
+      - name: Copy the trigger image to registry.revhero.io (digest-preserving)
+        if: vars.QA_TRIGGER_APP_ID != ''
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create --tag "${{ env.PIN_REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}" "${{ env.REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}"
+          docker buildx imagetools inspect "${{ env.PIN_REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}" >/dev/null
       - name: Pin trigger image to this commit
         if: vars.QA_TRIGGER_APP_ID != ''
         env:
@@ -204,7 +228,7 @@ jobs:
             -H "X-API-Key: ${DOKPLOY_API_TOKEN}" \
             -H "Content-Type: application/json" \
             "http://147.93.1.174:3000/api/application.update" \
-            -d '{"applicationId":"${{ vars.QA_TRIGGER_APP_ID }}","dockerImage":"${{ env.REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}"}'
+            -d '{"applicationId":"${{ vars.QA_TRIGGER_APP_ID }}","dockerImage":"${{ env.PIN_REGISTRY }}/${{ env.TRIGGER_IMAGE }}:${{ github.sha }}"}'
       - name: Trigger Dokploy redeploy (trigger)
         if: vars.QA_TRIGGER_APP_ID != ''
         env:
