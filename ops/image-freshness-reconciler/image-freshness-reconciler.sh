@@ -10,7 +10,7 @@
 # Runs on the swarm MANAGER (VPS2) so one instance covers prod (VPS2+VPS3)
 # AND staging (VPS1) — workers can't run `service update`.
 #
-# Detection (per ghcr.io/revhero-llc/* service):
+# Detection (per ghcr.io/revhero-llc/* or registry.revhero.io/revhero-llc/* service):
 #   tier 1 (all nodes):  registry image Created > running task CreatedAt
 #                        + GRACE  → the task predates the current image → stale.
 #   tier 2 (this node):  running container's image ID != pulled tag image ID
@@ -18,14 +18,21 @@
 #                        came back on a stale node cache).
 # `docker pull <tag>` is a manifest HEAD when unchanged — cheap at 5-min cadence.
 #
-# Skips: non-ghcr/revhero-llc images (nats/redis/traefik/etc), services with
-# an update already in progress, services with no running task.
+# Skips: images outside revhero-llc on ghcr.io / registry.revhero.io
+# (nats/redis/traefik/etc), services with an update already in progress,
+# services with no running task, and any tag whose pull fails (WARN + skip,
+# never a heal).
 #
 # Posts a Slack alert on each heal (debounced per-service) and backs off
 # services that stay stale after a heal (persistent problem ≠ missed deploy).
 #
 # Env vars (from /etc/revhero/image-freshness-reconciler.env):
 #   SLACK_WEBHOOK — Slack incoming webhook URL (optional; log-only if unset)
+#   REGISTRY_DOCKER_CONFIG — DOCKER_CONFIG dir holding a READ-ONLY login for
+#       registry.revhero.io (the `dokploy-pull` robot; P6 #84). Used only to
+#       pull registry.revhero.io tags, so root's ~/.docker/config.json keeps
+#       no persisted registry login. Unset → those pulls use root's config.
+#   DRY_RUN=1 — detect and log "would heal", but never force-update or alert.
 
 set -uo pipefail
 
@@ -35,11 +42,24 @@ GRACE_SECS=120         # image must be this much newer than the task to count as
 CONVERGE_TIMEOUT=300   # seconds to wait for service update convergence
 ALERT_DEBOUNCE=3600    # 1h between Slack alerts per service
 HEAL_BACKOFF=1800      # 30min: don't re-heal the same service more often than this
-IMAGE_FILTER="ghcr.io/revhero-llc/"
+# Both registries during and after the P6 cut-over: lane-2 still pulls from
+# ghcr.io until it is migrated; everything else pulls from registry.revhero.io.
+IMAGE_FILTER_RE='^(ghcr\.io|registry\.revhero\.io)/revhero-llc/'
+DRY_RUN="${DRY_RUN:-0}"
 
 mkdir -p "${STATE_DIR}"
 
 log() { echo "[image-freshness $(date +%H:%M:%S)] $*"; }
+
+# Pull a tag with the credentials for its registry (read-only robot config for
+# registry.revhero.io when REGISTRY_DOCKER_CONFIG is set).
+pull_tag() {
+  if [[ "$1" == registry.revhero.io/* && -n "${REGISTRY_DOCKER_CONFIG:-}" ]]; then
+    DOCKER_CONFIG="${REGISTRY_DOCKER_CONFIG}" docker pull -q "$1"
+  else
+    docker pull -q "$1"
+  fi
+}
 
 slack() {
   local text="$1"
@@ -61,7 +81,7 @@ for line in $(docker service ls --format '{{.Name}}|{{.Image}}'); do
   image="${line#*|}"
   tag="${image%%@*}"   # strip any digest pin
 
-  [[ "${tag}" != ${IMAGE_FILTER}* ]] && continue
+  [[ ! "${tag}" =~ ${IMAGE_FILTER_RE} ]] && continue
   checked=$((checked + 1))
 
   # Skip if an update is already in flight (a real deploy is rolling — don't race it)
@@ -84,7 +104,7 @@ for line in $(docker service ls --format '{{.Name}}|{{.Image}}'); do
   task_epoch="$(epoch "${task_created}")"
 
   # Refresh the local copy of the tag (manifest check when unchanged)
-  if ! docker pull -q "${tag}" >/dev/null 2>&1; then
+  if ! pull_tag "${tag}" >/dev/null 2>&1; then
     log "${svc}: WARN pull failed for ${tag} — skipping"
     continue
   fi
@@ -111,6 +131,10 @@ for line in $(docker service ls --format '{{.Name}}|{{.Image}}'); do
   [[ -z "${stale}" ]] && continue
   stale_found=$((stale_found + 1))
   log "${svc}: STALE — ${stale}"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    log "${svc}: DRY_RUN — would heal (no update, no alert)"
+    continue
+  fi
 
   # Heal back-off: if we already healed this service recently and it is stale
   # AGAIN, something else is wrong — alert (debounced) but don't churn it.
