@@ -25,7 +25,12 @@ Every 10 min, on the manager (VPS2), for **every swarm node** (local + SSH to
 each worker) and **every overlay netns**: computes the set of MACs with a
 `PERMANENT` neigh entry minus the set with a `dst` fdb entry. Any leftover MAC is
 a broken VTEP → **Slack alert** (node, netns, MAC, overlay IP, resolved container
-name). Debounced; Slack failure non-fatal; every run logs the result for liveness.
+name). Alerting is keyed on the gap SET: a new or changed set alerts immediately,
+an unchanged set re-alerts at most every `REMIND_HOURS` (labelled REMINDER), and a
+cleared set posts one "resolved" notice and resets. (It used to re-post the same
+unchanged gap every 2h, ~60 identical alerts 2026-10-07..10-12.) Slack failure
+non-fatal; every run logs the result for liveness. Cadence test:
+`bash ops/overlay-fdb-detector/test-alert-cadence.sh`.
 
 **It does NOT repair anything.** Auto-`bridge fdb add` across every node's root
 netns on a timer is deliberately out of scope — the blast radius of a wrong
@@ -49,8 +54,9 @@ Requires node→node root SSH from the manager (already trusted) and `jq`/`curl`
 | var | default | meaning |
 |---|---|---|
 | `SLACK_WEBHOOK` | — | incoming webhook; unset ⇒ log-only |
-| `STATE_DIR` | `/var/lib/overlay-fdb-detector` | debounce marker dir |
-| `DEBOUNCE_HOURS` | `2` | min gap between repeat alerts |
+| `STATE_DIR` | `/var/lib/overlay-fdb-detector` | alert state (last alert time, set fingerprint, first-seen) |
+| `REMIND_HOURS` | `24` | re-alert interval for an UNCHANGED gap set (new/changed sets alert immediately) |
+| `DEBOUNCE_HOURS` | — | retired (was the flat 2h repeat); ignored |
 | `TEST_ALERT` | `false` | `true` ⇒ post one Slack message (validate path) |
 
 ## When it fires — repair

@@ -29,18 +29,56 @@
 # trusted node->node). Read-only everywhere.
 #
 # Env: SLACK_WEBHOOK (unset => log-only), STATE_DIR (default /var/lib/overlay-fdb-detector),
-#      DEBOUNCE_HOURS (default 2), TEST_ALERT ("true" => post one Slack msg to validate path),
+#      REMIND_HOURS (default 24), TEST_ALERT ("true" => post one Slack msg to validate path),
 #      APP_SUBNET_PREFIX (override the auto-derived app subnet prefix, e.g. "10.0.1.").
+#      (DEBOUNCE_HOURS is retired — see "Alert cadence" below.)
+#
+# Alert cadence (2026-10-12): the old flat 2h debounce re-posted the SAME unchanged gap
+# ~12x/day (one revhero-web -> shared-Redis gap paged ~60 identical alerts 10-07..10-12,
+# burying real alerts in #deployments-and-bugs). Now the alert is keyed on a fingerprint
+# of the gap SET: a NEW or CHANGED set alerts immediately; an UNCHANGED set re-alerts at
+# most every REMIND_HOURS, labelled as a reminder; when the set clears, one "resolved"
+# message is posted and the state resets (so a recurrence alerts at once).
 
 set -uo pipefail
 SLACK_WEBHOOK="${SLACK_WEBHOOK:-}"
 STATE_DIR="${STATE_DIR:-/var/lib/overlay-fdb-detector}"
 MARKER="${STATE_DIR}/last-alert"
-DEBOUNCE_HOURS="${DEBOUNCE_HOURS:-2}"
+FP_FILE="${STATE_DIR}/last-alert-fingerprint"
+FIRST_FILE="${STATE_DIR}/gap-set-first-seen"
+REMIND_HOURS="${REMIND_HOURS:-24}"
 TEST_ALERT="${TEST_ALERT:-false}"
 SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=no"
 
 log() { echo "[overlay-fdb $(date -u +%H:%M:%SZ)] $*"; }
+
+# Stable fingerprint of a gap set (order-independent): host + netns + mac + ip per gap.
+gap_fingerprint() {
+  printf '%s\n' "$1" | sed '/^[[:space:]]*$/d' \
+    | sed -E 's/.*(host=[^ ]+).*(ns=[^ ]+).*(mac=[^ ]+).*(ip=[^ ]+).*/\1 \2 \3 \4/' \
+    | sort -u | sha256sum | cut -c1-16
+}
+# new | remind | suppress — for the current set's fingerprint ($1) at time $2 (epoch s).
+alert_decision() {
+  local fp="$1" now="$2" last_fp last_ts
+  last_fp="$(cat "$FP_FILE" 2>/dev/null || true)"
+  last_ts="$(cat "$MARKER" 2>/dev/null || echo 0)"
+  if [ "$fp" != "$last_fp" ]; then echo new; return; fi
+  if [ $(( now - ${last_ts:-0} )) -ge $(( ${REMIND_HOURS%.*} * 3600 )) ]; then echo remind; return; fi
+  echo suppress
+}
+# Record a SUCCESSFULLY posted alert ($1 fingerprint, $2 time, $3 decision).
+record_alert() {
+  mkdir -p "$STATE_DIR"
+  echo "$2" > "$MARKER"
+  echo "$1" > "$FP_FILE"
+  [ "$3" = "new" ] && echo "$2" > "$FIRST_FILE"
+  return 0
+}
+clear_alert_state() { rm -f "$MARKER" "$FP_FILE" "$FIRST_FILE"; }
+
+# Sourced by test-alert-cadence.sh for the functions above only (never set in production).
+if [ "${FDB_LIB_ONLY:-}" = "1" ]; then return 0; fi
 
 # App overlay subnet prefix (e.g. 10.0.1.) — auto-derived from dokploy-network so a
 # renumber doesn't silently disable the check; overridable via env.
@@ -110,6 +148,17 @@ findings="$(printf '%s' "$findings" | sed '/^[[:space:]]*$/d')"
 
 if [ -z "$findings" ]; then
   log "nominal — no missing VTEP entries on the app overlay (prefix ${PREFIX}) across the fleet. (resolver saw ${#ip2node[@]} local container IPs)"
+  # A previously alerted gap set has cleared: say so once, then reset (a recurrence alerts at once).
+  if [ -f "$FP_FILE" ] && [ "$TEST_ALERT" != "true" ]; then
+    RESOLVED=":white_check_mark: *Overlay FDB-gap detector* — the previously reported VTEP gap(s) are RESOLVED: no missing entries on the app overlay across the fleet."
+    if [ -n "$SLACK_WEBHOOK" ]; then
+      printf '%s' "$RESOLVED" | jq -Rs '{text:.}' | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$SLACK_WEBHOOK" >/dev/null 2>&1 \
+        && { log "Slack resolved notice sent."; clear_alert_state; } \
+        || log "WARNING: Slack POST (resolved) failed (non-fatal; will retry next run)."
+    else
+      clear_alert_state
+    fi
+  fi
   if [ "$TEST_ALERT" = "true" ]; then
     MSG=":white_check_mark: *Overlay FDB-gap detector* test run — no gaps, path OK (app prefix ${PREFIX}, ${#ip2node[@]} container IPs resolvable, TEST_ALERT=true)."
     if [ -n "$SLACK_WEBHOOK" ]; then
@@ -147,15 +196,21 @@ while IFS= read -r line; do
 done < <(printf '%s\n' "$findings")
 
 now="$(date +%s)"
-if [ "$TEST_ALERT" != "true" ] && [ -f "$MARKER" ]; then
-  last="$(cat "$MARKER" 2>/dev/null || echo 0)"
-  if [ $(( now - last )) -lt $(( ${DEBOUNCE_HOURS%.*} * 3600 )) ]; then
-    log "breach but debounced (alerted within ${DEBOUNCE_HOURS}h) — not re-paging."
-    exit 0
-  fi
+fp="$(gap_fingerprint "$findings")"
+decision="$(alert_decision "$fp" "$now")"
+if [ "$TEST_ALERT" != "true" ] && [ "$decision" = "suppress" ]; then
+  log "breach UNCHANGED since the last alert (set ${fp}) — next reminder after ${REMIND_HOURS}h; not re-paging."
+  exit 0
 fi
 
-MSG=":rotating_light: *Overlay FDB-gap detector* — missing VXLAN VTEP entries on the app overlay (cross-node partition; the 2026-09-03 outage signature). The listed node cannot reach these container overlay IPs until the \`dst\` entry is restored. Each gap has a RESOLVED, ready-to-paste repair command (dst = the node that owns the target container). Review each, then paste on the manager (it SSHes to the affected node). This detector does NOT auto-apply.
+if [ "$decision" = "remind" ]; then
+  first="$(cat "$FIRST_FILE" 2>/dev/null || echo "$now")"
+  HEAD=":rotating_light: *Overlay FDB-gap detector* — REMINDER: the same gap(s) are STILL OPEN (unchanged since $(date -u -d "@${first}" '+%Y-%m-%d %H:%MZ' 2>/dev/null || echo "?"); reminders every ${REMIND_HOURS}h until the set changes or clears)."
+else
+  HEAD=":rotating_light: *Overlay FDB-gap detector* — NEW/CHANGED gap set:"
+fi
+MSG="${HEAD}
+Missing VXLAN VTEP entries on the app overlay (cross-node partition; the 2026-09-03 outage signature). The listed node cannot reach these container overlay IPs until the \`dst\` entry is restored. Each gap has a RESOLVED, ready-to-paste repair command (dst = the node that owns the target container). Review each, then paste on the manager (it SSHes to the affected node). This detector does NOT auto-apply.
 ${detail}
 \`bridge fdb replace\` is idempotent (creates-or-updates). After repairing, verify from the REAL caller container (not the netns gateway). Runbook: memory \`reference_overlay_users_service_partition.md\`."
 [ "$unresolved" -gt 0 ] && MSG="${MSG}
@@ -163,7 +218,7 @@ ${detail}
 
 if [ -n "$SLACK_WEBHOOK" ]; then
   printf '%s' "$MSG" | jq -Rs '{text:.}' | curl -fsS -X POST -H 'Content-Type: application/json' -d @- "$SLACK_WEBHOOK" >/dev/null 2>&1 \
-    && { log "Slack alert sent."; mkdir -p "$STATE_DIR"; echo "$now" > "$MARKER"; } \
+    && { log "Slack alert sent (${decision}, set ${fp})."; record_alert "$fp" "$now" "$decision"; } \
     || log "WARNING: Slack POST failed (non-fatal)."
 else
   log "SLACK_WEBHOOK unset — alert logged only. Alert body:"
