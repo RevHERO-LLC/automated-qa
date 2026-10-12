@@ -84,7 +84,11 @@ describe("Email System (FE-EMAIL)", () => {
       expect(html.toLowerCase()).not.toMatch(/internal server error/);
       // Some FEs use rich-text editors / iframes for the compose body — accept
       // any form-like input OR a contenteditable.
-      const formInputs = await page.locator("input, textarea, [contenteditable='true']").count();
+      // `domcontentloaded` (#1306) fires before the client renders the form, so
+      // wait for the first editor to attach instead of counting immediately.
+      const editors = page.locator("input, textarea, [contenteditable='true']");
+      await editors.first().waitFor({ state: "attached", timeout: 15_000 }).catch(() => {});
+      const formInputs = await editors.count();
       expect(formInputs, "Expected at least one input/editor on /email/add").toBeGreaterThan(0);
     } finally {
       await context.close();

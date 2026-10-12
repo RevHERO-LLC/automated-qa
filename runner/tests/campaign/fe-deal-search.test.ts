@@ -15,7 +15,9 @@ describe("Deal Search regression (FE-DEAL-SEARCH)", () => {
         .locator('input[placeholder*="search" i]')
         .or(page.locator('input[name*="search" i]'))
         .first();
-      const has = (await search.count()) > 0;
+      // `domcontentloaded` (#1306) fires before the client renders the input, so
+      // wait for it to attach instead of counting immediately.
+      const has = await search.waitFor({ state: "attached", timeout: 15_000 }).then(() => true, () => false);
       expect(has, "Expected a search input on /deals/search").toBe(true);
       if (has) {
         await search.fill("nonexistent@example.com");
