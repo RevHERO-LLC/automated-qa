@@ -6,13 +6,20 @@
 # REAL MERGE commits, never squash/cherry-pick, so main carries NO content staging
 # lacks. See memory feedback_hotfix_promotion_merge_not_squash.
 #
-# SIGNAL (per repo): a DIRECT two-tree diff of the branch tips —
-#   git diff origin/staging origin/main --numstat  → files where main ADDED lines
-# = content on main not on staging. This is the reliable signal. (An earlier
-# version used the API three-dot `compare/staging...main`, which counts
-# parallel-SHA content — the same fix living on both branches under different
-# commit ids — as "main-only" and FALSE-ALARMED on email-ingress. A direct tip
-# diff is empty for such a repo. Do not go back to three-dot compare.)
+# SIGNAL (per repo): GENUINE prod-only changes, measured against the merge-base —
+# lines MAIN changed since `git merge-base origin/main origin/staging` that staging's
+# tip does not contain (see genuine_main_only below). Two earlier signals both
+# false-alarmed:
+#   * the API three-dot `compare/staging...main` counted parallel-SHA content (the
+#     same fix on both branches under different commit ids) as "main-only" —
+#     false-alarmed email-ingress (2026-09-09);
+#   * the DIRECT two-tree diff `git diff origin/staging origin/main --numstat` is
+#     merge-base-blind: when STAGING edits or deletes lines that main still holds
+#     in their old form, those old lines read as "main ADDED". On 2026-10-11 it
+#     alarmed 10 repos; 6 (judy, super-admin, deals-actions, dealmover-v3,
+#     email-ingress, sms) were pure staging-ahead — normal unpromoted dev work.
+# The merge-base signal is immune to both. If no merge-base is found within the
+# deepened history it falls back to the raw tip diff and says so in the alarm.
 #
 # We split main-only files into REAL CODE vs CI/docs (.github/, *.md, README,
 # LICENSE, .gitignore/.gitattributes). Only CODE drift Slack-alarms the deploys
@@ -65,6 +72,35 @@ jobs:
           # "not yet deployed". It has both, and it is live on prod.
           BACKLOG_MAX_DAYS="${BACKLOG_MAX_DAYS:-14}"
 
+          # genuine_main_only <repo-dir> <merge-base>
+          #   Prints "<lines>\t<file>" for every file where MAIN changed something since the
+          #   merge-base that staging's tip does not have:
+          #     + lines main ADDED since the merge-base that are absent from staging's copy, and
+          #     - lines main REMOVED since the merge-base that staging still has (and main no
+          #       longer has anywhere in the file, so a moved line is not counted).
+          #   Staging-ahead edits (main untouched since the merge-base) contribute nothing; the
+          #   same fix on both branches under different SHAs contributes nothing. Blank and
+          #   punctuation-only lines are ignored. Validated 2026-10-12 against the 10-11 alert:
+          #   flags exactly users/BFF/Generic-AI/campaign (#320, #316, #53) and none of the 6
+          #   staging-ahead repos.
+          _drift_norm() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | grep -vE '^[[:punct:]]*$' || true; }
+          genuine_main_only() {
+            local d="$1" mb="$2" f n_add n_rm tmp
+            tmp=$(mktemp -d)
+            while IFS= read -r f; do
+              [[ -n "$f" ]] || continue
+              git -C "$d" show "origin/staging:${f}" 2>/dev/null | _drift_norm > "$tmp/stg"
+              git -C "$d" show "origin/main:${f}" 2>/dev/null | _drift_norm > "$tmp/main"
+              git -C "$d" diff -U0 "$mb" origin/main -- "$f" > "$tmp/diff" 2>/dev/null
+              grep -E '^\+' "$tmp/diff" | grep -vE '^\+\+\+ ' | cut -c2- | _drift_norm > "$tmp/add"
+              grep -E '^-' "$tmp/diff" | grep -vE '^--- ' | cut -c2- | _drift_norm > "$tmp/rm"
+              n_add=$(grep -vxFf "$tmp/stg" "$tmp/add" | wc -l)
+              n_rm=$(grep -xFf "$tmp/stg" "$tmp/rm" | grep -vxFf "$tmp/main" | wc -l)
+              if (( n_add + n_rm > 0 )); then printf '%s\t%s\n' "$(( n_add + n_rm ))" "$f"; fi
+            done < <(git -C "$d" diff --name-only "$mb" origin/main 2>/dev/null)
+            rm -rf "$tmp"
+          }
+
           code_drift=0
           ci_drift=0
           backlog=0
@@ -86,10 +122,23 @@ jobs:
               rm -rf "$d"; continue
             fi
 
-            # Direct tip diff. numstat col1 = lines ADDED going staging→main = main-only.
+            # History for the merge-base (the clone above is --depth=1). Bounded and best-effort.
+            git -C "$d" fetch -q --deepen=200 origin main staging >/dev/null 2>&1 || true
+            mb=$(git -C "$d" merge-base origin/main origin/staging 2>/dev/null || true)
+
+            # Direct tip diff — still used for the staging-backlog signal below, and as the
+            # main-only fallback when no merge-base is reachable.
             numstat=$(git -C "$d" diff origin/staging origin/main --numstat 2>/dev/null)
-            mainfiles=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ && $1 > 0 {print $3}')
-            totlines=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ {s += $1} END {print s + 0}')
+            if [[ -n "$mb" ]]; then
+              genuine=$(genuine_main_only "$d" "$mb")
+              mainfiles=$(echo "$genuine" | awk -F'\t' 'NF == 2 && $1 > 0 {print $2}')
+              totlines=$(echo "$genuine" | awk -F'\t' 'NF == 2 {s += $1} END {print s + 0}')
+              basis="since merge-base $(git -C "$d" rev-parse --short "$mb")"
+            else
+              mainfiles=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ && $1 > 0 {print $3}')
+              totlines=$(echo "$numstat" | awk '$1 ~ /^[0-9]+$/ {s += $1} END {print s + 0}')
+              basis="NO merge-base within 200 commits: raw tip diff, may include staging-ahead noise"
+            fi
 
             # --- UNPROMOTED STAGING BACKLOG: the direction this check never covered ---
             # Everything above answers "does prod carry content staging lacks" — a hotfix that
@@ -116,8 +165,7 @@ jobs:
             stagelines=$(echo "$numstat" | awk '$2 ~ /^[0-9]+$/ {s += $2} END {print s + 0}')
             stagecode=$(echo "$stagefiles" | grep -vE '^(\.github/|README|LICENSE|\.gitignore|\.gitattributes)|\.md$' || true)
             if [[ -n "$stagecode" ]]; then
-              git -C "$d" fetch -q --deepen=200 origin main staging >/dev/null 2>&1 || true
-              mb=$(git -C "$d" merge-base origin/main origin/staging 2>/dev/null || true)
+              # (history was deepened and $mb computed above)
               if [[ -z "$mb" ]]; then
                 echo "backlog-indeterminate: ${repo} (no merge-base within 200 commits)"
                 main_age=-1
@@ -142,8 +190,8 @@ jobs:
             if [[ -n "$codef" ]]; then
               code_drift=$((code_drift + 1))
               flist=$(echo "$codef" | head -6 | paste -sd', ' -)
-              code_lines="${code_lines}\n  • *${repo}* — ${totlines} main-only line(s); NON-CI files: ${flist}"
-              echo "CODE-DRIFT: ${repo} (${totlines} lines) — ${flist}"
+              code_lines="${code_lines}\n  • *${repo}* — ${totlines} genuine main-only line(s) (${basis}); NON-CI files: ${flist}"
+              echo "CODE-DRIFT: ${repo} (${totlines} lines, ${basis}) — ${flist}"
             else
               ci_drift=$((ci_drift + 1))
               flist=$(echo "$mainfiles" | head -6 | paste -sd', ' -)
