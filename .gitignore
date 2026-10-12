@@ -23,6 +23,9 @@ audit/reports/
 *.pem
 *.key
 sessions/
+# Playwright storageState written by fixtures/auth.ts (live login cookies/tokens).
+# `sessions/` above does NOT match the dot-prefixed dir, so it was being tracked.
+.sessions/
 .credentials.json
 
 # OS
