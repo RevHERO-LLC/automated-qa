@@ -213,14 +213,18 @@ describe("Campaign Builder (FE-CAMP)", () => {
     try {
       await page.goto("/automation-campaign/create", { waitUntil: "domcontentloaded" });
       // Look for ANY editable name affordance — input, contenteditable, or a
-      // heading with the placeholder copy.
-      const candidates = await Promise.all([
-        page.locator('input[type="text"]').count(),
-        page.locator('[contenteditable="true"]').count(),
-        page.getByText(/untitled|new campaign|building campaign/i).count(),
-        page.getByRole("button", { name: /edit|rename|pencil/i }).count()
-      ]);
-      const hasAnyAffordance = candidates.some((n) => n > 0);
+      // heading with the placeholder copy. `domcontentloaded` (#1306) fires
+      // before the client renders the builder, so wait for the first match to
+      // attach instead of counting immediately.
+      const affordance = page
+        .locator('input[type="text"]')
+        .or(page.locator('[contenteditable="true"]'))
+        .or(page.getByText(/untitled|new campaign|building campaign/i))
+        .or(page.getByRole("button", { name: /edit|rename|pencil/i }));
+      const hasAnyAffordance = await affordance
+        .first()
+        .waitFor({ state: "attached", timeout: 15_000 })
+        .then(() => true, () => false);
       expect(hasAnyAffordance, "Expected some name-edit affordance on the builder").toBe(true);
     } finally {
       await context.close();
