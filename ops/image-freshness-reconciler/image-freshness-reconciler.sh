@@ -141,6 +141,15 @@ for line in $(docker service ls --format '{{.Name}}|{{.Image}}'); do
   image="${line#*|}"
   tag="${image%%@*}"   # strip any digest pin
 
+  # Lane-2 (staging-2) is a separately-pinned parallel-mission lane: it does NOT
+  # track the staging branch (deploy-staging.yml deploys lane-1; lane-2 pins via a
+  # manual deploy-lane2.yml). A staging2-* service on a staging-<sha> tag is pinned
+  # on purpose, so a branch-HEAD SHA-check is a false positive, and force-rolling it
+  # (or a tier-1/2 heal) would overwrite the parallel mission's lane. Skip lane-2.
+  case "${svc}" in
+    staging2-*) continue ;;
+  esac
+
   [[ ! "${tag}" =~ ${IMAGE_FILTER_RE} ]] && continue
   checked=$((checked + 1))
 
