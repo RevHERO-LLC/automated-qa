@@ -33,13 +33,15 @@ nats/redis/traefik and the registry's own public image are skipped):
 4. **tier 3 (#940, DETECT-ONLY):** independently of 1/2, resolves the branch
    the service's tag claims to track (`staging*` → `staging`, `prod*` →
    `main`) via the GitHub API, rebuilds the tag that branch's HEAD commit
-   would have produced, and compares ITS pulled image ID against the
-   currently-pinned tag's image ID. A mismatch — once that HEAD commit is
-   older than `SHA_GRACE_SECS` (10 min), so a normal deploy would have
-   finished — is logged and Slack-alerted (`:mag:`, separately debounced from
-   the tier-1/2 alerts). **Never heals, never calls `docker service update`.**
-   Needs `GITHUB_READ_TOKEN`; without it tier 3 is skipped entirely (one
-   startup log line) and tiers 1/2 run exactly as before.
+   would have produced, and compares ITS registry manifest digest against the
+   currently-pinned tag's manifest digest — both fetched via `docker manifest
+   inspect -v` (metadata only; **no layer pull**, since build #1056 below). A
+   mismatch — once that HEAD commit is older than `SHA_GRACE_SECS` (10 min),
+   so a normal deploy would have finished — is logged and Slack-alerted
+   (`:mag:`, separately debounced from the tier-1/2 alerts). **Never heals,
+   never calls `docker service update`.** Needs `GITHUB_READ_TOKEN`; without
+   it tier 3 is skipped entirely (one startup log line) and tiers 1/2 run
+   exactly as before.
 
 Known residual gaps (accepted, documented from the 2026-06-04 drills):
 
@@ -53,8 +55,9 @@ Known residual gaps (accepted, documented from the 2026-06-04 drills):
    production failure mode is covered. If this ever matters, the upgrade path
    is digest-state tracking (remember last-seen registry digest per service,
    heal when it changes without a newer task). **Tier 3 is actually immune to
-   this one** — it compares image IDs (content), not timestamps, so a
-   zero-diff rebuild that legitimately matches HEAD never false-flags.
+   this one** — it compares registry manifest digests (content), not
+   timestamps, so a zero-diff rebuild that legitimately matches HEAD never
+   false-flags.
 3. Dokploy ALSO early-rolls on the git push webhook (before the image is
    built) — harmless restart on the old image, later corrected by the
    workflow's `application.deploy` (or by this reconciler).
@@ -113,11 +116,15 @@ it:
 It runs the real script (not a reimplementation) against two synthetic
 services — one pinned to a stale SHA, one already current — and asserts the
 stale one is flagged `SHA-STUCK` and Slack-alerted, the current one is not,
-and `docker service update` is never invoked (detect-only). There is no
-existing test convention for the bash scripts under `ops/` (only the
-Playwright/`vitest` suites under `runner/` have one), so this intentionally
-stays a plain, dependency-free bash script rather than introducing a new
-framework for one tool.
+and `docker service update` is never invoked (detect-only). Since build
+#1056 it also asserts tier 3 makes exactly 4 `docker manifest inspect -v`
+calls (2 services × running+expected) and exactly 2 `docker pull` calls
+total (tiers 1/2's own per-service pull of the pinned tag — unrelated to
+tier 3, unaffected by this change) — i.e. tier 3 adds zero layer pulls.
+There is no existing test convention for the bash scripts under `ops/` (only
+the Playwright/`vitest` suites under `runner/` have one), so this
+intentionally stays a plain, dependency-free bash script rather than
+introducing a new framework for one tool.
 
 ## Verified
 
@@ -130,3 +137,23 @@ fired; canonical image rebuilt afterwards via a normal staging deploy.
 above) — **not yet deployed to VPS2.** The next person to ship this should
 add `GITHUB_READ_TOKEN` to the live env file per Install above and watch one
 real cycle's `sha_unknown` count before trusting `sha_stuck` alerts fleet-wide.
+
+2026-10-30 (build #1056): tier 3 **is** live on VPS2 — the note directly
+above is stale (left for history). Confirmed via `journalctl`:
+`GITHUB_READ_TOKEN` is set and every pass over a 38-pass/~3.5h sample logged
+a steady `sha_unknown=2` (tier 3 running; 2 services it can't resolve, not
+investigated here). That same sample showed the per-service `docker pull` of
+the reconstructed expected tag — stacked on top of tiers 1/2's own pull of
+the pinned tag — pushing pass duration to 2m55s–5m10s and start-to-start
+cadence to 5.2–6.4min, past the nominal `OnUnitActiveSec=5min`. Replaced
+with `manifest_digest()`: a `docker manifest inspect -v` lookup (metadata
+only) for BOTH the pinned tag and the reconstructed expected tag, so tier 3
+no longer pulls anything. (Local image ID and registry manifest digest are
+NOT the same value space on this fleet's Docker version — confirmed
+empirically — so both sides of the comparison now go through
+`manifest_digest()`; the old code's reuse of tier 1/2's pulled `img_id` for
+one side would no longer have been valid.) Red/green in
+`test-sha-stuck-roll.sh`: the same stuck/fresh fixtures produce the same
+verdicts as before this change, plus new assertions for the zero-pull,
+four-manifest-call shape. **Not yet re-verified against a live VPS2 cycle —
+this PR is HELD, not merged** (merging deploys to VPS2 — Zach's call).

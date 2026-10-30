@@ -31,8 +31,17 @@ mkdir -p "${MOCKBIN}" "${WORK}/state"
 export MOCK_SERVICES_FILE="${WORK}/services.txt"
 export MOCK_HEAL_LOG="${WORK}/heal.log"
 export MOCK_CURL_LOG="${WORK}/curl.log"
+# Build #1056: separate logs for `docker pull` vs `docker manifest inspect`
+# calls, so the test can PROVE tier 3 no longer pulls any layers (only tiers
+# 1/2's pre-existing, unrelated per-service pull of the pinned tag shows up
+# in MOCK_DOCKER_PULL_LOG) and instead drives its comparison entirely off
+# MOCK_MANIFEST_LOG (metadata-only `docker manifest inspect -v`).
+export MOCK_DOCKER_PULL_LOG="${WORK}/pull.log"
+export MOCK_MANIFEST_LOG="${WORK}/manifest.log"
 : > "${MOCK_HEAL_LOG}"
 : > "${MOCK_CURL_LOG}"
+: > "${MOCK_DOCKER_PULL_LOG}"
+: > "${MOCK_MANIFEST_LOG}"
 
 OLD_SHA="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 HEAD_SHA="cccccccccccccccccccccccccccccccccccccccc"
@@ -42,10 +51,18 @@ fresh-svc|ghcr.io/revhero-llc/revhero-fake-service:staging-${HEAD_SHA}
 EOF
 
 # --- mock docker: handles every subcommand the reconciler calls -----------
-# service ls/inspect/ps/update, image inspect/prune, bare inspect/pull/ps.
+# service ls/inspect/ps/update, image inspect/prune, manifest inspect,
+# bare inspect/pull/ps.
 # tier 1 and tier 2 are kept deliberately QUIET here (same Created timestamp
 # for every tag, no local container) so execution reaches the new tier 3 for
 # both services — proving tier 3 fires independently of tiers 1/2.
+#
+# Build #1056: `docker image inspect ... *Id*` (the OLD local-image-ID path)
+# and `docker manifest inspect -v` (the NEW digest-only path) deliberately
+# return DIFFERENT, non-overlapping sentinel values below. Tier 3 must now
+# use ONLY the manifest digests — if any code path regressed to reading the
+# image-ID sentinels instead, the two sides would never match and every
+# service would false-flag SHA-STUCK, which the assertions below would catch.
 cat > "${MOCKBIN}/docker" <<'MOCKDOCKER'
 #!/usr/bin/env bash
 case "$1" in
@@ -65,6 +82,7 @@ case "$1" in
         case "${fmt}" in
           *Created*) echo "2026-10-09T00:00:00.000000000Z" ;;
           *Id*)
+            # OLD value space — tier 3 must NOT read this anymore (see header).
             case "${tag}" in
               *"staging-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 echo "sha256:oldoldoldold000000000000000000000000000000000000000000" ;;
@@ -81,7 +99,30 @@ case "$1" in
     esac
     exit 0
     ;;
-  pull) exit 0 ;;                                  # always "succeeds" (no network)
+  manifest)
+    # `docker manifest inspect -v <ref>` (build #1056, tier 3 only) — metadata
+    # JSON, no layer pull. Logged separately from `pull` so the test can
+    # assert tier 3 drives entirely off this and adds zero pulls.
+    case "$2 $3" in
+      "inspect -v") ref="$4" ;;
+      *) ref="$3" ;;
+    esac
+    echo "MANIFEST-CALL ${ref}" >> "${MOCK_MANIFEST_LOG}"
+    case "${ref}" in
+      *"staging-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        echo '[{"Descriptor":{"digest":"sha256:digestOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLDOLD"}}]' ;;
+      *"staging-cccccccccccccccccccccccccccccccccccccccc")
+        echo '[{"Descriptor":{"digest":"sha256:digestNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWNEWN"}}]' ;;
+      *)
+        echo '[{"Descriptor":{"digest":"sha256:digestUNEXPECTEDUNEXPECTEDUNEXPECTEDUNEXPECTED"}}]' ;;
+    esac
+    exit 0
+    ;;
+  pull)
+    # pull_tag() calls `docker pull -q "$ref"` -> $2=-q $3=ref
+    echo "PULL-CALL $3" >> "${MOCK_DOCKER_PULL_LOG}"
+    exit 0
+    ;;                                  # always "succeeds" (no network)
   inspect) echo '[{"CreatedAt":"2026-10-09T00:00:00.000000000Z"}]'; exit 0 ;;
   ps) echo ""; exit 0 ;;                           # no local container -> tier 2 inert
 esac
@@ -127,6 +168,11 @@ case "${args}" in
     echo "${input}" | grep -o '"sha":"[^"]*"' | head -1 | sed -E 's/.*:"([^"]*)"/\1/' ;;
   *'.commit.committer.date // empty'*)
     echo "${input}" | grep -o '"date":"[^"]*"' | head -1 | sed -E 's/.*:"([^"]*)"/\1/' ;;
+  *'.Descriptor.digest'*)
+    # manifest_digest(): 'if type=="array" then .[0].Descriptor.digest else
+    # .Descriptor.digest end // empty' — the mock docker always emits a
+    # single-element array, so grabbing the one "digest" field is equivalent.
+    echo "${input}" | grep -o '"digest":"[^"]*"' | head -1 | sed -E 's/.*:"([^"]*)"/\1/' ;;
   *)
     echo "{}" ;;
 esac
@@ -163,6 +209,16 @@ assert "fresh-svc is NOT flagged SHA-STUCK"              '! echo "${out}" | grep
 assert "a Slack alert was posted for stuck-svc"          'grep -q "stuck-svc" "${MOCK_CURL_LOG}"'
 assert "no Slack alert was posted for fresh-svc"         '! grep -q "fresh-svc" "${MOCK_CURL_LOG}"'
 assert "detect-only: docker service update NEVER called" '[[ ! -s "${MOCK_HEAL_LOG}" ]]'
+
+# --- Build #1056 evidence: digest-only lookup replaces the per-service pull
+# of the reconstructed expected tag. Both services still exercise tier 3
+# fully (one flagged, one not — the same red/green shape as before this
+# change), proving the verdict survived the swap from image-ID comparison to
+# digest comparison on the SAME two fixtures.
+assert "tier 3 made exactly 4 manifest-inspect calls (2 services x running+expected)" \
+  '[[ $(grep -c "^MANIFEST-CALL" "${MOCK_MANIFEST_LOG}") -eq 4 ]]'
+assert "tier 3 added ZERO docker pulls (only tiers 1/2's pre-existing per-service pull ran)" \
+  '[[ $(grep -c "^PULL-CALL" "${MOCK_DOCKER_PULL_LOG}") -eq 2 ]]'
 
 if [[ ${fail} -eq 0 ]]; then
   echo "ALL ASSERTIONS PASSED"

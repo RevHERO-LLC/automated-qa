@@ -25,15 +25,31 @@
 #                        Tier 3 resolves the branch (staging->staging,
 #                        prod->main) HEAD commit via the GitHub API, rebuilds
 #                        the tag that commit WOULD have produced, and compares
-#                        its pulled image ID against the currently-pinned tag's
-#                        image ID. A mismatch, once the HEAD commit is older
-#                        than SHA_GRACE_SECS (so a normal deploy would have
-#                        finished), is logged + Slack-alerted — NEVER healed.
-#                        Comparing image IDs (not the tag string) also covers
-#                        a still-floating tag for free: a floating :prod whose
+#                        its REGISTRY MANIFEST DIGEST against the
+#                        currently-pinned tag's manifest digest — both fetched
+#                        via `docker manifest inspect -v` (a registry
+#                        metadata round-trip, never a layer pull). A mismatch,
+#                        once the HEAD commit is older than SHA_GRACE_SECS (so
+#                        a normal deploy would have finished), is logged +
+#                        Slack-alerted — NEVER healed.
+#                        Comparing digests (not the tag string) also covers a
+#                        still-floating tag for free: a floating :prod whose
 #                        content already matches HEAD reads as fine; one that
 #                        doesn't is flagged exactly like a stale pin.
-# `docker pull <tag>` is a manifest HEAD when unchanged — cheap at 5-min cadence.
+#                        (Build #1056: tier 3 used to `docker pull` the
+#                        reconstructed expected tag on top of tiers 1/2's own
+#                        pull of the pinned tag — a real layer fetch, on a
+#                        cold cache, for every service whose branch had moved
+#                        since the last pass. That pushed the 5-min pass past
+#                        its own timer: measured 2m55s-5m10s per pass, 5.2-
+#                        6.4min start-to-start cadence, on VPS2. Manifest-only
+#                        lookups for BOTH sides of tier 3's comparison remove
+#                        that cost — note a local image ID and a registry
+#                        manifest digest are NOT the same value space, so both
+#                        sides must be fetched the same way or the compare is
+#                        meaningless.)
+# `docker pull <tag>` (tiers 1/2 only) is a manifest HEAD when unchanged —
+# cheap at 5-min cadence. Tier 3 no longer pulls at all.
 #
 # Skips: images outside revhero-llc on ghcr.io / registry.revhero.io
 # (nats/redis/traefik/etc), services with an update already in progress,
@@ -93,6 +109,27 @@ pull_tag() {
   else
     docker pull -q "$1"
   fi
+}
+
+# tier 3 (#940, build #1056): resolve a tag's registry manifest digest with
+# NO layer pull — `docker manifest inspect -v` is a metadata-only round trip
+# (one small JSON doc per platform; no blobs transfer). Prints the digest of
+# the manifest matching this engine's platform, or nothing on ANY failure
+# (missing tag, auth, network, unparseable JSON) — callers must treat an
+# empty result as "unknown", exactly like github_branch_head() below.
+# NB: this digest is NOT the same value space as `docker image inspect
+# --format '{{.Id}}'` (confirmed empirically to differ for identical content
+# on this fleet's Docker version) — both sides of any comparison MUST go
+# through this same function, never mixed with a locally-pulled image ID.
+manifest_digest() {
+  local ref="$1" out
+  if [[ "${ref}" == registry.revhero.io/* && -n "${REGISTRY_DOCKER_CONFIG:-}" ]]; then
+    out="$(DOCKER_CONFIG="${REGISTRY_DOCKER_CONFIG}" docker manifest inspect -v "${ref}" 2>/dev/null)" || return 0
+  else
+    out="$(docker manifest inspect -v "${ref}" 2>/dev/null)" || return 0
+  fi
+  [[ -z "${out}" ]] && return 0
+  echo "${out}" | jq -r 'if type=="array" then .[0].Descriptor.digest else .Descriptor.digest end // empty' 2>/dev/null
 }
 
 slack() {
@@ -240,20 +277,27 @@ for line in $(docker service ls --format '{{.Name}}|{{.Image}}'); do
       prefix="${tag_suffix}"
     fi
     expected_tag="${tag%:*}:${prefix}-${expected_sha}"
-    if ! pull_tag "${expected_tag}" >/dev/null 2>&1; then
-      log "${svc}: SHA-check unknown — could not pull expected ${expected_tag} (not pushed yet?)"
+    # Build #1056: digest-only lookups (no `docker pull`, no layer fetch) for
+    # BOTH sides — the running/pinned tag's own digest is fetched fresh here
+    # rather than reusing tier 1/2's `img_id`, because a local image ID and a
+    # registry manifest digest are different value spaces (see
+    # manifest_digest() above); mixing them would silently false-flag every
+    # service.
+    img_digest="$(manifest_digest "${tag}")"
+    if [[ -z "${img_digest}" ]]; then
+      log "${svc}: SHA-check unknown — could not resolve a manifest digest for running tag ${tag}"
       sha_unknown=$((sha_unknown + 1))
       continue
     fi
-    expected_img_id="$(docker image inspect "${expected_tag}" --format '{{.Id}}' 2>/dev/null || true)"
-    if [[ -z "${expected_img_id}" || -z "${img_id}" ]]; then
-      log "${svc}: SHA-check unknown — could not resolve an image ID to compare"
+    expected_img_digest="$(manifest_digest "${expected_tag}")"
+    if [[ -z "${expected_img_digest}" ]]; then
+      log "${svc}: SHA-check unknown — could not resolve a manifest digest for expected ${expected_tag} (not pushed yet?)"
       sha_unknown=$((sha_unknown + 1))
       continue
     fi
-    if [[ "${img_id}" != "${expected_img_id}" ]]; then
+    if [[ "${img_digest}" != "${expected_img_digest}" ]]; then
       sha_stuck=$((sha_stuck + 1))
-      detail="running '${tag_suffix}' (${img_id:7:12}) != ${branch}@${expected_sha:0:12} (${expected_img_id:7:12})"
+      detail="running '${tag_suffix}' (${img_digest:7:12}) != ${branch}@${expected_sha:0:12} (${expected_img_digest:7:12})"
       log "${svc}: SHA-STUCK — ${detail}"
       sha_marker="${STATE_DIR}/${svc}.lastshaalert"
       now_a=$(date +%s)
