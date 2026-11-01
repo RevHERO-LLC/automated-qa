@@ -1,5 +1,5 @@
 [Unit]
-Description=LOG-ONLY Swarm overlay VTEP/FDB-gap detector — Slack on missing dst entries (cross-node partition signature)
+Description=Swarm overlay VTEP/FDB-gap detector — Slack on missing dst entries; guarded auto-repair is DRY-RUN unless AUTO_REPAIR_ENABLED=true
 After=docker.service network-online.target
 Wants=network-online.target
 
@@ -8,6 +8,9 @@ Type=oneshot
 EnvironmentFile=/etc/revhero/overlay-fdb-detector.env
 Environment=STATE_DIR=/var/lib/overlay-fdb-detector
 ExecStart=/usr/local/bin/check-overlay-fdb.sh
+# A hung survey/repair is not a failure to systemd (oneshot has no default timeout) and would silently stop the
+# timer — cap it so a hang becomes a FAILED unit instead of silence.
+TimeoutStartSec=5min
 StandardOutput=journal
 StandardError=journal
 User=root

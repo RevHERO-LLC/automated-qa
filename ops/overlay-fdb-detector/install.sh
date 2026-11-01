@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # install.sh — Install the overlay-fdb-detector on VPS2 (the Swarm manager, which
-# has node->node root SSH to the workers). Read-only detector; no netns mutation.
+# has node->node root SSH to the workers). Detector; the #220 auto-repair (netns
+# mutation) is DRY-RUN unless AUTO_REPAIR_ENABLED=true is set in the env file.
 #   sudo bash ops/overlay-fdb-detector/install.sh
 # Then fill /etc/revhero/overlay-fdb-detector.env (SLACK_WEBHOOK). Secrets are not in this repo.
 
@@ -12,6 +13,9 @@ for cmd in docker jq curl nsenter ssh bridge; do
   command -v "$cmd" >/dev/null || { echo "[install] ERROR: '$cmd' not found." >&2; exit 1; }
 done
 echo "[install] deps OK (docker jq curl nsenter ssh bridge)."
+command -v ping >/dev/null || echo "[install] WARN: 'ping' not found on this node — the #220 real-caller probe needs it (also install it on the workers); without it auto-repair stays alert-only."
+command -v flock >/dev/null || echo "[install] WARN: 'flock' not found — a manual run could overlap the timer's run."
+echo "[install] #220 auto-repair ships in DRY-RUN (default): it changes nothing until AUTO_REPAIR_ENABLED=true is set in the env file."
 
 cp "${SCRIPT_DIR}/check-overlay-fdb.sh" /usr/local/bin/check-overlay-fdb.sh
 chmod 0755 /usr/local/bin/check-overlay-fdb.sh
@@ -30,6 +34,9 @@ else
   printf '%s\n' \
     '# Fill in, then: chmod 0600 /etc/revhero/overlay-fdb-detector.env' \
     'SLACK_WEBHOOK=REPLACE_ME' \
+    '# #220 guarded auto-repair is DRY-RUN unless the next line is uncommented (exact value "true") AND SLACK_WEBHOOK is set.' \
+    '# Arm it only after the DRY-RUN "would run" lines in the gap alerts have looked right. Cap: 3 repairs/hour fleet-wide.' \
+    '#AUTO_REPAIR_ENABLED=true' \
     > "${ENV_FILE}"
   chmod 0600 "${ENV_FILE}"
   echo "[install] wrote ${ENV_FILE} skeleton."
