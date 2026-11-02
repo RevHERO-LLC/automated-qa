@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the analytics alarm-loop dead-man check every 5 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Persistent=true
+RandomizedDelaySec=20s
+
+[Install]
+WantedBy=timers.target
