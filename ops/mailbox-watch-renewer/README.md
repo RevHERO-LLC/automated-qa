@@ -13,7 +13,7 @@ This timer replaces that unreliable scheduler and, critically, **fails loud**: a
 ## Behavior
 
 - Runs **every 2h** (< the 4h re-arm gate, so no mailbox lapses between runs).
-- POSTs `refresh-expired-google` + `refresh-expired-microsoft` (both unauth, async, idempotent — they re-arm only the expiring/expired mailboxes).
+- POSTs `refresh-expired-google` + `refresh-expired-microsoft` (async, idempotent — they re-arm only the expiring/expired mailboxes). Since #1057 email-ingress gates `/v1/user-mailboxes` with its internal-auth check (log-only until `INTERNAL_AUTH_ENFORCE=true`), so the renewer sends `X-Internal-Secret` from `EMAIL_INGRESS_INTERNAL_SECRET` in the env file — set it before email-ingress enforces or renewals 401 and watches lapse.
 - Logs each result via `logger -t mailbox-watch-renewer` (journald).
 - On any non-200, Slack-alerts the deploy channel.
 
