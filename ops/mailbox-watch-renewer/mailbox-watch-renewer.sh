@@ -19,8 +19,21 @@ BASE="${EMAIL_INGRESS_BASE:-https://email-ingress.revhero.io}"
 TAG=mailbox-watch-renewer
 fail=0
 results=""
+# #1057: email-ingress is putting an internal-auth gate on /v1/user-mailboxes (log-only until it
+# enforces). Send the shared secret when one is configured; curl reads the header from a 0600
+# temp file (removed on exit) so the value never appears in `ps`. Without it the calls still work today, but
+# they will 401 the day email-ingress enforces -- warn loudly so that is never a surprise.
+secret_args=()
+if [ -n "${EMAIL_INGRESS_INTERNAL_SECRET:-}" ]; then
+  hdr_file=$(mktemp)   # mktemp creates it 0600
+  trap 'rm -f "$hdr_file"' EXIT
+  printf 'X-Internal-Secret: %s\n' "$EMAIL_INGRESS_INTERNAL_SECRET" > "$hdr_file"
+  secret_args=(-H "@$hdr_file")
+else
+  logger -t "$TAG" "WARNING: EMAIL_INGRESS_INTERNAL_SECRET is not set in $ENV_FILE; renewals will 401 once email-ingress enforces internal auth"
+fi
 for ep in refresh-expired-google refresh-expired-microsoft; do
-  out=$(curl -sS -m 150 -w $'\n%{http_code}' -X POST "$BASE/v1/user-mailboxes/$ep" 2>&1) || true
+  out=$(curl -sS -m 150 -w $'\n%{http_code}' -X POST "${secret_args[@]}" "$BASE/v1/user-mailboxes/$ep" 2>&1) || true
   code=$(printf '%s' "$out" | tail -n1)
   body=$(printf '%s' "$out" | sed '$d' | tr '\n' ' ')
   logger -t "$TAG" "$ep -> HTTP ${code}: ${body}"
