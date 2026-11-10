@@ -177,6 +177,15 @@ test('carry-forward edge reasons: template-changed, apply-rejected, self-check-f
   assert.ok(nullCase, JSON.stringify(res.report.counts));
   assert.equal(res.report.counts.residualByReason['template-changed'], 1);
 
+  // a regenerated case that now carries an _actor marker the prior did not: the carried fill takes the NEW markers
+  const actor = path.join(p.root, 'actor.md');
+  const target = [...readBlocks(raw).values()].find((b) => needsFill(b.block.join('\n')) && b.tag && /_type: frontend_$/.test(b.line));
+  write(actor, raw.replace(target.line, `${target.line} _actor: MEMBER / onBehalfOf: ADMIN_`));
+  res = carryForward({ ...base, scaffold: actor, out: path.join(p.root, 'o0') });
+  const moved = res.accepted.find((a) => a.id === target.id);
+  assert.ok(moved, JSON.stringify(res.residual.find((x) => x.id === target.id)));
+  assert.match(moved.text, /_type: frontend_ _actor: MEMBER \/ onBehalfOf: ADMIN_$/);
+
   // the live fragment lost a case the scaffold has: the validator rejects the carry, and it is residual, not dropped
   const liveMissing = path.join(p.root, 'live.md');
   const firstFill = [...readBlocks(raw).values()].find((b) => needsFill(b.block.join('\n')) && b.tag);

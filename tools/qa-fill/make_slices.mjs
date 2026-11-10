@@ -104,7 +104,10 @@ export function makeSlices({ registry, run, out, size = 30, ctx = 60000, frag = 
     if (!String(noCarry).trim()) throw new Error('--no-carry needs a reason');
     live = live || path.join(registry, 'fragments', 'zz-surfaces.md');
     fs.mkdirSync(run, { recursive: true });
-    fs.writeFileSync(path.join(run, 'no-carry.json'), JSON.stringify({ at: new Date().toISOString(), reason: String(noCarry), fragment: path.resolve(live) }, null, 1));
+    const at = new Date().toISOString();
+    fs.writeFileSync(path.join(run, 'no-carry.json'), JSON.stringify({ at, reason: String(noCarry), fragment: path.resolve(live) }, null, 1));
+    const md = path.join(run, 'carry-report.md');
+    if (fs.existsSync(md)) fs.appendFileSync(md, `\n- NO-CARRY OVERRIDE (${at}): sliced every case still needing a fill. Reason: ${String(noCarry)}\n`);
   }
 
   const inv = JSON.parse(fs.readFileSync(path.join(registry, 'surface-inventory.json'), 'utf8')).surfaces;

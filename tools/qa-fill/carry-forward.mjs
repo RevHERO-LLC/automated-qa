@@ -20,7 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { readBlocks, rehome, needsFill } from './lib/signature.mjs';
+import { readBlocks, rehome, needsFill, MARKERS } from './lib/signature.mjs';
 import { indexInventory, caseKey } from './lib/surface-key.mjs';
 import { parseEvidence, resolveAgainstSnapshot, reposFromManifest } from './lib/evidence.mjs';
 import { citedFilesUnchanged, snapshotDiff, touchedSurfaceKeys } from './lib/unchanged.mjs';
@@ -148,7 +148,7 @@ export function carryForward(o) {
     if (!ch.unchanged) { toResidual(b, k, 'source-changed', [...ch.changed, ...ch.missing].slice(0, 3).join(' | ')); continue; }
     const pf = prior.filled.get(priorId);
     if (!pf) { toResidual(b, k, 'no-prior-fill', `${priorId} absent from the filled fragment`); continue; }
-    carried.push({ id: b.id, text: rehome(pf.block.join('\n'), b.id, b.tag ? b.tag.raw : null), evidence: st.evidence, status: st.status, carriedFrom: `${prior.generation}:${priorId}`, src: 'fill-carry.json' });
+    carried.push({ id: b.id, text: rehome(pf.block.join('\n'), b.id, b.tag ? b.tag.raw : null, (MARKERS.exec(b.line) || [])[1] || null), evidence: st.evidence, status: st.status, carriedFrom: `${prior.generation}:${priorId}`, src: 'fill-carry.json' });
   }
 
   // ---- the apply validator decides; a rejection is residual, never a silent drop

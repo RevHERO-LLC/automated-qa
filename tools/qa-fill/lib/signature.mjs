@@ -85,14 +85,20 @@ export function readBlocks(text) {
   return blocks;
 }
 
+// The trailing markers of a case line: "_type: x_", optionally followed by "_actor: ..._".
+export const MARKERS = /\s(_type: [^_]+_(?:\s+_actor: [^_]+_)?)\s*$/;
+
 /**
  * Re-home a carried fill onto a new case: the new id and the new scaffold's surface tag, with the old fill's body
- * (everything after its own id and tag) unchanged. Sub-bullet lines of the old block travel with it.
+ * (everything after its own id and tag) unchanged, and the NEW scaffold's trailing markers when given (the plan:
+ * keep the new scaffold's _type/_actor; the signature ignores _actor, so it is not implied by a match). Sub-bullet
+ * lines of the old block travel with it.
  */
-export function rehome(oldText, newId, newTagRaw) {
+export function rehome(oldText, newId, newTagRaw, newMarkers = null) {
   const lines = String(oldText).split(/\r?\n/);
   const head = parseCaseLine(lines[0]);
   if (!head) throw new Error('carried text does not start with a case line');
-  const first = `- **${newId}** — ${newTagRaw ? newTagRaw + ' ' : ''}${head.body}`;
+  const body = newMarkers && MARKERS.test(head.body) ? head.body.replace(MARKERS, ` ${newMarkers}`) : head.body;
+  const first = `- **${newId}** — ${newTagRaw ? newTagRaw + ' ' : ''}${body}`;
   return [first, ...lines.slice(1)].join('\n');
 }

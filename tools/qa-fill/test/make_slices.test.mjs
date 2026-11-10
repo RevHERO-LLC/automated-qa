@@ -88,7 +88,9 @@ test('refuses without a carry report, or when the inventory, the raw scaffold or
 test('--no-carry slices every case still needing a fill and records the reason in the run', () => {
   const fx = fixture();
   fs.rmSync(path.join(fx.run, 'carry-report.json'));
+  write(path.join(fx.run, 'carry-report.md'), '# Carry-forward report\n');
   const r = makeSlices({ registry: fx.reg, run: fx.run, out: fx.out, noCarry: 'carry-forward crashed on the new extractor' });
+  assert.match(fs.readFileSync(path.join(fx.run, 'carry-report.md'), 'utf8'), /NO-CARRY OVERRIDE \(.+\): .* Reason: carry-forward crashed on the new extractor/);
   assert.equal(r.mode, 'no-carry');
   assert.deepEqual(ids(r, fx.out), ['FE-SURF-003', 'FE-SURF-004', 'FE-SURF-005', 'FE-SURF-006', 'FE-SURF-007'], 'FE-SURF-001 is already filled, FE-SURF-002 holds only boilerplate');
   const nc = JSON.parse(fs.readFileSync(path.join(fx.run, 'no-carry.json'), 'utf8'));

@@ -43,6 +43,13 @@ test('rehome keeps the old body, swaps in the new id and the new surface tag, ke
   assert.equal(out, '- **FE-SURF-017** — [S011 /(Auth)/invite/[id]] filled body _type: frontend_ _actor: ADMIN / onBehalfOf: ADMIN_\n  - detail');
 });
 
+test('rehome takes the NEW scaffold\'s trailing markers when given (the signature ignores _actor)', () => {
+  const old = '- **FE-SURF-005** — [S003 /a] filled body _type: frontend_ _actor: ADMIN / onBehalfOf: ADMIN_';
+  assert.equal(rehome(old, 'FE-SURF-017', '[S011 /a]', '_type: frontend_ _actor: MEMBER / onBehalfOf: ADMIN_'), '- **FE-SURF-017** — [S011 /a] filled body _type: frontend_ _actor: MEMBER / onBehalfOf: ADMIN_');
+  assert.equal(rehome('- **FE-SURF-005** — [S003 /a] body _type: frontend_', 'FE-SURF-017', '[S011 /a]', '_type: frontend_'), '- **FE-SURF-017** — [S011 /a] body _type: frontend_');
+  assert.equal(rehome('- **FE-SURF-005** — [S003 /a] body without markers', 'FE-SURF-017', '[S011 /a]', '_type: frontend_'), '- **FE-SURF-017** — [S011 /a] body without markers', 'no marker to replace: left for the validator');
+});
+
 test('placeholders lists the remaining <...> tokens', () => {
   assert.deepEqual(placeholders('a <the real filter> b <x>'), ['<the real filter>', '<x>']);
   assert.deepEqual(placeholders('filled text'), []);

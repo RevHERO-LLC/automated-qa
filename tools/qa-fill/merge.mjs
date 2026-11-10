@@ -20,9 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parseCaseLine, placeholders, FILL_PLACEHOLDER } from './lib/signature.mjs';
-
-const SUFFIX = /\s(_type: [^_]+_(?:\s+_actor: [^_]+_)?)\s*$/;
+import { parseCaseLine, placeholders, FILL_PLACEHOLDER, MARKERS as SUFFIX } from './lib/signature.mjs';
 
 /** Every case of every slice file in a directory (files without a cases[] array, such as slices-index.json, are skipped). */
 export function loadSliceCases(dir) {
