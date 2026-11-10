@@ -41,7 +41,7 @@ function fixture() {
   write(frag, SCAFFOLD.replace(/For <field>=<real value>, displays <the exact rendered string>\./, 'For `name`=Q4 the header displays `Q4`.'));
   const cases = ['FE-SURF-003', 'FE-SURF-004', 'FE-SURF-005', 'FE-SURF-006', 'FE-SURF-007'].map((id) => ({ id, reason: ['FE-SURF-006', 'FE-SURF-007'].includes(id) ? 'per-entity' : 'source-changed', hint: id === 'FE-SURF-003' ? { resolved: 'GET /v1/deals/list', candidates: ['GET /v1/deals/list'] } : null }));
   write(path.join(run, 'residual.json'), JSON.stringify({ count: cases.length, cases }));
-  write(path.join(run, 'carry-report.json'), JSON.stringify({ selfCheckProblems: [], hashes: { scaffold: sha(path.join(run, 'scaffold.raw.md')), inventory: sha(inv) }, paths: { scaffold: path.join(run, 'scaffold.raw.md'), frag } }));
+  write(path.join(run, 'carry-report.json'), JSON.stringify({ selfCheckProblems: [], hashes: { scaffold: sha(path.join(run, 'scaffold.raw.md')), inventory: sha(inv) }, paths: { scaffold: path.join(run, 'scaffold.raw.md'), frag, inventory: inv } }));
   return { root, reg, run, inv, frag, out: path.join(root, 'slices') };
 }
 
@@ -71,6 +71,13 @@ test('refuses without a carry report, or when the inventory, the raw scaffold or
     ['inventory re-generated', (fx) => fs.appendFileSync(fx.inv, ' '), /registry inventory changed/],
     ['raw scaffold edited', (fx) => fs.appendFileSync(path.join(fx.run, 'scaffold.raw.md'), '\n'), /raw scaffold changed/],
     ['live fragment swapped', (fx) => fs.appendFileSync(fx.frag, `\n${line(8, null, null, 'x <the real filter>.')}\n`), /does not hold the same case ids/],
+    ['report from a dry run', (fx) => {
+      const f = path.join(fx.run, 'carry-report.json');
+      const rep = JSON.parse(fs.readFileSync(f, 'utf8'));
+      rep.paths.frag = path.join(fx.run, 'zz-surfaces.md');
+      fs.copyFileSync(fx.frag, rep.paths.frag);
+      fs.writeFileSync(f, JSON.stringify(rep));
+    }, /did not run on this registry's own fragment and inventory/],
   ]) {
     const fx = fixture();
     mutate(fx);

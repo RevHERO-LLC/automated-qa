@@ -116,6 +116,19 @@ test('three generations end to end: carry what is provably unchanged, residualiz
   fillAndArchive(p, run2, '2026-11-02');
   const createGen2 = [...blocksOf(p.frag).values()].find((b) => b.tag && b.tag.path === 'routes:/create' && /Fixture fill/.test(b.line));
 
+  // a dry run never touches the registry (a full extraction would replace every fill with a placeholder), and its
+  // report cannot be sliced, because its inventory is not the registry's
+  const before = [p.frag, path.join(p.reg, 'surface-inventory.json')].map((f) => fs.readFileSync(f));
+  const dry = path.join(p.root, 'run2-dry');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', dry]);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /DRY RUN: regenerating into .*the registry is not touched/);
+  assert.deepEqual([p.frag, path.join(p.reg, 'surface-inventory.json')].map((f) => fs.readFileSync(f)), before, 'registry byte-identical after a dry run');
+  assert.deepEqual(json(path.join(dry, 'carry-report.json')).counts.residualByReason, { 'per-entity': 1 });
+  r = run('make_slices.mjs', ['--registry', p.reg, '--run', dry, '--out', path.join(dry, 'slices')]);
+  assert.equal(r.code, 3, r.out);
+  assert.match(r.out, /did not run on this registry's own fragment and inventory \(a dry run/);
+
   // ---- gen 3: a new route (renumbers everything), an edit on the /detail route line, a changed /list handler
   write(path.join(p.snap, ROUTER_REL), ROUTER.replace('group.POST("/create", h)', 'group.POST("/create", h)\n\tgroup.POST("/archive", h)').replace('group.GET("/detail/:id", h)', 'group.GET("/detail/:id", h2)'));
   write(path.join(p.snap, DEAL_REL), 'package deal_resource\n\nfunc List() {\n\t// ORDER BY created_at DESC, id DESC\n}\n\nfunc Detail() {}\n');

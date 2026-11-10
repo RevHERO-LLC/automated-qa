@@ -59,6 +59,11 @@ export function checkCarryReport({ registry, run, frag }) {
   if (!fs.existsSync(reportFile)) return { ok: false, problems: [`no carry report at ${reportFile}: run regenerate.mjs first`] };
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   const inventory = path.join(registry, 'surface-inventory.json');
+  const same = (x, y) => !!x && path.resolve(x).toLowerCase() === path.resolve(y).toLowerCase();
+  const regFrag = path.join(registry, 'fragments', 'zz-surfaces.md');
+  if (!frag && !(same(report.paths && report.paths.frag, regFrag) && same(report.paths && report.paths.inventory, inventory))) {
+    problems.push(`the carry report did not run on this registry's own fragment and inventory (a dry run, or another registry): it applied to ${report.paths && report.paths.frag}. Re-run regenerate.mjs with --write, or pass --frag deliberately`);
+  }
   if (!fs.existsSync(inventory)) problems.push(`no inventory at ${inventory}`);
   else if (sha(inventory) !== report.hashes.inventory) problems.push('the registry inventory changed after the carry-forward ran (was the extractor re-run on its own?)');
   const scaffold = report.paths && report.paths.scaffold;
