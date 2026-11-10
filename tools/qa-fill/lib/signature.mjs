@@ -1,8 +1,8 @@
 // Case lines, case blocks and template signatures for registry fragments (qa-test-cases/fragments/zz-surfaces.md).
 //
 // A case line:  - **FE-SURF-0123** — [S045 /deals/[id]] <case text> _type: frontend_ [_actor: ADMIN / onBehalfOf: ADMIN_]
-// A case BLOCK is that line plus any following lines indented with two spaces (sub-bullets). apply-fills.mjs uses the
-// same definition, so a block read here is exactly what apply-fills replaces.
+// A case BLOCK is that line plus any following lines indented with two spaces (sub-bullets). apply_fills.mjs uses the
+// same definition, so a block read here is exactly what apply_fills replaces.
 //
 // The SIGNATURE of a scaffold line identifies which template question produced it, independent of the positional id
 // and surface number: id and surface tag stripped, placeholders normalized to <P>, the fill-agent actor marker
@@ -11,6 +11,12 @@
 
 export const ID_LINE = /^- \*\*([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+[a-z]?)\*\* — /;
 const PLACEHOLDER = /<[^<>\n]{1,240}>/g;
+
+// Which placeholders make a case a FILL target: exactly the 2026-11-07 slicer's rule (make_slices.mjs PH). Template
+// boilerplate such as "by-design: <reason>" (about 300 cases) was never sliced or filled, so it is not a fill target
+// here either: carrying or residualizing it would change the established process, not reproduce it.
+export const FILL_PLACEHOLDER = /<(the|UNKNOWN|a |an |N>|real|exact|value|field|filter|status|product|entity|role|seed|count)[^>]*>/i;
+export const needsFill = (text) => FILL_PLACEHOLDER.test(String(text));
 
 /**
  * Split the leading surface tag "[S### <path>]" off a case body. The path can contain brackets of its own
