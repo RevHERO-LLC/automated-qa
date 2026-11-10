@@ -25,6 +25,21 @@ test('layer 2: identical cited files are unchanged; an edit, a deletion or an ab
   assert.equal(citedFilesUnchanged([], oldRoot, newRoot).unchanged, false, 'no citations can never vouch for anything');
 });
 
+test('layer 2 sees a file edited between two calls in the same process (no stale module-level hash cache)', () => {
+  const root = tmpDir();
+  const oldRoot = path.join(root, 'old');
+  const newRoot = path.join(root, 'new');
+  write(path.join(oldRoot, 'R', 'a.go'), 'one\n');
+  write(path.join(newRoot, 'R', 'a.go'), 'one\n');
+  const f = [{ repo: 'R', path: 'a.go', lines: '1' }];
+  assert.equal(citedFilesUnchanged(f, oldRoot, newRoot).unchanged, true);
+  write(path.join(newRoot, 'R', 'a.go'), 'one // edited\n');
+  assert.equal(citedFilesUnchanged(f, oldRoot, newRoot).unchanged, false, 'a second call must re-read the edited file');
+  const cache = new Map();
+  assert.equal(citedFilesUnchanged(f, oldRoot, newRoot, cache).unchanged, false);
+  assert.equal(cache.size, 2, 'a caller-owned cache is filled for the run');
+});
+
 test('snapshotDiff normalizes paths to <repo>/<path>; a repo on one side only is emitted as flat paths', () => {
   const root = tmpDir();
   const oldRoot = path.join(root, 'a', 'old');

@@ -207,6 +207,15 @@ test('carry-forward edge reasons: template-changed, apply-rejected, self-check-f
   assert.deepEqual(res.residual.filter((x) => x.reason === 'apply-rejected').map((x) => x.id), [firstFill.id]);
   assert.match(res.residual.find((x) => x.id === firstFill.id).detail, /id found 0 times/);
 
+  // a second carry-forward in the SAME process after a cited file changed must see the change (no stale hash cache;
+  // the 2026-11-10 acceptance run's synthetic edits leaked 158 of 161 targeted carries before this was fixed)
+  const before = carryForward({ ...base, scaffold: path.join(run2, 'scaffold.raw.md'), out: path.join(p.root, 'o5') });
+  const viaHandler = before.accepted.filter((a) => /campaign\.handler\.go/.test(a.evidence)).map((a) => a.id);
+  assert.ok(viaHandler.length > 0, 'fixture: some carried fill cites campaign.handler.go');
+  fs.appendFileSync(path.join(p.snap, CAMP_REL), '// edited between two in-process runs\n');
+  const after = carryForward({ ...base, scaffold: path.join(run2, 'scaffold.raw.md'), out: path.join(p.root, 'o6') });
+  for (const id of viaHandler) assert.equal(after.residual.find((x) => x.id === id)?.reason, 'source-changed', `${id} must not carry after its cited file changed`);
+
   // a contract whose sources are not inside the snapshot can never be diffed: refuse, residualize everything
   const offContract = path.join(p.root, 'off.json');
   write(offContract, JSON.stringify({ surfaces: { source: [path.join(p.root, 'elsewhere', ROUTER_REL)] } }));

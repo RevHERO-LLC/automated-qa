@@ -14,24 +14,26 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { indexInventory } from './surface-key.mjs';
 
-const hashCache = new Map();
-
-export function fileHash(p) {
-  if (hashCache.has(p)) return hashCache.get(p);
+// Hash cache: ONE per carry-forward run, passed in by the caller, never module-level. A module-level cache outlives
+// the run that filled it, so a second run in the same process (a test, a wrapper, a re-run after an edit) would
+// compare against hashes taken before the files changed and carry fills whose cited code did change: the unsafe
+// direction. Found by the 2026-11-10 acceptance run's synthetic edits (158 of 161 targeted carries leaked).
+export function fileHash(p, cache = null) {
+  if (cache && cache.has(p)) return cache.get(p);
   let h = null;
   try { h = crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex'); } catch { h = null; }
-  hashCache.set(p, h);
+  if (cache) cache.set(p, h);
   return h;
 }
 
 /** Layer 2. @returns {{unchanged: boolean, changed: string[], missing: string[]}} */
-export function citedFilesUnchanged(files, oldRoot, newRoot) {
+export function citedFilesUnchanged(files, oldRoot, newRoot, cache = null) {
   const changed = [];
   const missing = [];
   for (const f of files) {
     const rel = `${f.repo}/${f.path}`;
-    const a = fileHash(path.join(oldRoot, f.repo, f.path));
-    const b = fileHash(path.join(newRoot, f.repo, f.path));
+    const a = fileHash(path.join(oldRoot, f.repo, f.path), cache);
+    const b = fileHash(path.join(newRoot, f.repo, f.path), cache);
     if (a === null) missing.push(`${rel} (absent from the prior snapshot)`);
     else if (b === null) changed.push(`${rel} (deleted)`);
     else if (a !== b) changed.push(rel);

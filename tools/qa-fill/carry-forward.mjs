@@ -66,6 +66,7 @@ function pageUrl(p) {
 export function carryForward(o) {
   const extractor = o.extractor || DEFAULT_EXTRACTOR;
   const problems = [];
+  const hashCache = new Map(); // layer-2 hashes, valid for THIS run only (see lib/unchanged.mjs fileHash)
   // ---- interface self-check: refuse loudly rather than mis-key silently
   const sx = checkExtractorSource(extractor);
   if (!sx.ok) problems.push(...sx.problems);
@@ -144,7 +145,7 @@ export function carryForward(o) {
     if (parsed.uncited) { toResidual(b, k, 'no-evidence', priorId); continue; }
     const resolved = resolveAgainstSnapshot(parsed, prior.files.snapshot);
     if (resolved.unresolved.length) { toResidual(b, k, 'evidence-unresolved', resolved.unresolved.slice(0, 3).join(' | ')); continue; }
-    const ch = citedFilesUnchanged(resolved.files, prior.files.snapshot, o.snapshot);
+    const ch = citedFilesUnchanged(resolved.files, prior.files.snapshot, o.snapshot, hashCache);
     if (!ch.unchanged) { toResidual(b, k, 'source-changed', [...ch.changed, ...ch.missing].slice(0, 3).join(' | ')); continue; }
     const pf = prior.filled.get(priorId);
     if (!pf) { toResidual(b, k, 'no-prior-fill', `${priorId} absent from the filled fragment`); continue; }
