@@ -303,6 +303,13 @@ test('option C end to end: an inert router edit carries every case and remaps ro
   rep = json(path.join(testOnly, 'carry-report.json'));
   assert.deepEqual(rep.plumbingGuard.changedFiles, []);
   assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1 });
+  write(path.join(p.snap, HELPER_REL), 'package helpers\n\n// RespondError answers every error (a comment-only edit)\nfunc RespondError() {}\n');
+  const commentOnly = path.join(p.root, 'run-plumbing-comment-only');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', commentOnly]);
+  assert.equal(r.code, 0, r.out);
+  rep = json(path.join(commentOnly, 'carry-report.json'));
+  assert.deepEqual(rep.plumbingGuard.changedFiles, [], 'a comment-only edit to shared code re-asks nothing');
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1 });
   write(path.join(p.snap, HELPER_REL), 'package helpers\n\nfunc RespondError() { genericize() }\n');
   for (const extra of [[], ['--strict-router']]) {
     const plumbRun = path.join(p.root, `run-plumbing${extra.length ? '-strict' : ''}`);

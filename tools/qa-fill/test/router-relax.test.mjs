@@ -26,6 +26,34 @@ test('plumbing: changed non-test Go files under the BFF shared dirs, from header
   ], 'test files, handlers, other repos and diff body lines are not plumbing');
 });
 
+test('plumbing with the snapshots: only CODE changes count (comments, imports and the package clause do not)', () => {
+  const root = tmpDir('qafill-plumb-');
+  const oldRoot = path.join(root, 'old');
+  const newRoot = path.join(root, 'new');
+  const H = 'RevHero-user-fe-backend/internal/helpers';
+  const both = (rel, a, b) => { write(path.join(oldRoot, rel), a); write(path.join(newRoot, rel), b); };
+  const go = (body) => `package helpers\n\nimport (\n\t"fmt"\n)\n\n${body}\n`;
+  both(`${H}/comment.go`, go('// old note\nfunc A() { fmt.Println(1) }'), go('// new note, reworded\nfunc A() { fmt.Println(1) }'));
+  both(`${H}/imports.go`, go('func B() { fmt.Println(2) }'), go('func B() { fmt.Println(2) }').replace('\t"fmt"\n', '\t"fmt"\n\tstr "strings"\n'));
+  both(`${H}/blank.go`, go('func C() {}'), go('func C() {}').replace('\t"fmt"\n', '\t"fmt"\n\t_ "net/http/pprof"\n'));
+  both(`${H}/code.go`, go('func D() int { return 1 }'), go('func D() int { return 2 }'));
+  both(`${H}/block.go`, go('/*\n * old words\n */\nfunc E() {}'), go('/*\n * new words\n */\nfunc E() {}'));
+  both(`${H}/pointer.go`, go('func F(p *int) {\n\t*p = 1\n}'), go('func F(p *int) {\n\t*p = 2\n}'));
+  write(path.join(newRoot, 'RevHero-user-fe-backend/cmd/extra.go'), 'package main\n\nfunc init() {}\n');
+  write(path.join(oldRoot, 'RevHero-user-fe-backend/cmd/main.go'), 'package main\n');
+  write(path.join(newRoot, 'RevHero-user-fe-backend/cmd/main.go'), 'package main\n');
+  const diff = snapshotDiff(oldRoot, newRoot, ['RevHero-user-fe-backend']);
+  assert.deepEqual(changedPlumbing(diff, oldRoot, newRoot), [
+    'RevHero-user-fe-backend/cmd/extra.go',
+    `${H}/blank.go`,
+    `${H}/code.go`,
+    `${H}/pointer.go`,
+  ], 'comment, named-import and block-comment edits are inert; a blank import, code, a pointer write and a new file count');
+  assert.equal(changedPlumbing(diff).length, 7, 'without the snapshots every touched file counts (path-only, conservative)');
+  const ghost = `diff --git a/${H}/ghost.go b/${H}/ghost.go\n@@ -1,0 +2 @@\n+// a comment, but the file cannot be read\n`;
+  assert.deepEqual(changedPlumbing(ghost, oldRoot, newRoot), [`${H}/ghost.go`], 'a side that cannot be read counts as changed');
+});
+
 // Modeled on the real router: clients, the revocation store and seat guard, a rate limiter, handlers, registrations
 // (one with inline middleware, one multi-line), a conditional block and a route mount.
 const SRC = `package routes
