@@ -23,7 +23,7 @@ import { pathToFileURL } from 'node:url';
 import { readBlocks, rehome, needsFill, MARKERS } from './lib/signature.mjs';
 import { indexInventory, caseKey } from './lib/surface-key.mjs';
 import { parseEvidence, resolveAgainstSnapshot, reposFromManifest, rewriteCitedLines } from './lib/evidence.mjs';
-import { citedFilesUnchanged, snapshotDiff, touchedSurfaceKeys, relaxRouterDiff, remapCitedLines } from './lib/unchanged.mjs';
+import { citedFilesUnchanged, snapshotDiff, touchedSurfaceKeys, relaxRouterDiff, remapCitedLines, lexGo } from './lib/unchanged.mjs';
 import { parseGinRoutes, hintFor } from './lib/routes.mjs';
 import { checkExtractorSource, checkInventory, checkFragment } from './lib/selfcheck.mjs';
 import { indexFragments, validateEntries, applyEntries } from './lib/apply.mjs';
@@ -37,14 +37,60 @@ const BFF_ROUTER = 'RevHero-user-fe-backend/internal/routes/routes.go';
 export const BFF_PLUMBING = ['RevHero-user-fe-backend/internal/middleware/', 'RevHero-user-fe-backend/internal/helpers/',
   'RevHero-user-fe-backend/internal/config/', 'RevHero-user-fe-backend/cmd/'];
 
-/** Changed non-test Go files under BFF_PLUMBING, read off the (unfiltered) snapshot diff. */
-export function changedPlumbing(diffText) {
+const isPlumbing = (p) => !!p && /\.go$/.test(p) && !/_test\.go$/.test(p) && BFF_PLUMBING.some((d) => p.startsWith(d));
+
+/** Per file version: lexed lines, plus which lines are named import specs or the package clause (inert alone). */
+function goView(root, rel) {
+  if (!root) return null;
+  const p = path.join(root, rel);
+  if (!fs.existsSync(p)) return null;
+  const lines = fs.readFileSync(p, 'utf8').replace(/\r/g, '').split('\n');
+  const lex = lexGo(lines);
+  const quiet = new Set();
+  let inImport = false;
+  lex.forEach((L, i) => {
+    const code = L.code.trim();
+    if (/^package\s+\w+$/.test(code)) quiet.add(i + 1);
+    else if (/^import\s*\($/.test(code)) inImport = true;
+    else if (inImport && code === ')') inImport = false;
+    else if ((inImport || /^import\s/.test(code)) && /("[^"]*")$/.test(code) && !/^(import\s+)?[_.]\s/.test(code)) quiet.add(i + 1);
+  });
+  return { lex, quiet };
+}
+
+/**
+ * Changed non-test Go files under BFF_PLUMBING, read off the (unfiltered) snapshot diff. With the snapshot roots, a
+ * file counts only when a changed line is CODE: comment-, blank-, package- and named-import-only edits do not change
+ * behavior (a blank import still counts: it runs init side effects). Measured 2026-11-11 over 30 BFF staging windows:
+ * this recovers as much as a function-level guard would, which is therefore not built. Unreadable = changed.
+ */
+export function changedPlumbing(diffText, oldRoot = null, newRoot = null) {
   const out = new Set();
+  let cur = null;
+  const flush = () => { if (cur && (cur.code || !oldRoot || !newRoot)) out.add(cur.path); cur = null; };
+  let o = 0;
+  let n = 0;
   for (const line of diffText.split('\n')) {
-    const m = /^diff --git a\/(\S+) b\/(\S+)/.exec(line) || /^([^\s@+-][^\s]*\.go)$/.exec(line); // flat path = one-sided repo
-    const p = m ? (m[2] || m[1]) : null;
-    if (p && /\.go$/.test(p) && !/_test\.go$/.test(p) && BFF_PLUMBING.some((d) => p.startsWith(d))) out.add(p);
+    const g = /^diff --git a\/(\S+) b\/(\S+)/.exec(line);
+    if (g) {
+      flush();
+      if (isPlumbing(g[2])) cur = { path: g[2], code: false, A: goView(oldRoot, g[1]), B: goView(newRoot, g[2]) };
+      continue;
+    }
+    const flat = /^([^\s@+\\-][^\s]*\.go)$/.exec(line); // one-sided repo: flat path, whole file
+    if (flat && !/^(index|similarity|rename|new|deleted|old)\b/.test(line)) { flush(); if (isPlumbing(flat[1])) out.add(flat[1]); continue; }
+    if (!cur) continue;
+    const h = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
+    if (h) { o = Number(h[1]); n = Number(h[2]); continue; }
+    if (/^(---|\+\+\+) /.test(line)) continue;
+    const side = line[0] === '-' ? cur.A : line[0] === '+' ? cur.B : undefined;
+    if (side === undefined) continue;
+    const at = line[0] === '-' ? o++ : n++;
+    if (!side) { cur.code = true; continue; } // added or deleted file, or unreadable: conservative
+    const L = side.lex[at - 1];
+    if (!L || (L.code.trim() && !side.quiet.has(at))) cur.code = true;
   }
+  flush();
   return [...out].sort();
 }
 
@@ -118,7 +164,7 @@ export function carryForward(o) {
   if (!problems.length && priorUsable) {
     const repos = new Set([...prior.repos, ...reposFromManifest(manifest)]);
     const diff = snapshotDiff(prior.files.snapshot, o.snapshot, [...repos]);
-    plumbing = changedPlumbing(diff);
+    plumbing = changedPlumbing(diff, prior.files.snapshot, o.snapshot);
     relax = o.strictRouter ? { diffText: diff, info: {} } : relaxRouterDiff(diff, [BFF_ROUTER], prior.files.snapshot, o.snapshot);
     touched = touchedSurfaceKeys({ extractor, contract: o.contract, diffText: relax.diffText, scratchDir: path.join(o.out, 'touched'), expectedSurfaceCount: inventory.surfaces.length });
   }
