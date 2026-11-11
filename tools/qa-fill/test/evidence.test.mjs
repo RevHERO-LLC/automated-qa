@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { parseEvidence, resolveAgainstSnapshot } from '../lib/evidence.mjs';
+import { parseEvidence, resolveAgainstSnapshot, rewriteCitedLines } from '../lib/evidence.mjs';
 import { tmpDir, write } from './helpers.mjs';
 
 const REPOS = new Set(['RevHero-FE-New', 'RevHero-users-service', 'RevHero-user-fe-backend', 'RevHero-calendar-service', 'RevHero-leadgen-service']);
@@ -81,4 +81,35 @@ test('resolveAgainstSnapshot: present path ok, missing path unresolved, bare nam
   const r = resolveAgainstSnapshot(parsed, snap);
   assert.deepEqual(r.files.map((f) => f.path).sort(), ['a/One.tsx']);
   assert.deepEqual(r.unresolved.sort(), ['RevHero-FE-New/a/Missing.tsx', 'RevHero-FE-New/page.tsx']);
+});
+
+test('a file cited more than once keeps every range; a mention without lines means the whole file', () => {
+  // Shape of FE-SURF-911..913 (routes.go:2044 ... routes.go:1041): the router check must see BOTH ranges.
+  const a = parseEvidence('RevHero-user-fe-backend/internal/routes/routes.go:2044; admin.handler.go:12; routes.go:1041', REPOS);
+  assert.equal(a.files.find((f) => f.path === 'internal/routes/routes.go').lines, '2044');
+  const snap = tmpDir();
+  write(path.join(snap, 'RevHero-user-fe-backend', 'internal', 'routes', 'routes.go'), 'package routes\n');
+  write(path.join(snap, 'RevHero-user-fe-backend', 'internal', 'admin.handler.go'), 'package admin\n');
+  const r = resolveAgainstSnapshot(a, snap);
+  assert.equal(r.files.find((f) => f.path === 'internal/routes/routes.go').lines, '2044,1041', 'merged after resolution (bare name + full path)');
+  const b = parseEvidence('RevHero-user-fe-backend/internal/routes/routes.go:858-870; RevHero-user-fe-backend/internal/routes/routes.go', REPOS);
+  assert.equal(b.files[0].lines, null);
+  const c = parseEvidence('RevHero-user-fe-backend/x.go:1-2; RevHero-user-fe-backend/x.go:9', REPOS);
+  assert.equal(c.files[0].lines, '1-2,9');
+});
+
+test('rewriteCitedLines changes only the line specs of the target file, every occurrence, nothing else', () => {
+  const snap = tmpDir();
+  write(path.join(snap, 'RevHero-user-fe-backend', 'internal', 'routes', 'routes.go'), 'package routes\n');
+  write(path.join(snap, 'RevHero-user-fe-backend', 'internal', 'deal.handler.go'), 'package deal\n');
+  write(path.join(snap, 'RevHero-users-service', 'internal', 'routes', 'routes.go'), 'package routes\n');
+  const T = 'RevHero-user-fe-backend/internal/routes/routes.go';
+  const plus2 = (s) => s.split(',').map((p) => p.split('-').map((n) => Number(n) + 2).join('-')).join(',');
+  const ev = 'RevHero-user-fe-backend/internal/routes/routes.go:13 (detail route); deal.handler.go:7; routes.go:40-42,50';
+  assert.equal(rewriteCitedLines(ev, REPOS, snap, T, plus2), 'RevHero-user-fe-backend/internal/routes/routes.go:15 (detail route); deal.handler.go:7; routes.go:42-44,52');
+  const other = 'RevHero-users-service/internal/routes/routes.go:13; RevHero-user-fe-backend/internal/routes/routes.go:5';
+  assert.equal(rewriteCitedLines(other, REPOS, snap, T, plus2), 'RevHero-users-service/internal/routes/routes.go:13; RevHero-user-fe-backend/internal/routes/routes.go:7', "another repo's routes.go is not the target");
+  assert.equal(rewriteCitedLines('RevHero-user-fe-backend/internal/routes/routes.go:13', REPOS, snap, T, () => null), null, 'a refused remap refuses the whole carry');
+  assert.equal(rewriteCitedLines('RevHero-user-fe-backend/internal/routes/routes.go (whole file)', REPOS, snap, T, plus2), null, 'a citation without lines cannot be remapped');
+  assert.equal(rewriteCitedLines('RevHero-user-fe-backend/internal/deal.handler.go:7', REPOS, snap, T, plus2), 'RevHero-user-fe-backend/internal/deal.handler.go:7', 'no target citation: unchanged');
 });

@@ -39,7 +39,49 @@ export function parseEvidence(evidence, repos) {
   const files = [];
   const unresolved = [];
   if (!evidence || typeof evidence !== 'string') return { files, unresolved, uncited: true };
-  const text = evidence.replace(/\\/g, '/');
+  // A file cited more than once keeps EVERY range: the line-level router check must see all of them (6 archived fills
+  // cite routes.go twice with different lines; keeping only the first would hide an edit to the second).
+  const byKey = new Map();
+  for (const c of citations(evidence, repos)) {
+    if (c.unresolved) { unresolved.push(c.unresolved); continue; }
+    const ln = c.lines ? c.lines.replace(/\s+/g, '') : null;
+    const key = `${c.repo}/${c.path}`;
+    if (byKey.has(key)) { byKey.get(key).lines = mergeLines(byKey.get(key).lines, ln); continue; }
+    const f = { repo: c.repo, path: c.path, lines: ln };
+    byKey.set(key, f);
+    files.push(f);
+  }
+  return { files, unresolved, uncited: files.length === 0 };
+}
+
+/** Two line specs of one file; a mention without lines means the whole file. */
+export const mergeLines = (a, b) => (a === null || b === null ? null : `${a},${b}`);
+
+/**
+ * Rewrite the line spec of every citation that resolves (in `snapshotRoot`) to `targetRel` ("<repo>/<path>") with
+ * `map(spec)`, leaving every other character of the evidence as it was. Same tokenizer and repo-context rules as
+ * parseEvidence. Returns null when a citation of the target has no lines or `map` refuses one (returns null).
+ */
+export function rewriteCitedLines(evidence, repos, snapshotRoot, targetRel, map) {
+  if (!evidence || typeof evidence !== 'string') return evidence;
+  let out = '';
+  let last = 0;
+  for (const c of citations(evidence, repos)) {
+    if (c.unresolved) continue;
+    const r = resolveAgainstSnapshot({ files: [{ repo: c.repo, path: c.path, lines: null }], unresolved: [] }, snapshotRoot);
+    if (!r.files.length || `${r.files[0].repo}/${r.files[0].path}` !== targetRel) continue;
+    if (!c.at) return null;
+    const next = map(c.lines.replace(/\s+/g, ''));
+    if (next === null || next === undefined) return null;
+    out += evidence.slice(last, c.at[0]) + next;
+    last = c.at[1];
+  }
+  return out + evidence.slice(last);
+}
+
+/** Citations in order, with the repo context applied and the [start, end) offsets of each line spec. */
+function citations(evidence, repos) {
+  const text = evidence.replace(/\\/g, '/'); // same length, so offsets map onto the original string
   const known = [...repos, ...Object.keys(REPO_ALIASES)];
   const names = known.sort((a, b) => b.length - a.length).map(escapeRe).join('|');
   const canon = (r) => REPO_ALIASES[r] || r;
@@ -50,20 +92,16 @@ export function parseEvidence(evidence, repos) {
     + `|\\b(?<bare>${names})\\b(?!\\/)`
     // 3. a plain path without spaces, inheriting the context
     + `|(?<plain>(?:${SEG}\\/)*${SEG}\\.[A-Za-z0-9]+)${lines('plines')}`,
-    'g');
+    'gd');
+  const out = [];
   let currentRepo = null;
-  const seen = new Set();
-  const push = (repo, rel, ln) => {
-    const key = `${repo}/${rel}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    files.push({ repo, path: rel, lines: ln ? ln.replace(/\s+/g, '') : null });
-  };
+  const cite = (repo, rel, ln, at) => out.push({ repo, path: rel, lines: ln || null, at: ln && at ? at : null });
   for (const m of text.matchAll(re)) {
     const g = m.groups;
+    const ix = m.indices.groups;
     if (g.arepo) {
       currentRepo = canon(g.arepo);
-      push(currentRepo, g.apath.trim(), g.alines);
+      cite(currentRepo, g.apath.trim(), g.alines, ix.alines);
     } else if (g.bare) {
       currentRepo = canon(g.bare);
     } else if (g.plain) {
@@ -71,12 +109,12 @@ export function parseEvidence(evidence, repos) {
       const segs = g.plain.split('/');
       if (segs.length > 1 && known.includes(segs[0])) {
         currentRepo = canon(segs[0]);
-        push(currentRepo, segs.slice(1).join('/'), g.plines);
-      } else if (currentRepo) push(currentRepo, g.plain, g.plines);
-      else unresolved.push(g.plain);
+        cite(currentRepo, segs.slice(1).join('/'), g.plines, ix.plines);
+      } else if (currentRepo) cite(currentRepo, g.plain, g.plines, ix.plines);
+      else out.push({ unresolved: g.plain });
     }
   }
-  return { files, unresolved, uncited: files.length === 0 };
+  return out;
 }
 
 const basenameIndex = new Map(); // `${root}|${repo}` -> Map(basename -> [relative paths])
@@ -114,9 +152,16 @@ function indexRepo(snapshotRoot, repo) {
 export function resolveAgainstSnapshot(parsed, snapshotRoot) {
   const files = [];
   const unresolved = [...parsed.unresolved];
-  const seen = new Set();
-  // A file can be cited twice in different spellings (full path, then bare name); dedupe AFTER resolution.
-  const keep = (f) => { const k = `${f.repo}/${f.path}`; if (!seen.has(k)) { seen.add(k); files.push(f); } };
+  const byKey = new Map();
+  // A file can be cited twice in different spellings (full path, then bare name); dedupe AFTER resolution, keeping
+  // every cited range (mergeLines).
+  const keep = (f) => {
+    const k = `${f.repo}/${f.path}`;
+    if (byKey.has(k)) { byKey.get(k).lines = mergeLines(byKey.get(k).lines, f.lines); return; }
+    const g = { ...f };
+    byKey.set(k, g);
+    files.push(g);
+  };
   for (const f of parsed.files) {
     const abs = path.join(snapshotRoot, f.repo, f.path);
     if (fs.existsSync(abs)) { keep(f); continue; }

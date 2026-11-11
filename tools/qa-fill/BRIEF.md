@@ -28,7 +28,8 @@ carry-forward could NOT reuse from the previous fill, so it needs fresh reading.
   from the code>`, `<field>=<real value>`, `<the exact field-level error text>`, `<the real sort order>`,
   `<the real tiebreak>`, `<UNKNOWN ...>`;
 - `reason`: why it was not carried. `source-changed` / `surface-touched` = the code behind a previous answer changed,
-  so re-read it; `no-match` = a new case; `template-changed` = the template wording changed; `per-entity` = the
+  so re-read it; `plumbing-changed` = the BFF's shared request code (middleware, response helpers, config, startup)
+  changed, which every BFF route goes through, so re-read the route end to end; `no-match` = a new case; `template-changed` = the template wording changed; `per-entity` = the
   write-consistency sweep, always re-derived because a new write path can appear anywhere; `no-evidence` /
   `evidence-unresolved` = the previous answer cited no readable code;
 - `hint`: the ADDRESSING HINT (next section), or null.
