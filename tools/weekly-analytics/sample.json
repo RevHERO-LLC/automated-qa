@@ -3,6 +3,7 @@
   "week_label": "Aug 31 – Sep 6, 2026",
   "week_start": "2026-08-31",
   "week_end": "2026-09-06",
+  "auto_replies_available": true,
   "summary": {
     "clients_total": 24,
     "clients_active": 7,
@@ -48,6 +49,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -151,6 +162,17 @@
           "direction": "down",
           "email": 1,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 2,
+          "baseline": 1.5,
+          "delta_pct": "+33%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -291,6 +313,7 @@
           "is_active": true,
           "sent": 44,
           "replies": 1,
+          "auto_replies": 2,
           "positive": 1,
           "negative": 0,
           "clicked": 0,
@@ -304,6 +327,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 1,
           "clicked": 0,
@@ -343,6 +367,16 @@
             4,
             1,
             1
+          ],
+          "auto_replies": [
+            0,
+            1,
+            3,
+            2,
+            2,
+            1,
+            1,
+            2
           ],
           "positive_sentiment": [
             0,
@@ -419,6 +453,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -512,6 +556,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             0,
             0,
@@ -587,6 +641,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -674,6 +738,17 @@
           "direction": "down",
           "email": 0,
           "sms": 4
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 1,
+          "baseline": 1.2,
+          "delta_pct": "-17%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -814,6 +889,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 4,
+          "auto_replies": 1,
           "positive": 10,
           "negative": 6,
           "clicked": 0,
@@ -853,6 +929,16 @@
             1,
             6,
             4
+          ],
+          "auto_replies": [
+            0,
+            0,
+            1,
+            2,
+            0,
+            1,
+            2,
+            1
           ],
           "positive_sentiment": [
             1,
@@ -932,6 +1018,17 @@
           "direction": "down",
           "email": 1,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 0,
+          "baseline": 0.2,
+          "delta_pct": "-100%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -1072,6 +1169,7 @@
           "is_active": false,
           "sent": 28,
           "replies": 1,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 1,
           "clicked": 0,
@@ -1085,6 +1183,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 1,
           "clicked": 0,
@@ -1124,6 +1223,16 @@
             0,
             1,
             1
+          ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
           ],
           "positive_sentiment": [
             0,
@@ -1211,6 +1320,17 @@
           "direction": "down",
           "email": 1,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 3,
+          "baseline": 1.5,
+          "delta_pct": "+100%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -1351,6 +1471,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 1,
+          "auto_replies": 3,
           "positive": 2,
           "negative": 0,
           "clicked": 0,
@@ -1364,6 +1485,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 46,
           "negative": 30,
           "clicked": 0,
@@ -1403,6 +1525,16 @@
             5,
             7,
             1
+          ],
+          "auto_replies": [
+            4,
+            1,
+            0,
+            2,
+            1,
+            1,
+            2,
+            3
           ],
           "positive_sentiment": [
             92,
@@ -1479,6 +1611,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -1572,6 +1714,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             0,
             0,
@@ -1647,6 +1799,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -1742,6 +1904,17 @@
           "direction": "down",
           "email": 5,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 4,
+          "baseline": 8.0,
+          "delta_pct": "-50%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -1882,6 +2055,7 @@
           "is_active": false,
           "sent": 244,
           "replies": 4,
+          "auto_replies": 4,
           "positive": 0,
           "negative": 1,
           "clicked": 0,
@@ -1895,6 +2069,7 @@
           "is_active": false,
           "sent": 2,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 205,
           "negative": 159,
           "clicked": 0,
@@ -1908,6 +2083,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 1,
+          "auto_replies": 0,
           "positive": 2,
           "negative": 0,
           "clicked": 0,
@@ -1947,6 +2123,16 @@
             24,
             7,
             5
+          ],
+          "auto_replies": [
+            3,
+            9,
+            11,
+            15,
+            10,
+            5,
+            2,
+            4
           ],
           "positive_sentiment": [
             159,
@@ -2023,6 +2209,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -2116,6 +2312,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             9,
             14,
@@ -2200,6 +2406,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             8,
             20,
@@ -2275,6 +2491,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -2368,6 +2594,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             0,
             0,
@@ -2443,6 +2679,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -2536,6 +2782,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             0,
             0,
@@ -2620,6 +2876,16 @@
             0,
             0
           ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "positive_sentiment": [
             0,
             0,
@@ -2695,6 +2961,16 @@
             0
           ],
           "replies_received": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "auto_replies": [
             0,
             0,
             0,
@@ -2798,6 +3074,17 @@
           "direction": "down",
           "email": 6,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 2,
+          "baseline": 2.5,
+          "delta_pct": "-20%",
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -2938,6 +3225,7 @@
           "is_active": true,
           "sent": 663,
           "replies": 1,
+          "auto_replies": 2,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -2951,6 +3239,7 @@
           "is_active": true,
           "sent": 504,
           "replies": 1,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -2964,6 +3253,7 @@
           "is_active": false,
           "sent": 432,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -2977,6 +3267,7 @@
           "is_active": true,
           "sent": 368,
           "replies": 3,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -2990,6 +3281,7 @@
           "is_active": false,
           "sent": 357,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -3003,6 +3295,7 @@
           "is_active": true,
           "sent": 319,
           "replies": 1,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -3016,6 +3309,7 @@
           "is_active": true,
           "sent": 275,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -3029,6 +3323,7 @@
           "is_active": false,
           "sent": 223,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 0,
           "clicked": 0,
@@ -3042,6 +3337,7 @@
           "is_active": false,
           "sent": null,
           "replies": null,
+          "auto_replies": null,
           "positive": null,
           "negative": null,
           "clicked": null,
@@ -3081,6 +3377,16 @@
             6,
             34,
             6
+          ],
+          "auto_replies": [
+            1,
+            1,
+            0,
+            1,
+            1,
+            2,
+            6,
+            2
           ],
           "positive_sentiment": [
             36,
@@ -3151,6 +3457,17 @@
           "direction": "down",
           "email": 1,
           "sms": 0
+        },
+        {
+          "key": "auto_replies",
+          "label": "Auto-Replies",
+          "value": 0,
+          "baseline": 0.0,
+          "delta_pct": null,
+          "flagged": false,
+          "direction": "neutral",
+          "email": null,
+          "sms": null
         },
         {
           "key": "positive_sentiment",
@@ -3291,6 +3608,7 @@
           "is_active": true,
           "sent": 51,
           "replies": 1,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 1,
           "clicked": 0,
@@ -3304,6 +3622,7 @@
           "is_active": false,
           "sent": 0,
           "replies": 0,
+          "auto_replies": 0,
           "positive": 0,
           "negative": 2,
           "clicked": 0,
@@ -3343,6 +3662,16 @@
             0,
             0,
             1
+          ],
+          "auto_replies": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
           ],
           "positive_sentiment": [
             0,
@@ -3401,5 +3730,5 @@
       }
     }
   ],
-  "method": "Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) over the report week, tenant-wide (all seats). Baseline = trailing 4-week average over weeks with activity; the trend sparkline covers 8 weeks. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 active baseline weeks render without flags (“new”). A real client (open deals OR a send within 6 weeks) that isn’t sending this week is shown as “paused” (not flagged); accounts with no open deals and no recent sends are “inactive”. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows are sparse; a global day-coverage guard suppresses all flags if the report week looks like a pipeline gap."
+  "method": "Read-only weekly digest. Per client, metrics are SUM(public.daily_analytics_snapshots) over the report week, tenant-wide (all seats). Baseline = trailing 4-week average over weeks with activity; the trend sparkline covers 8 weeks. A metric is red-flagged when it moves ≥ 30% in the unhealthy direction (down: sends/replies/positive/meetings/revenue; up: negative/blocked), above a min-volume floor (baseline ≥ 10 sends / ≥ 3 replies), or drops to zero after prior activity. Clients with < 2 active baseline weeks render without flags (“new”). A real client (open deals OR a send within 6 weeks) that isn’t sending this week is shown as “paused” (not flagged); accounts with no open deals and no recent sends are “inactive”. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows are sparse; a global day-coverage guard suppresses all flags if the report week looks like a pipeline gap. Auto-Replies (out-of-office, bounces and other automatic replies, counted once per message and never part of Replies) comes from the same table, week window, tenant scope and per-campaign grouping as Replies; it is never red-flagged and reads “n/a” when the analytics schema has no auto_replies column yet."
 }

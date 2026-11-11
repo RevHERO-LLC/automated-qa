@@ -17,7 +17,8 @@ It is a **read-only consumer** of analytics that already exist — it changes no
 | schedule | `../../.github/workflows/weekly-analytics-report.yml` | Self-hosted GHA cron (Mon 13:00 UTC) wiring the three together. |
 
 `schema.json` documents the run-JSON contract; `sample.json` is a fixture exercising every
-render state; `runs/` is the append-only per-run store (also uploaded as a GHA artifact).
+render state; `runs/` is the append-only per-run store (also uploaded as a GHA artifact);
+`test_auto_replies.py` is the offline test suite (see **Tests**).
 
 ## Run locally
 
@@ -31,6 +32,37 @@ python render.py runs/2026-09-07.json > report.html      # open in a browser
 SLACK_ANALYTICS_BOT_TOKEN='xoxb-...' \
   python post_slack.py --data runs/2026-09-07.json --html report.html --channel C0C2YB9SDB2 --dry-run
 ```
+
+## Tests (offline)
+
+```bash
+cd tools/weekly-analytics
+python -m unittest -v test_auto_replies      # or: pytest test_auto_replies.py
+```
+
+No database or network. `psycopg2.connect` is replaced by a scripted fake that routes by query and raises
+like Postgres when a query names a column the schema lacks, so `collect.collect()` runs end to end with the
+`auto_replies` column present and missing. The renderer tests cover both states plus a run JSON from before AN-01.
+
+## Auto-Replies (UAT AN-01)
+
+**Auto-Replies** is a separate metric shown next to **Replies received** (client metric table, trend card and
+per-campaign table), with a legend line: *Replies = people only; Auto-Replies = out-of-office, bounces and other
+automatic replies, counted once per message.* It is `SUM(auto_replies)` from the same
+`public.daily_analytics_snapshots` table, in the same query as Replies (same week window, tenant scope and
+per-campaign grouping), so it matches the dashboard by construction. It is one plain column (analytics
+migration `000013`): email only, no email/sms split, and never part of `replies_received_*`.
+
+- **Neutral.** Shown for context, never red-flagged.
+- **Prod schema fallback.** Production analytics can lag staging. `collect.py` probes
+  `information_schema.columns` once per run. If `auto_replies` is missing it never queries it, sets
+  `auto_replies_available: false` and emits `null`; the report then reads **n/a** (never 0) and says why in the
+  legend, and a `note:` line goes to stderr so the GHA log shows it. The same job works before and after the
+  analytics deploy with no change.
+- **Transition caveat.** The analytics definition change is not back-filled: days stored before it keep
+  `auto_replies = 0` and the old Replies definition (automatic mail counted as replies). Until those weeks age out
+  of the 4-week baseline, Auto-Replies' baseline and delta read low, and Replies can step down because the
+  definition changed, not the business. Recomputing history is a separate, deliberate analytics decision.
 
 ## Client buckets (v2)
 

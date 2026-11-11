@@ -5,6 +5,7 @@
   "week_label": "string — human week window, e.g. 'Sep 8 – Sep 14, 2026' (the DATA carries it; render never computes it)",
   "week_start": "string (YYYY-MM-DD, inclusive)",
   "week_end": "string (YYYY-MM-DD, inclusive)",
+  "auto_replies_available": "bool|absent — AN-01. true when the analytics DB has public.daily_analytics_snapshots.auto_replies (migration 000013) and Auto-Replies was collected; false when the column is missing (production can lag staging): every Auto-Replies value is then null and renders 'n/a', never 0. ABSENT in run JSON from before AN-01 — the renderer then shows no Auto-Replies anywhere and no legend.",
   "summary": {
     "clients_total": "int — all active tenants enumerated",
     "clients_active": "int — active SENDERS (sent this week; status active/new)",
@@ -36,7 +37,7 @@
         {
           "key": "string — stable metric key (messages_sent, replies_received, ...)",
           "label": "string — display label",
-          "value": "number — this-week total (tenant-wide, all seats)",
+          "value": "number — this-week total (tenant-wide, all seats). null = unavailable (only Auto-Replies, when auto_replies_available is false): baseline/delta_pct are null too and the row renders 'n/a'. key 'auto_replies' (label 'Auto-Replies', direction 'neutral', never flagged, no email/sms split) sits right after replies_received and is NOT part of it.",
           "email": "number|null — email split (omit/null if not split)",
           "sms": "number|null — sms split",
           "baseline": "number|null — prior-4-week trailing average (null when new/no-baseline)",
@@ -65,7 +66,9 @@
           "id": "int|null — automation_campaign id (null = unattributed bucket, or the '+N more' fold row)",
           "name": "string — campaign name (from revhero_prod_campaign)",
           "is_active": "bool — campaign is_active NOW (may differ from the report week for backfills)",
-          "sent": "number|null", "replies": "number|null", "positive": "number|null",
+          "sent": "number|null", "replies": "number|null",
+          "auto_replies": "number|null — AN-01 Auto-Replies for this campaign; null = column missing (renders 'n/a'), and null on the '+N more' fold row. Key absent in pre-AN-01 runs.",
+          "positive": "number|null",
           "negative": "number|null", "clicked": "number|null", "booked": "number|null",
           "won": "number|null", "revenue": "number|null"
         }
@@ -74,7 +77,9 @@
         "weeks": ["string — short week labels, oldest->newest (e.g. 'Aug 3')"],
         "data": {
           "messages_sent": ["number — weekly totals aligned to weeks[]"],
-          "replies_received": ["number"], "positive_sentiment": ["number"],
+          "replies_received": ["number"],
+          "auto_replies": "[number] | null — weekly Auto-Replies aligned to weeks[]; null = column missing (renders 'n/a'); key absent in pre-AN-01 runs",
+          "positive_sentiment": ["number"],
           "meetings_booked": ["number"], "revenue_generated": ["number"]
         }
       }
