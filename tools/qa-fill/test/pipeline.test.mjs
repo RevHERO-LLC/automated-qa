@@ -226,3 +226,91 @@ test('carry-forward edge reasons: template-changed, apply-rejected, self-check-f
   const cli = run('carry-forward.mjs', ['--prior', prior, '--scaffold', path.join(run2, 'scaffold.raw.md'), '--inventory', base.inventory, '--snapshot', p.snap, '--contract', offContract, '--out', path.join(p.root, 'o4'), '--extractor', EXTRACTOR]);
   assert.equal(cli.code, 4, 'a failed self-check is a non-zero exit');
 });
+
+test('option C end to end: an inert router edit carries every case and remaps routes.go citations; strict and .Use( do not', { skip }, () => {
+  const p = project();
+  const HELPER_REL = 'RevHero-user-fe-backend/internal/helpers/httpResponse.go';
+  const HELPER_TEST_REL = 'RevHero-user-fe-backend/internal/helpers/httpResponse_test.go';
+  write(path.join(p.snap, HELPER_REL), 'package helpers\n\nfunc RespondError() {}\n');
+  write(path.join(p.snap, HELPER_TEST_REL), 'package helpers\n');
+  const run1 = path.join(p.root, 'run1');
+  let r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', run1, '--write']);
+  assert.equal(r.code, 0, r.out);
+  fillAndArchive(p, run1, '2026-11-01');
+
+  // one wiring line above every route: the /detail registration moves from line 13 to 14
+  write(path.join(p.snap, ROUTER_REL), ROUTER.replace('\tv1Group := router.Group("/v1")', '\tv1Group := router.Group("/v1")\n\tauditClient.SetTimeout(30) // wiring only'));
+  write(path.join(p.snap, '_manifest.tsv'), manifest('dddddddddd'));
+  const relaxedRun = path.join(p.root, 'run-relaxed');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', relaxedRun]);
+  assert.equal(r.code, 0, r.out);
+  let rep = json(path.join(relaxedRun, 'carry-report.json'));
+  assert.equal(rep.routerRelaxation.changed, true);
+  assert.equal(rep.routerRelaxation.strict, false);
+  assert.deepEqual([rep.routerRelaxation.hunks, rep.routerRelaxation.dropped, rep.routerRelaxation.kept], [1, 1, 0]);
+  assert.equal(rep.touched.all, false);
+  assert.equal(rep.touched.count, 0, 'the extractor never saw the inert hunk');
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1 });
+  assert.equal(rep.routerRelaxation.carriedViaLines, 2, 'the two /detail cases cite routes.go:13');
+  assert.equal(rep.routerRelaxation.evidenceRemapped, 2);
+  const viaLines = Object.values(json(path.join(relaxedRun, 'fill-carry.json'))).filter((c) => /routes\.go/.test(c.evidence));
+  assert.equal(viaLines.length, 2);
+  for (const c of viaLines) {
+    assert.match(c.evidence, /routes\.go:14(?!\d)/, 'citation follows the moved registration');
+    assert.doesNotMatch(c.evidence, /routes\.go:13(?!\d)/);
+  }
+  assert.match(fs.readFileSync(path.join(relaxedRun, 'carry-report.md'), 'utf8'), /Router relaxation \(routes\.go\): 1 hunks, 1 dropped as inert, 0 kept; carried on cited lines 2/);
+
+  // a fill whose CASE TEXT cites router lines would go stale on a line-level carry, so it goes to residual instead
+  const filledFile = path.join(p.reg, 'fill-archive', '2026-11-01', 'zz-surfaces.md.filled');
+  const keepFilled = fs.readFileSync(filledFile, 'utf8');
+  const victim = viaLines.find((c) => /Fixture fill for/.test(c.text));
+  assert.ok(victim, 'a /detail case with fixture text');
+  const priorId = victim.carriedFrom.split(':')[1];
+  fs.writeFileSync(filledFile, keepFilled.replace(`Fixture fill for ${priorId}:`, `Fixture fill for ${priorId} (routes.go:13):`));
+  const textRun = path.join(p.root, 'run-text');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', textRun]);
+  assert.equal(r.code, 0, r.out);
+  rep = json(path.join(textRun, 'carry-report.json'));
+  assert.deepEqual([rep.routerRelaxation.textGuarded, rep.routerRelaxation.carriedViaLines], [1, 1]);
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1, 'source-changed': 1 });
+  fs.writeFileSync(filledFile, keepFilled);
+
+  // --strict-router: the as-built whole-file rule (a hunk outside every route range touches every route)
+  const strictRun = path.join(p.root, 'run-strict');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', strictRun, '--strict-router']);
+  assert.equal(r.code, 0, r.out);
+  rep = json(path.join(strictRun, 'carry-report.json'));
+  assert.equal(rep.routerRelaxation.strict, true);
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1, 'surface-touched': 7 });
+
+  // a security edit (middleware attached to the group) is kept, so every route is re-asked
+  write(path.join(p.snap, ROUTER_REL), ROUTER.replace('\tv1Group := router.Group("/v1")', '\tv1Group := router.Group("/v1")\n\tv1Group.Use(middleware_auth.JWTAuth())'));
+  const useRun = path.join(p.root, 'run-use');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', useRun]);
+  assert.equal(r.code, 0, r.out);
+  rep = json(path.join(useRun, 'carry-report.json'));
+  assert.deepEqual([rep.routerRelaxation.hunks, rep.routerRelaxation.kept], [1, 1]);
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1, 'surface-touched': 7 });
+
+  // shared plumbing, router unchanged: a test-file edit changes nothing; a helper edit re-asks every BFF route case,
+  // in both modes (the guard is independent of the router rule and closes the same hole in the strict design)
+  write(path.join(p.snap, ROUTER_REL), ROUTER);
+  write(path.join(p.snap, HELPER_TEST_REL), 'package helpers\n\n// a new test\n');
+  const testOnly = path.join(p.root, 'run-plumbing-test-only');
+  r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', testOnly]);
+  assert.equal(r.code, 0, r.out);
+  rep = json(path.join(testOnly, 'carry-report.json'));
+  assert.deepEqual(rep.plumbingGuard.changedFiles, []);
+  assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1 });
+  write(path.join(p.snap, HELPER_REL), 'package helpers\n\nfunc RespondError() { genericize() }\n');
+  for (const extra of [[], ['--strict-router']]) {
+    const plumbRun = path.join(p.root, `run-plumbing${extra.length ? '-strict' : ''}`);
+    r = run('regenerate.mjs', ['--contract', p.contract, '--registry', p.reg, '--out', plumbRun, ...extra]);
+    assert.equal(r.code, 0, r.out);
+    rep = json(path.join(plumbRun, 'carry-report.json'));
+    assert.deepEqual(rep.plumbingGuard.changedFiles, [HELPER_REL]);
+    assert.deepEqual(rep.counts.residualByReason, { 'per-entity': 1, 'plumbing-changed': 7 }, `mode ${extra.join(' ') || 'relaxed'}`);
+    assert.match(fs.readFileSync(path.join(plumbRun, 'carry-report.md'), 'utf8'), /BFF shared plumbing: 1 file\(s\) changed/);
+  }
+});

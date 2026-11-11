@@ -11,7 +11,7 @@
 // Usage:
 //   node carry-forward.mjs --prior <fill-archive/<generation>> --scaffold <raw scaffold .md> --inventory <inventory.json>
 //        --snapshot <current snapshot root> --contract <qa-contract.json> --out <run dir>
-//        [--frag <live fragment.md>] [--extractor <qa-surface-inventory.js>] [--write]
+//        [--frag <live fragment.md>] [--extractor <qa-surface-inventory.js>] [--strict-router] [--write]
 // Outputs in <run dir>: fill-carry.json (apply_fills format), residual.json, carry-report.json, carry-report.md.
 // --write also applies the carried entries to --frag (default: the scaffold) through the same validator.
 
@@ -22,14 +22,31 @@ import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { readBlocks, rehome, needsFill, MARKERS } from './lib/signature.mjs';
 import { indexInventory, caseKey } from './lib/surface-key.mjs';
-import { parseEvidence, resolveAgainstSnapshot, reposFromManifest } from './lib/evidence.mjs';
-import { citedFilesUnchanged, snapshotDiff, touchedSurfaceKeys } from './lib/unchanged.mjs';
+import { parseEvidence, resolveAgainstSnapshot, reposFromManifest, rewriteCitedLines } from './lib/evidence.mjs';
+import { citedFilesUnchanged, snapshotDiff, touchedSurfaceKeys, relaxRouterDiff, remapCitedLines } from './lib/unchanged.mjs';
 import { parseGinRoutes, hintFor } from './lib/routes.mjs';
 import { checkExtractorSource, checkInventory, checkFragment } from './lib/selfcheck.mjs';
 import { indexFragments, validateEntries, applyEntries } from './lib/apply.mjs';
 
 export const DEFAULT_EXTRACTOR = path.join(os.homedir(), '.claude', 'scripts', 'qa-surface-inventory.js');
 const BFF_ROUTER = 'RevHero-user-fe-backend/internal/routes/routes.go';
+// Shared request plumbing of the BFF: every BFF route goes through it, and fills rarely cite it. If any non-test Go
+// file here changed, every BFF route surface is residual (`plumbing-changed`). Found by the option C audit
+// (2026-11-10): the 11-07 -> 11-10 drift changed the error helper (5xx data.error genericized) and added auth
+// middleware; the whole-file router rule had re-asked those routes only because routes.go happened to change too.
+export const BFF_PLUMBING = ['RevHero-user-fe-backend/internal/middleware/', 'RevHero-user-fe-backend/internal/helpers/',
+  'RevHero-user-fe-backend/internal/config/', 'RevHero-user-fe-backend/cmd/'];
+
+/** Changed non-test Go files under BFF_PLUMBING, read off the (unfiltered) snapshot diff. */
+export function changedPlumbing(diffText) {
+  const out = new Set();
+  for (const line of diffText.split('\n')) {
+    const m = /^diff --git a\/(\S+) b\/(\S+)/.exec(line) || /^([^\s@+-][^\s]*\.go)$/.exec(line); // flat path = one-sided repo
+    const p = m ? (m[2] || m[1]) : null;
+    if (p && /\.go$/.test(p) && !/_test\.go$/.test(p) && BFF_PLUMBING.some((d) => p.startsWith(d))) out.add(p);
+  }
+  return [...out].sort();
+}
 
 export const sha256File = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 const norm = (p) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
@@ -92,13 +109,22 @@ export function carryForward(o) {
   const carried = [];
   let notFillTargets = 0;
 
-  // ---- layer 1: the touched set (once for the whole scaffold)
+  // ---- layer 1: the touched set (once for the whole scaffold). Option C (2026-11-10): inert hunks of the BFF router
+  // (comments, outbound client wiring that feeds no security code) are dropped before the extractor sees the diff, and
+  // a fill citing router LINES carries when no hunk overlaps them. --strict-router restores whole-file behavior.
   let touched = { all: true, keys: new Set(), mode: null, reason: 'not computed' };
+  let relax = { info: {} };
+  let plumbing = [];
   if (!problems.length && priorUsable) {
     const repos = new Set([...prior.repos, ...reposFromManifest(manifest)]);
     const diff = snapshotDiff(prior.files.snapshot, o.snapshot, [...repos]);
-    touched = touchedSurfaceKeys({ extractor, contract: o.contract, diffText: diff, scratchDir: path.join(o.out, 'touched'), expectedSurfaceCount: inventory.surfaces.length });
+    plumbing = changedPlumbing(diff);
+    relax = o.strictRouter ? { diffText: diff, info: {} } : relaxRouterDiff(diff, [BFF_ROUTER], prior.files.snapshot, o.snapshot);
+    touched = touchedSurfaceKeys({ extractor, contract: o.contract, diffText: relax.diffText, scratchDir: path.join(o.out, 'touched'), expectedSurfaceCount: inventory.surfaces.length });
   }
+  const routerInfo = relax.info[BFF_ROUTER] || null; // present only when the router changed and was relaxed
+  const lineLevel = routerInfo ? { [BFF_ROUTER]: routerInfo } : null;
+  const routerStats = { carriedViaLines: 0, evidenceRemapped: 0, textGuarded: 0, remapRefused: 0 };
 
   // ---- prior index: key -> prior case id; and which surfaces the prior generation had at all, so a case on a known
   // surface whose wording matches nothing there is reported as a template change rather than as a new case
@@ -122,6 +148,10 @@ export function carryForward(o) {
     if (/^[^:/]+:\//.test(s.path)) return hintFor(s, routes);
     return { resolved: pageUrl(s.path), candidates: [pageUrl(s.path)] };
   };
+  const isBffRoute = (sk) => {
+    const s = sk ? idx.byKey.get(sk) : null;
+    return !!s && (s.sources || []).some((p) => String(p).replace(/\\/g, '/').endsWith(BFF_ROUTER));
+  };
   const toResidual = (b, k, reason, detail = '') => residual.push({ id: b.id, reason, detail, surfaceKey: k ? k.surfaceKey : null, hint: hint(k && k.surfaceKey) });
 
   for (const b of blocks.values()) {
@@ -141,15 +171,28 @@ export function carryForward(o) {
     if (!st || !['filled', 'none', 'finding'].includes(st.status)) { toResidual(b, k, 'no-prior-fill', priorId); continue; }
     if (touched.all) { toResidual(b, k, 'surface-touched', touched.reason || 'touched set unavailable'); continue; }
     if (touched.keys.has(k.surfaceKey)) { toResidual(b, k, 'surface-touched'); continue; }
+    if (plumbing.length && isBffRoute(k.surfaceKey)) { toResidual(b, k, 'plumbing-changed', plumbing.slice(0, 3).join(' | ')); continue; }
     const parsed = parseEvidence(st.evidence, prior.repos);
     if (parsed.uncited) { toResidual(b, k, 'no-evidence', priorId); continue; }
     const resolved = resolveAgainstSnapshot(parsed, prior.files.snapshot);
     if (resolved.unresolved.length) { toResidual(b, k, 'evidence-unresolved', resolved.unresolved.slice(0, 3).join(' | ')); continue; }
-    const ch = citedFilesUnchanged(resolved.files, prior.files.snapshot, o.snapshot, hashCache);
+    const ch = citedFilesUnchanged(resolved.files, prior.files.snapshot, o.snapshot, hashCache, lineLevel);
     if (!ch.unchanged) { toResidual(b, k, 'source-changed', [...ch.changed, ...ch.missing].slice(0, 3).join(' | ')); continue; }
     const pf = prior.filled.get(priorId);
     if (!pf) { toResidual(b, k, 'no-prior-fill', `${priorId} absent from the filled fragment`); continue; }
-    carried.push({ id: b.id, text: rehome(pf.block.join('\n'), b.id, b.tag ? b.tag.raw : null, (MARKERS.exec(b.line) || [])[1] || null), evidence: st.evidence, status: st.status, carriedFrom: `${prior.generation}:${priorId}`, src: 'fill-carry.json' });
+    const priorText = pf.block.join('\n');
+    let evidence = st.evidence;
+    if (routerInfo && resolved.files.some((f) => `${f.repo}/${f.path}` === BFF_ROUTER)) {
+      // Carried on router LINES although the file changed: the cited lines may have moved. Rewrite the citation to
+      // the current file so the next generation checks the right lines; refuse when that cannot be done exactly.
+      if (/routes\.go:\d/.test(priorText)) { routerStats.textGuarded += 1; toResidual(b, k, 'source-changed', `${BFF_ROUTER} (line numbers in the case text would go stale)`); continue; }
+      const ev = rewriteCitedLines(st.evidence, prior.repos, prior.files.snapshot, BFF_ROUTER, (s) => remapCitedLines(s, routerInfo));
+      if (ev === null) { routerStats.remapRefused += 1; toResidual(b, k, 'source-changed', `${BFF_ROUTER} (citation could not be remapped)`); continue; }
+      routerStats.carriedViaLines += 1;
+      if (ev !== st.evidence) routerStats.evidenceRemapped += 1;
+      evidence = ev;
+    }
+    carried.push({ id: b.id, text: rehome(priorText, b.id, b.tag ? b.tag.raw : null, (MARKERS.exec(b.line) || [])[1] || null), evidence, status: st.status, carriedFrom: `${prior.generation}:${priorId}`, src: 'fill-carry.json' });
   }
 
   // ---- the apply validator decides; a rejection is residual, never a silent drop
@@ -184,6 +227,19 @@ export function carryForward(o) {
     },
     paths: { scaffold: path.resolve(o.scaffold), inventory: path.resolve(o.inventory), snapshot: path.resolve(o.snapshot), frag: path.resolve(frag) },
     touched: { all: touched.all, count: touched.keys.size, mode: touched.mode, reason: touched.reason },
+    routerRelaxation: {
+      file: BFF_ROUTER,
+      strict: !!o.strictRouter,
+      changed: !!routerInfo,
+      reliable: routerInfo ? routerInfo.reliable : null,
+      hunks: routerInfo ? routerInfo.hunks : 0,
+      dropped: routerInfo ? routerInfo.dropped : 0,
+      kept: routerInfo ? routerInfo.kept : 0,
+      droppedHunks: routerInfo ? routerInfo.droppedHunks : [],
+      keptHunks: routerInfo ? routerInfo.keptHunks : [],
+      ...routerStats,
+    },
+    plumbingGuard: { dirs: BFF_PLUMBING, changedFiles: plumbing, residual: residual.filter((r) => r.reason === 'plumbing-changed').length },
     counts: { fillTargets, carried: accepted.length, carriedByStatus: byStatus, residual: residual.length, residualByReason: byReason, notFillTargets },
     carryRate: fillTargets ? Number((accepted.length / fillTargets).toFixed(4)) : 0,
   };
@@ -195,6 +251,9 @@ export function carryForward(o) {
     `- Fill targets: ${fillTargets}; carried: ${accepted.length} (${(report.carryRate * 100).toFixed(1)}%) ${JSON.stringify(byStatus)}; residual: ${residual.length}`,
     `- Residual by reason: ${JSON.stringify(byReason)}`,
     `- Touched surfaces: ${touched.all ? `ALL (${touched.reason})` : `${touched.keys.size} (mode ${touched.mode})`}`,
+    `- Router relaxation (routes.go): ${o.strictRouter ? 'OFF (--strict-router)' : !routerInfo ? 'router unchanged' : `${routerInfo.reliable ? '' : 'UNRELIABLE diff, nothing relaxed; '}${routerInfo.hunks} hunks, ${routerInfo.dropped} dropped as inert, ${routerInfo.kept} kept; carried on cited lines ${routerStats.carriedViaLines} (evidence remapped ${routerStats.evidenceRemapped}); refused: ${routerStats.textGuarded} text line refs, ${routerStats.remapRefused} unremappable`}`,
+    ...(routerInfo && routerInfo.keptHunks.length ? routerInfo.keptHunks.slice(0, 10).map((h) => `  - kept: ${h}`) : []),
+    `- BFF shared plumbing: ${plumbing.length ? `${plumbing.length} file(s) changed, so every BFF route case is residual (plumbing-changed): ${plumbing.slice(0, 6).join(', ')}${plumbing.length > 6 ? ', ...' : ''}` : 'unchanged'}`,
     problems.length ? `- SELF-CHECK FAILED: ${problems.join('; ')}` : '- Self-check: ok',
     '',
   ].join('\n');
@@ -211,10 +270,11 @@ function main() {
   const o = {
     prior: get('--prior'), scaffold: get('--scaffold'), inventory: get('--inventory'), snapshot: get('--snapshot'),
     contract: get('--contract'), out: get('--out'), frag: get('--frag'), extractor: get('--extractor'), write: a.includes('--write'),
+    strictRouter: a.includes('--strict-router'),
   };
   const need = ['scaffold', 'inventory', 'snapshot', 'contract', 'out'].filter((k) => !o[k]);
   if (need.length) {
-    console.error(`missing ${need.map((k) => `--${k}`).join(' ')}\nusage: node carry-forward.mjs --prior <gen> --scaffold <raw.md> --inventory <inv.json> --snapshot <root> --contract <qa-contract.json> --out <dir> [--frag <live.md>] [--extractor <js>] [--write]`);
+    console.error(`missing ${need.map((k) => `--${k}`).join(' ')}\nusage: node carry-forward.mjs --prior <gen> --scaffold <raw.md> --inventory <inv.json> --snapshot <root> --contract <qa-contract.json> --out <dir> [--frag <live.md>] [--extractor <js>] [--strict-router] [--write]`);
     process.exit(2);
   }
   const r = carryForward(o);

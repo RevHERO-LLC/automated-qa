@@ -17,7 +17,7 @@
 // (qa-surface-inventory.js:527-531), so there is no carry-forward.
 //
 // Usage: node regenerate.mjs --contract <qa-contract.json> --registry <qa-test-cases dir> --out <run dir>
-//          [--snapshot <root>] [--prior <generation dir>] [--extractor <js>] [--write] [--touched <diff file>]
+//          [--snapshot <root>] [--prior <generation dir>] [--extractor <js>] [--strict-router] [--write] [--touched <diff file>]
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,10 +61,11 @@ function main() {
   const extractor = get('--extractor') || DEFAULT_EXTRACTOR;
   const touched = get('--touched');
   if (!contract || !registry || (!out && !touched)) {
-    console.error('usage: node regenerate.mjs --contract <qa-contract.json> --registry <qa-test-cases> --out <run dir> [--snapshot <root>] [--prior <gen>] [--extractor <js>] [--write] [--touched <diff>]');
+    console.error('usage: node regenerate.mjs --contract <qa-contract.json> --registry <qa-test-cases> --out <run dir> [--snapshot <root>] [--prior <gen>] [--extractor <js>] [--strict-router] [--write] [--touched <diff>]');
     process.exit(2);
   }
   const write = a.includes('--write');
+  const strictRouter = a.includes('--strict-router'); // carry-forward: whole-file routes.go rule (no option C)
   const regInventory = path.join(registry, 'surface-inventory.json');
   const regFragment = path.join(registry, 'fragments', 'zz-surfaces.md');
   if (touched) {
@@ -85,7 +86,7 @@ function main() {
   if (!snapshot) { console.error('cannot infer the snapshot root from the contract; pass --snapshot'); process.exit(2); }
   const prior = get('--prior') || latestGeneration(registry);
   console.log(`prior generation: ${prior || 'NONE (everything goes to residual)'}`);
-  const res = carryForward({ prior, scaffold: raw, inventory, snapshot, contract, out, frag: fragment, extractor, write });
+  const res = carryForward({ prior, scaffold: raw, inventory, snapshot, contract, out, frag: fragment, extractor, write, strictRouter });
   console.log(fs.readFileSync(path.join(out, 'carry-report.md'), 'utf8'));
   if (res.applied) console.log(`applied ${res.accepted.length} carried entries to ${fragment}`);
   else if (!write) console.log('dry run: nothing applied and the registry untouched (pass --write)');
