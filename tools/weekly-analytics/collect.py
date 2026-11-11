@@ -22,6 +22,9 @@ Authoritative schema facts (verified against prod + analytics-service source 202
     reliability signal; a GLOBAL day-coverage + volume guard catches pipeline gaps.
   - date is timestamptz truncated to UTC midnight -> we SET TIME ZONE 'UTC' before filtering.
   - campaign_id is NULL (not 0) when unattributed; summing across campaigns == tenant total.
+  - auto_replies (analytics migration 000013, UAT AN-01) is ONE plain bigint column (no _email/_sms/_total),
+    never part of replies_received_*. Production analytics may predate it, so it is probed via
+    information_schema once per run; if missing it is never queried and every Auto-Replies cell is null ("n/a").
 
 Deterministic given (--week-start, DB contents). Default report week = the previous
 complete calendar week (Mon-Sun) relative to --today (default: system date). No paid APIs.
@@ -66,6 +69,9 @@ MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 METRICS = [
     ("messages_sent",      "Messages sent",      "messages_sent_total",      ("messages_sent_email", "messages_sent_sms"),           "down",    "sends"),
     ("replies_received",   "Replies received",   "replies_received_total",   ("replies_received_email", "replies_received_sms"),     "down",    "replies"),
+    # AN-01: out-of-office / bounce / auto-ack mail, counted once per message and NOT part of replies_received.
+    # One plain column (no _email/_sms/_total split). Neutral: shown for context, never red-flagged.
+    ("auto_replies",       "Auto-Replies",       "auto_replies",             None,                                                   "neutral", None),
     ("positive_sentiment", "Positive sentiment", "positive_sentiment_total", ("positive_sentiment_email", "positive_sentiment_sms"), "down",   "replies"),
     ("negative_sentiment", "Negative sentiment", "negative_sentiment_total", ("negative_sentiment_email", "negative_sentiment_sms"), "up",     "replies"),
     ("blocked",            "Blocked / bounced",  "blocked_total",            ("blocked_email", "blocked_sms"),                       "up",      "sends"),
@@ -80,7 +86,13 @@ METRICS = [
 ]
 ALL_KEYS = [m[0] for m in METRICS]
 # metrics whose weekly trend is drawn as a sparkline (the "trend line" the flags reference)
-SERIES_KEYS = ["messages_sent", "replies_received", "positive_sentiment", "meetings_booked", "revenue_generated"]
+SERIES_KEYS = ["messages_sent", "replies_received", "auto_replies", "positive_sentiment", "meetings_booked", "revenue_generated"]
+
+# auto_replies only exists on analytics schemas that include migration 000013; production lags staging.
+# It is probed once per run (information_schema). When the column is missing it is never queried and
+# every Auto-Replies cell is None (rendered "n/a") -- never 0, which would read as "no auto-replies".
+AUTO_REPLIES_KEY = "auto_replies"
+SNAPSHOT_SCHEMA, SNAPSHOT_TABLE = "public", "daily_analytics_snapshots"
 
 # Hours-Saved default minute weights (FE features/settings/constants/hoursSaved.ts).
 HS_WEIGHTS = {"email_sent": 3, "sms_sent": 2, "deal_won": 15, "deal_lost": 5}
@@ -124,9 +136,13 @@ def _pct_str(tw, bl):
     return f"{'+' if p >= 0 else ''}{round(p * 100)}%"
 
 
-def build_metrics_sql():
+def build_metrics_sql(include_auto_replies=False):
+    """The one weekly SUM query. auto_replies rides in the same SELECT (same window + grouping as
+    replies_received) only when the column exists; the default is the pre-AN-01 query, unchanged."""
     cols = []
     for key, _label, total, split, _dir, _floor in METRICS:
+        if key == AUTO_REPLIES_KEY and not include_auto_replies:
+            continue
         cols.append(f"COALESCE(SUM({total}),0) AS {key}")
         if split:
             e, s = split
@@ -143,7 +159,21 @@ GROUP BY parent_user_id, campaign_id, date_trunc('week', date)
 """
 
 
-def fetch_snapshots(dsn, lo, hi):
+def fetch_has_column(dsn, schema, table, column):
+    """True if <schema>.<table> has <column> (read-only information_schema probe)."""
+    conn = psycopg2.connect(dsn)
+    try:
+        conn.set_session(readonly=True, autocommit=True)
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM information_schema.columns "
+                        "WHERE table_schema = %s AND table_name = %s AND column_name = %s LIMIT 1",
+                        (schema, table, column))
+            return cur.fetchone() is not None
+    finally:
+        conn.close()
+
+
+def fetch_snapshots(dsn, lo, hi, include_auto_replies=False):
     """{parent_user_id: {campaign_id(None ok): {wk_date: rowdict}}} across [lo, hi)."""
     out = {}
     conn = psycopg2.connect(dsn)
@@ -151,7 +181,7 @@ def fetch_snapshots(dsn, lo, hi):
         conn.set_session(readonly=True, autocommit=True)
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SET TIME ZONE 'UTC'")
-            cur.execute(build_metrics_sql(), {"start": lo, "end": hi})
+            cur.execute(build_metrics_sql(include_auto_replies), {"start": lo, "end": hi})
             for r in cur.fetchall():
                 out.setdefault(r["parent_user_id"], {}).setdefault(r["campaign_id"], {})[r["wk"]] = dict(r)
     finally:
@@ -265,7 +295,7 @@ def _has_activity(row):
 
 
 def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_deals,
-                   report_wk, baseline_mondays, series_mondays, suppress_flags):
+                   report_wk, baseline_mondays, series_mondays, suppress_flags, has_auto_replies=False):
     weeks = _agg_weeks(campaign_map)
     report = weeks.get(report_wk)
     baseline_rows = [weeks[w] for w in baseline_mondays if w in weeks]
@@ -303,6 +333,8 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_dea
         row = weeks.get(w) or {}
         for k in SERIES_KEYS:
             series["data"][k].append(_num(row.get(k, 0)))
+    if not has_auto_replies:  # column missing on this schema -> n/a, not a flat line of zeros
+        series["data"][AUTO_REPLIES_KEY] = None
 
     if status in ("paused", "inactive"):
         last_active = None
@@ -330,6 +362,11 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_dea
     metrics_out, flags_out = [], []
 
     for key, label, _total, split, direction, floor in METRICS:
+        if key == AUTO_REPLIES_KEY and not has_auto_replies:
+            metrics_out.append({"key": key, "label": label, "value": None, "baseline": None,
+                                "delta_pct": None, "flagged": False, "direction": direction,
+                                "email": None, "sms": None})
+            continue
         v = tw(key)
         b = bl(key) if has_baseline else None
         flagged = False
@@ -380,6 +417,7 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_dea
         campaigns_out.append({
             "id": cid, "name": cname, "is_active": meta.get("is_active", False),
             "sent": sent, "replies": _num(row.get("replies_received", 0)),
+            "auto_replies": (_num(row.get(AUTO_REPLIES_KEY, 0)) if has_auto_replies else None),
             "positive": _num(row.get("positive_sentiment", 0)),
             "negative": _num(row.get("negative_sentiment", 0)),
             "clicked": _num(row.get("links_clicked", 0)),
@@ -394,7 +432,7 @@ def analyze_client(name, pid, campaign_map, cmeta, has_active_campaign, open_dea
         campaigns_out = campaigns_out[:PER_CAMPAIGN_CAP]
     if campaigns_more:
         campaigns_out.append({"id": None, "name": f"+{campaigns_more} more campaign(s)", "is_active": False,
-                              "sent": None, "replies": None, "positive": None, "negative": None,
+                              "sent": None, "replies": None, "auto_replies": None, "positive": None, "negative": None,
                               "clicked": None, "booked": None, "won": None, "revenue": None})
 
     ms, dw, dl = tw("messages_sent"), tw("deals_won"), tw("deals_lost")
@@ -423,7 +461,8 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
 
     clients = fetch_clients(users_dsn)
     pids = [c["parent_user_id"] for c in clients]
-    snaps = fetch_snapshots(analytics_dsn, lo, hi)
+    has_auto_replies = fetch_has_column(analytics_dsn, SNAPSHOT_SCHEMA, SNAPSHOT_TABLE, AUTO_REPLIES_KEY)
+    snaps = fetch_snapshots(analytics_dsn, lo, hi, include_auto_replies=has_auto_replies)
     coverage = fetch_week_coverage(analytics_dsn, lo, hi)
     cmeta, active_campaign_pids = fetch_campaign_meta(campaign_dsn, pids)
     open_deals_by_pid = fetch_open_deals(campaign_dsn, pids)
@@ -468,7 +507,8 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
         try:
             out.append(analyze_client(c["name"], pid, snaps.get(pid, {}), cmeta,
                                       pid in active_campaign_pids, open_deals_by_pid.get(pid, 0),
-                                      report_wk, baseline_mondays, series_mondays, suppress))
+                                      report_wk, baseline_mondays, series_mondays, suppress,
+                                      has_auto_replies))
         except Exception as e:
             out.append({"name": c["name"], "parent_user_id": pid, "status": "error",
                         "note": f"Collection failed for this client: {type(e).__name__}: {e}",
@@ -488,6 +528,7 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
         "week_label": week_label(report_start, report_end),
         "week_start": report_start.isoformat(),
         "week_end": report_end.isoformat(),
+        "auto_replies_available": has_auto_replies,
         "summary": {"clients_total": len(out), "clients_active": active, "clients_flagged": flagged,
                     "clients_paused": paused, "clients_inactive": inactive},
         "clients": out,
@@ -502,7 +543,10 @@ def collect(analytics_dsn, users_dsn, campaign_dsn, report_start, title):
                    f"sending this week is shown as “paused” (not flagged); accounts with no open deals and no "
                    f"recent sends are “inactive”. Per-campaign breakdowns use campaign names from revhero_prod_campaign. Snapshot rows "
                    f"are sparse; a global day-coverage guard suppresses all flags if the report week looks like a "
-                   f"pipeline gap."),
+                   f"pipeline gap. Auto-Replies (out-of-office, bounces and other automatic replies, counted once per "
+                   f"message and never part of Replies) comes from the same table, week window, tenant scope and "
+                   f"per-campaign grouping as Replies; it is never red-flagged and reads “n/a” when the analytics "
+                   f"schema has no auto_replies column yet."),
     }
     if alert:
         doc["alert"] = alert
@@ -533,6 +577,8 @@ def main():
         report_start, _ = week_window(args.today or dt.date.today())
 
     doc = collect(args.analytics_dsn, args.users_dsn, args.campaign_dsn, report_start, args.title)
+    if not doc["auto_replies_available"]:
+        sys.stderr.write("note: analytics DB has no auto_replies column yet -- Auto-Replies will read n/a\n")
     text = json.dumps(doc, indent=2, ensure_ascii=False)
     if args.out == "-":
         sys.stdout.reconfigure(encoding="utf-8", newline="\n")
