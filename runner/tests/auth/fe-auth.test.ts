@@ -1,11 +1,21 @@
 // FE-AUTH-001 .. FE-AUTH-020 — Authentication suite (P0).
 // Each test name is prefixed with the registry ID so the reporter can match.
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
+import type { Page } from "playwright";
 import { freshContext, loginAs, closeBrowser, invalidateSession } from "../../fixtures/auth.js";
 import { bffClient, bffLogin, bffForgotPassword, bffResetPassword } from "../../fixtures/api.js";
 import { getCredentials } from "../../lib/context.js";
 import { closePool } from "../../fixtures/db.js";
 import { expectVisible } from "../../fixtures/dom.js";
+
+// The login form's submit control. FE #525 (U24 wording audit, merged 2026-11-12) reworded the button from
+// "Login" to "Log in" (features/auth/components/forms/LoginForm.tsx:90), and while a login is pending it reads
+// "Logging in..." -- an exact-label locator (/^login$/i) misses the button in both cases. So: the label
+// check accepts either spelling, and every interaction goes through the form's own submit button.
+const LOGIN_BUTTON_NAME = /^log ?in$/i;
+function loginSubmit(page: Page) {
+  return page.locator('form:has(input[type="password"]) button[type="submit"]').first();
+}
 
 describe("Authentication (FE-AUTH)", () => {
   beforeAll(() => {
@@ -24,7 +34,7 @@ describe("Authentication (FE-AUTH)", () => {
       await page.goto("/login", { waitUntil: "domcontentloaded" });
       await expectVisible(page.locator('input[type="email"], input[name="email"]').first(), { timeout: 10_000 });
       await expectVisible(page.locator('input[type="password"]').first());
-      await expectVisible(page.getByRole("button", { name: /^login$/i }).first());
+      await expectVisible(page.getByRole("button", { name: LOGIN_BUTTON_NAME }).first());
       await expectVisible(page.getByText(/forgot password/i).first());
       await expectVisible(page.getByText(/register|sign up/i).first());
     } finally {
@@ -79,7 +89,7 @@ describe("Authentication (FE-AUTH)", () => {
     const { page, context } = await freshContext();
     try {
       await page.goto("/login", { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: /^login$/i }).click();
+      await loginSubmit(page).click();
       // FE form validation OR BFF rejection should fire — wait for one.
       await expectVisible(
         page
@@ -361,7 +371,7 @@ describe("Authentication (FE-AUTH)", () => {
     try {
       await page.goto("/login", { waitUntil: "domcontentloaded" });
       // Wait for the form to be interactive (button enabled).
-      const loginBtn = page.getByRole("button", { name: /^login$/i });
+      const loginBtn = loginSubmit(page);
       await loginBtn.waitFor({ state: "visible", timeout: 10_000 });
       await page.locator('input[type="email"], input[name="email"]').first().fill(`spinner-test-${Date.now()}@yopmail.com`);
       await page.locator('input[type="password"]').first().fill("wrong-on-purpose");

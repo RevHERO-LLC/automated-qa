@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-27T00:00:00.000Z",
+  "generated_at": "2026-11-16T17:44:09.031Z",
   "source": "test-registry.md",
   "total": 501,
   "active": 478,
@@ -3389,7 +3389,7 @@
     },
     {
       "id": "FE-EMAIL-002",
-      "description": "\"Mailbox not connected\" empty state with Connect Mailbox CTA.",
+      "description": "Legacy `/email-system/email` redirects to the inbox Email tab (`/inbox?tab=email`), which renders (the thread list, or the no-mailbox state with its Connect-a-mailbox CTA).",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -4701,7 +4701,7 @@
     },
     {
       "id": "FE-PHONE-001",
-      "description": "`/phone-system` redirects to `/phone-system/sms`.",
+      "description": "Legacy `/phone-system` and `/phone-system/sms` redirect to the inbox SMS tab (`/inbox?tab=sms`).",
       "area": "Phone / SMS System",
       "role": "ADMIN",
       "type": "functional",
@@ -5294,7 +5294,7 @@
     },
     {
       "id": "FE-REG-023",
-      "description": "Already-authenticated user navigating to /signup step=1 → redirects to dashboard.",
+      "description": "Already-authenticated user navigating to /signup step=1 → redirects to the app home (`/home`).",
       "area": "Registration / Signup wizard",
       "role": "ADMIN",
       "type": "functional",

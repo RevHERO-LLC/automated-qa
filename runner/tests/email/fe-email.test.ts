@@ -1,6 +1,7 @@
 // FE-EMAIL-001..012 — Email system FE (P1).
 import { describe, test, expect, afterAll } from "vitest";
 import { loginAs, closeBrowser } from "../../fixtures/auth.js";
+import { expectVisible } from "../../fixtures/dom.js";
 
 describe("Email System (FE-EMAIL)", () => {
   afterAll(async () => {
@@ -18,14 +19,21 @@ describe("Email System (FE-EMAIL)", () => {
     }
   });
 
-  test("FE-EMAIL-002 — 'Mailbox not connected' empty state with Connect Mailbox CTA", async () => {
+  test("FE-EMAIL-002 — legacy /email-system/email lands on the inbox Email tab (list, or the no-mailbox state)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
+      // The legacy Email page was retired with the unified-inbox release (FE #479, merged to staging
+      // 2026-11-11): proxy.ts answers the old URL with a 307 into the inbox (features/inbox/lib/legacyRoutes.ts:
+      // /email-system/email -> /inbox?tab=email), so the old URL can never be the final URL again. The page's
+      // "Mailbox not connected" + Connect CTA state now lives in the inbox's New Message menu/sheet ("No mailbox
+      // connected" + "Connect a mailbox", features/inbox/lib/newMessage.ts emailBlock) and is shown only to a
+      // seat with no mailbox. The QA admin has one, so the check is: redirect lands on the Email tab and the
+      // inbox shell renders with its New Message entry point -- connected or not, it must not crash.
       await page.goto("/email-system/email", { waitUntil: "domcontentloaded" });
-      // Either the mailbox is connected (Maggie has Gmail) and inbox renders,
-      // OR an empty state with Connect CTA. Both states must be non-crashing.
-      const url = page.url();
-      expect(url).toContain("/email-system/email");
+      await page.waitForURL((url) => url.pathname === "/inbox", { timeout: 15_000 });
+      expect(new URL(page.url()).searchParams.get("tab"), `legacy email URL should land on the Email tab (got ${page.url()})`).toBe("email");
+      await expectVisible(page.getByRole("button", { name: /new message/i }).first(), { timeout: 20_000 });
+      expect((await page.content()).toLowerCase()).not.toMatch(/internal server error/);
     } finally {
       await context.close();
     }
