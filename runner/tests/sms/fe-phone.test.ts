@@ -7,11 +7,18 @@ describe("Phone System (FE-PHONE)", () => {
     await closeBrowser();
   });
 
-  test("FE-PHONE-001 — /phone-system redirects to /phone-system/sms", async () => {
+  test("FE-PHONE-001 — legacy /phone-system (and /phone-system/sms) redirect to the inbox SMS tab", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system", { waitUntil: "domcontentloaded" });
-      expect(page.url()).toMatch(/\/phone-system\/sms|\/phone-system$/);
+      // Retired with the unified-inbox release (FE #479, merged to staging 2026-11-11): proxy.ts 307s both URLs
+      // into the inbox (features/inbox/lib/legacyRoutes.ts: "/phone-system" and "/phone-system/sms" ->
+      // /inbox?tab=sms). The old assertion (/phone-system -> /phone-system/sms) can no longer hold.
+      // /phone-system/voicemails is NOT retired (FE-PHONE-004 covers it).
+      for (const legacy of ["/phone-system", "/phone-system/sms"]) {
+        await page.goto(legacy, { waitUntil: "domcontentloaded" });
+        await page.waitForURL((url) => url.pathname === "/inbox", { timeout: 15_000 });
+        expect(new URL(page.url()).searchParams.get("tab"), `${legacy} should land on the inbox SMS tab (got ${page.url()})`).toBe("sms");
+      }
     } finally {
       await context.close();
     }

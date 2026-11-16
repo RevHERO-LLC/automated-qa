@@ -362,12 +362,15 @@ describe("Registration wizard (FE-REG)", () => {
     }
   });
 
-  test("FE-REG-023 — Already-authenticated user navigating to /signup → redirects to dashboard", async () => {
+  test("FE-REG-023 — Already-authenticated user navigating to /signup → redirects to the app home", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
       await page.goto("/signup?step=1", { waitUntil: "domcontentloaded" });
+      // proxy.ts (the /signup step-1 branch) sends a signed-in user to DEFAULT_HOME_PATH, which is /home since
+      // the product-overhaul U8 release (FE #502, merged 2026-11-11; lib/visibility.ts:373). It was
+      // /automation-campaign before, so the earlier landing paths stay accepted alongside /home.
       await page.waitForURL(
-        (url) => /automation-campaign|dashboard|getting-started|setup/.test(url.pathname),
+        (url) => /^\/home(\/|$)|automation-campaign|dashboard|getting-started|setup/.test(url.pathname),
         { timeout: 15_000 }
       );
       expect(page.url()).not.toMatch(/\/signup/);
