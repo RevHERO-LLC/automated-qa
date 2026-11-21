@@ -58,26 +58,16 @@ describe("AI personalization (FE-AI)", () => {
 
   test("FE-AI-018 — Credit balance drops by AI rate after personalised send (smoke)", async () => { expect(true).toBe(true); });
   test("FE-AI-019 — Toky + AI charges AI credits, not phone (smoke)", async () => { expect(true).toBe(true); });
-  test("FE-AI-020 — cleanup-old-prompts endpoint exists at both legacy and /v1 paths", async () => {
-    // QA-AUDIT-STALE #33: ai-agent originally exposed only the unversioned
-    // /cleanup-old-prompts route. QA-FULL-030 added the /v1/-prefixed alias
-    // for API-surface consistency (Revhero-Generic-Ai-Agent commit f1abc14).
-    // After the fix lands on staging, BOTH paths must return non-404.
-    const legacy = await axios.post(
-      `${getAreaUrls().aiAgent}/cleanup-old-prompts`,
-      {},
-      { timeout: 30_000, validateStatus: () => true }
-    );
-    expect(legacy.status, "legacy /cleanup-old-prompts must remain reachable").not.toBe(404);
-
-    const versioned = await axios.post(
-      `${getAreaUrls().aiAgent}/v1/cleanup-old-prompts`,
-      {},
-      { timeout: 30_000, validateStatus: () => true }
-    );
-    // Once the QA-FULL-030 fix is deployed, this also returns non-404.
-    // Until the staging redeploy lands, this assertion is the test's signal
-    // for the fix landing live.
-    expect(versioned.status, "/v1/cleanup-old-prompts alias should be live after QA-FULL-030 redeploy").not.toBe(404);
+  test("FE-AI-020 — cleanup-old-prompts exists at both paths and is internal-only (U13-4)", async () => {
+    // QA-AUDIT-STALE #33 / QA-FULL-030: ai-agent serves the maintenance route at the legacy
+    // /cleanup-old-prompts path and at the /v1/ alias. U13-4 (unified-inbox mission, 2026-11) put both
+    // behind the internal secret. This probe deliberately sends NO secret: with the secret the route
+    // runs the real prompt cleanup on every QA run. An anonymous call must be refused by the guard
+    // (401/403), which also proves the route exists (a missing route answers 404).
+    for (const path of ["/cleanup-old-prompts", "/v1/cleanup-old-prompts"]) {
+      const r = await axios.post(`${getAreaUrls().aiAgent}${path}`, {}, { timeout: 30_000, validateStatus: () => true });
+      expect(r.status, `${path} must exist`).not.toBe(404);
+      expect([401, 403], `${path} must refuse an anonymous caller (U13-4 internal-only)`).toContain(r.status);
+    }
   });
 });
