@@ -22,6 +22,11 @@ def esc(s):
     return html.escape(str(s if s is not None else ""))
 
 
+NA = "n/a"  # the source could not provide this value (e.g. analytics schema lacks the column) -- never 0
+AUTO_REPLIES_LEGEND = ("Replies = people only; Auto-Replies = out-of-office, bounces and other automatic "
+                       "replies, counted once per message.")
+
+
 def _num(v):
     """Format a metric value: ints plain, floats/revenue with separators."""
     if v is None:
@@ -46,6 +51,7 @@ STATUS_BADGE = {
 }
 
 SERIES_LABELS = [("messages_sent", "Sent"), ("replies_received", "Replies"),
+                 ("auto_replies", "Auto-Replies"),
                  ("positive_sentiment", "Positive"), ("meetings_booked", "Booked"),
                  ("revenue_generated", "Revenue")]
 
@@ -62,6 +68,9 @@ def _delta_cell(m):
 
 
 def _metric_row(m):
+    if m.get("value") is None:  # unavailable in the source data: n/a across the row, never a 0
+        return (f"<tr><td>{esc(m.get('label'))}</td>"
+                + f'<td class="num muted">{NA}</td>' * 3 + "</tr>")
     flag = ' class="flagged"' if m.get("flagged") else ""
     mark = ' <span class="flagmark">▲</span>' if m.get("flagged") else ""
     email = m.get("email")
@@ -147,6 +156,13 @@ def _trend_block(series):
     data = series.get("data", {})
     cards = []
     for key, lbl in SERIES_LABELS:
+        if key == "auto_replies":
+            if key not in data:  # run JSON from before AN-01: no such series, draw nothing
+                continue
+            if data[key] is None:  # analytics schema had no auto_replies column: n/a, not a flat zero line
+                cards.append(f'<div class="tcard"><div class="tlbl">{esc(lbl)}</div>'
+                             f'<div class="tval muted">{NA}</div></div>')
+                continue
         vals = data.get(key, [])
         last = vals[-1] if vals else 0
         trend = (vals[-1] - vals[0]) if len(vals) >= 2 else 0
@@ -162,20 +178,25 @@ def _campaign_table(campaigns):
     real = [c for c in (campaigns or []) if c.get("sent") is not None]
     if not campaigns:
         return ""
+    auto = any("auto_replies" in c for c in campaigns)  # only runs from AN-01 on carry the column
     rows = []
     for c in campaigns:
         if c.get("sent") is None:  # the "+N more" fold row
-            rows.append(f'<tr><td colspan="7" class="muted">{esc(c.get("name"))}</td></tr>')
+            rows.append(f'<tr><td colspan="{8 if auto else 7}" class="muted">{esc(c.get("name"))}</td></tr>')
             continue
         dot = '<span class="cdot on">●</span>' if c.get("is_active") else '<span class="cdot off">○</span>'
+        ar = c.get("auto_replies")
+        auto_cell = ((f'<td class="num muted">{NA}</td>' if ar is None else f'<td class="num">{_num(ar)}</td>')
+                     if auto else "")
         rows.append(
             f'<tr><td>{dot} {esc(c.get("name"))}</td>'
-            f'<td class="num">{_num(c.get("sent"))}</td><td class="num">{_num(c.get("replies"))}</td>'
+            f'<td class="num">{_num(c.get("sent"))}</td><td class="num">{_num(c.get("replies"))}</td>{auto_cell}'
             f'<td class="num">{_num(c.get("positive"))}</td><td class="num">{_num(c.get("booked"))}</td>'
             f'<td class="num">{_num(c.get("won"))}</td><td class="num">{_num(c.get("revenue"))}</td></tr>')
+    auto_th = '<th class="num" title="Auto-Replies">Auto</th>' if auto else ""
     return (f'<details class="campaigns"><summary>By campaign · {len(real)}</summary>'
             '<div class="tbl-wrap"><table><thead><tr><th>Campaign</th><th class="num">Sent</th>'
-            '<th class="num">Repl</th><th class="num">Pos</th><th class="num">Book</th>'
+            f'<th class="num">Repl</th>{auto_th}<th class="num">Pos</th><th class="num">Book</th>'
             f'<th class="num">Won</th><th class="num">Rev</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div></details>')
 
 
@@ -282,6 +303,13 @@ def render(d, prev=None):
 
     alert_html = f'<div class="alert">{esc(d.get("alert"))}</div>' if d.get("alert") else ""
 
+    # Legend: only runs from AN-01 on carry Auto-Replies; older run JSON renders exactly as before.
+    legend_html = ""
+    if "auto_replies_available" in d:
+        na_note = "" if d.get("auto_replies_available") else (
+            " Auto-Replies reads n/a this week: the analytics database does not have the auto_replies column yet.")
+        legend_html = f'<p class="lead legend">{esc(AUTO_REPLIES_LEGEND + na_note)}</p>\n'
+
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -359,7 +387,7 @@ details.fold ul.nodata-list{{padding:0 4px}}
   <span class="badge neutral">{_num(s.get('clients_inactive'))} inactive</span>
 </div>
 {alert_html}
-<h2>Needs attention <span class="count">{len(attention)}</span></h2>
+{legend_html}<h2>Needs attention <span class="count">{len(attention)}</span></h2>
 <p class="lead">Clients whose metrics moved off their 4-week trend (or dropped to zero). Reds first.</p>
 {attention_html}
 
