@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the offsite-backup dead-man check every hour
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Persistent=true
+RandomizedDelaySec=60s
+
+[Install]
+WantedBy=timers.target
