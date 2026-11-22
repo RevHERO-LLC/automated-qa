@@ -89,6 +89,17 @@ new_case; export MOCK_AWS_OUT="$(ts_ago 108000)" MOCK_SLACK_FAIL=1
 check "slack down: exit 1" "$(run)" 1
 check "slack down: state not recorded" "$(kind)" ""
 
+# 8. more than 1000 objects: the CLI prints one max PER PAGE; the newest page decides (older page first)
+new_case; export MOCK_AWS_OUT="$(ts_ago 200000)
+$(ts_ago 3600)"
+check "multi-page: exit 0" "$(run)" 0
+check "multi-page: newest page wins, no alert" "$(posts)" 0
+# 8b. multi-page where every page is old -> still stale
+new_case; export MOCK_AWS_OUT="$(ts_ago 200000)
+$(ts_ago 100000)"
+check "multi-page old: exit 0" "$(run)" 0
+check "multi-page old: one stale post" "$(posts)" 1
+
 # 7. the prefix + read-only profile reach aws as configured
 new_case; export MOCK_AWS_OUT="$(ts_ago 7200)" S3_PREFIX="postgres/prod/"
 run >/dev/null

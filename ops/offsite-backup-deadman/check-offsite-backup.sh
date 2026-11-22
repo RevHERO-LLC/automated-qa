@@ -98,7 +98,9 @@ observe() {
     rm -f "$err"; return
   fi
   rm -f "$err"
-  out="$(printf '%s' "$out" | tr -d '\r' | head -1)"
+  # With --output text the AWS CLI applies --query PER PAGE (1000 keys each), printing one max per page (or "None"
+  # for an empty page). Take the newest across all pages, never just the first page's.
+  out="$(printf '%s\n' "$out" | tr -d '\r' | grep -v -E '^(None|null)?$' | sort | tail -1)"
   now="$(now_epoch)"
   if [ -z "$out" ] || [ "$out" = "None" ] || [ "$out" = "null" ]; then
     OBS=stale; REASON="the offsite prefix s3://${S3_BUCKET}/${S3_PREFIX} is EMPTY — there is NO offsite copy of prod"
