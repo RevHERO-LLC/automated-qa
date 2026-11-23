@@ -1,0 +1,85 @@
+# staging-anon-probe.targets — what the daily probe requests (installed to /etc/revhero/, never overwritten once it exists).
+#
+# One target per line:   <https-base-url>  <path>  <family>
+# Every request is an UNAUTHENTICATED GET. Every route below must answer 401 or 403 to a caller with no credentials.
+#
+# RULES for adding a line (the script enforces the first; the rest are on you):
+#   1. STAGING ONLY. A host that is not a staging domain (*.test.revhero.io, *.staging2.revhero.io, *.staging.revhero.ai,
+#      *.test.revhero.ai) makes the whole probe refuse to run. Prod hosts can never be added.
+#   2. READ-ONLY LIST ROUTES ONLY. Some GETs in this fleet TRIGGER WORK when reachable: deal-mover GET /v1/sweeper/run,
+#      deals-actions GET /v1/actions/linkedin-enrich-sweep, /derive-websites, /reconcile-scrape-links, /fire-on-resolve.
+#      Never list one: an open route would run it. If in doubt, read the handler.
+#   3. Use a NONEXISTENT tenant wherever a route takes an id (999999999), so an open route has nothing to return.
+#   4. A route that is open ON PURPOSE (a webhook, a public page, the unauthenticated GET /v1/supported-crms/account-by-crm-user
+#      leftover) does not belong here: it would alert every day. Remove it, or fix it.
+#
+# Routes were read from origin/staging of each service on 2026-11-22. A route that moves answers 404, which the probe
+# reports as "absent" (not proof of auth) and counts against MIN_EVALUATED_PCT, so drift shows up instead of hiding.
+#
+# families: users, campaigns, deals, inbox, admin (plus documents / other where the service has none of those).
+
+# ---- BFF (user-fe-backend): every protected /v1 route sits behind JWTAuth(). Three public hosts for the same app. ----
+https://api.staging.revhero.ai               /v1/user/profile                  users
+https://api.staging.revhero.ai               /v1/account/users                 users
+https://api.staging.revhero.ai               /v1/campaigns/list                campaigns
+https://api.staging.revhero.ai               /v1/deals/filter                  deals
+https://api.staging.revhero.ai               /v1/inbox/conversations           inbox
+https://api.staging.revhero.ai               /v1/inbox/counts                  inbox
+https://api.staging.revhero.ai               /v1/admin/users/all               admin
+https://api.staging.revhero.ai               /v1/admin/dashboard/stats         admin
+
+https://user-fe-backend.test.revhero.io      /v1/user/profile                  users
+https://user-fe-backend.test.revhero.io      /v1/account/users                 users
+https://user-fe-backend.test.revhero.io      /v1/campaigns/list                campaigns
+https://user-fe-backend.test.revhero.io      /v1/deals/filter                  deals
+https://user-fe-backend.test.revhero.io      /v1/inbox/conversations           inbox
+https://user-fe-backend.test.revhero.io      /v1/inbox/counts                  inbox
+https://user-fe-backend.test.revhero.io      /v1/admin/users/all               admin
+https://user-fe-backend.test.revhero.io      /v1/admin/dashboard/stats         admin
+
+# Lane 2 (staging-2) BFF.
+https://api.staging2.revhero.io              /v1/user/profile                  users
+https://api.staging2.revhero.io              /v1/account/users                 users
+https://api.staging2.revhero.io              /v1/campaigns/list                campaigns
+https://api.staging2.revhero.io              /v1/deals/filter                  deals
+https://api.staging2.revhero.io              /v1/inbox/conversations           inbox
+https://api.staging2.revhero.io              /v1/inbox/counts                  inbox
+https://api.staging2.revhero.io              /v1/admin/users/all               admin
+https://api.staging2.revhero.io              /v1/admin/dashboard/stats         admin
+
+# ---- Internal services that also have a public staging host (the U18 prod edge lock does NOT cover these) ----
+# users-service (code gates: InternalServicesAuth on holidays / active-hours, #244)
+https://users-service.test.revhero.io        /v1/holidays/user/999999999              users
+https://users-service.test.revhero.io        /v1/active-hours/user/999999999          users
+https://users-service.test.revhero.io        /v1/credit/user/999999999                users
+https://users-service.test.revhero.io        /v1/account/accounts/user/999999999      users
+
+# campaign-service (PublicEdgeGuard + InternalServicesAuthGraceable; INTERNAL_AUTH_ENFORCE is log-only on lane 1)
+https://campaign-service.test.revhero.io     /v1/campaigns                     campaigns
+https://campaign-service.test.revhero.io     /v1/deals/filter                  deals
+
+# sms-service (InternalServicesAuthGraceable)
+https://sms-service.test.revhero.io          /v1/messages/conversations        inbox
+https://sms-service.test.revhero.io          /v1/phone-numbers/user/999999999  users
+
+# email-ingress. /v1/emails validates ParentUserID as required: asked without it, an anonymous caller got a 400 from the
+# handler (no auth in front of it, 2026-11-22), so the parameter is sent to reach a conclusive answer.
+# The second route is behind the HARD gate: a control that must always be refused.
+https://email-ingress.test.revhero.io        /v1/emails?parent_user_id=999999999   inbox
+https://email-ingress.test.revhero.io        /v1/internal/inbox-feed/emails    inbox
+
+# deals-actions: ONLY the list route. The other GETs in this group trigger work (see rule 2).
+https://deals-actions-service.test.revhero.io  /v1/actions/pending-bookings    deals
+
+# hubspot / pipedrive CRM adapters (ParentUserID is a required query parameter, as on email-ingress)
+https://hubspot-service.test.revhero.io      /v1/campaigns?parent_user_id=999999999    campaigns
+https://pipedrive-service.test.revhero.io    /v1/campaigns?parent_user_id=999999999    campaigns
+
+# cloud-documents (hard InternalSecretAuth on the whole group)
+https://cloud-documents-service.test.revhero.io  /v1/upload/providers          documents
+
+# analytics: the dashboard read family has had NO auth (known leftover, follow-up 2.23); /dashboard/clients is super-admin.
+# The dashboard routes require from, to (YYYY-MM-DD) and account_id; a 2020 window for a nonexistent tenant returns nothing.
+https://internal-analytics.test.revhero.io   /v1/analytics/dashboard?parent_user_id=999999999&account_id=999999999&from=2020-01-01&to=2020-01-02          campaigns
+https://internal-analytics.test.revhero.io   /v1/analytics/dashboard/summary?parent_user_id=999999999&account_id=999999999&from=2020-01-01&to=2020-01-02  campaigns
+https://internal-analytics.test.revhero.io   /v1/analytics/dashboard/clients   admin

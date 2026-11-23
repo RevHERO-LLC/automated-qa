@@ -1,0 +1,19 @@
+[Unit]
+Description=Anonymous-request probe of the staging public API hosts — Slack when a route that must answer 401/403 answers 2xx
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/staging-anon-probe.env
+Environment=STATE_DIR=/var/lib/staging-anon-probe
+ExecStart=/usr/local/bin/probe-staging-anon.sh
+# A hung check is not a failure to systemd (oneshot has no default timeout) and would silently stop the probe. The
+# script has its own time budget (BUDGET_SECS, default 420 s); this cap turns a hang past it into a FAILED unit.
+TimeoutStartSec=10min
+# It holds no credential except the Slack webhook and only makes outbound GETs.
+NoNewPrivileges=yes
+PrivateTmp=yes
+StandardOutput=journal
+StandardError=journal
+User=root

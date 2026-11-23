@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the staging anonymous-access probe once a day
+
+[Timer]
+# 10:20 UTC: outside VPS4's nightly dump window (~02:00-08:45Z), whose CPU pressure slows staging answers and would
+# turn timeouts into false "could not evaluate" alerts.
+OnCalendar=*-*-* 10:20:00 UTC
+Persistent=true
+RandomizedDelaySec=120s
+
+[Install]
+WantedBy=timers.target
