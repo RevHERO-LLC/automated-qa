@@ -44,7 +44,11 @@ So install it on VPS2 only knowing that. To test the edge itself, run it from ou
 
 ## Install (manual, not CI)
 
-`sudo bash ops/staging-anon-probe/install.sh`, then fill `/etc/revhero/staging-anon-probe.env` (`SLACK_WEBHOOK`) and run both manual tests the installer prints: the report-mode run first, then `TEST_ALERT=true`. Merging this repo deploys nothing by itself.
+1. **On the target host, first:** `bash ops/staging-anon-probe/test-probe.sh`. It needs the host's real `jq` and proves the body classifier against it (the test was developed against gojq, a jq-compatible implementation, because the author's machine had no `jq`).
+2. `sudo bash ops/staging-anon-probe/install.sh`, then fill `/etc/revhero/staging-anon-probe.env` (`SLACK_WEBHOOK`).
+3. Run the two manual tests the installer prints: the report-mode run first, then `TEST_ALERT=true`.
+
+Merging this repo deploys nothing by itself. **The first scheduled run will alert** for every route that is open today (see the PR for the 2026-11-22 list), and repeat every `REMIND_HOURS` until each is fixed or removed from the targets file. Decide that before installing.
 
 ## Run it by hand
 
