@@ -48,9 +48,12 @@ https://api.staging2.revhero.io              /v1/admin/users/all               a
 https://api.staging2.revhero.io              /v1/admin/dashboard/stats         admin
 
 # ---- Internal services that also have a public staging host (the U18 prod edge lock does NOT cover these) ----
-# users-service (code gates: InternalServicesAuth on holidays / active-hours, #244)
+# users-service (code gates, #244: InternalServicesAuth on holidays, active-hours and api-keys; RequireSuperAdmin on
+# ai-bad-responses). The first four are the route groups plan P5-D6 names; test-probe.sh fails if any is missing.
 https://users-service.test.revhero.io        /v1/holidays/user/999999999              users
 https://users-service.test.revhero.io        /v1/active-hours/user/999999999          users
+https://users-service.test.revhero.io        /v1/api-keys/users/999999999             users
+https://users-service.test.revhero.io        /v1/ai-bad-responses                     admin
 https://users-service.test.revhero.io        /v1/credit/user/999999999                users
 https://users-service.test.revhero.io        /v1/account/accounts/user/999999999      users
 

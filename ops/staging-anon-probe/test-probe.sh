@@ -137,6 +137,42 @@ echo '{"data":{"balance":12.5}}'                               > "${WORK}/b20"; 
 echo '{"data":{"email":"someone@example.com"}}'                > "${WORK}/b21"; check "has_data: a non-empty string is data"   "$(has_data "${WORK}/b21")" data
 unset PROBE_LIB_ONLY
 
+# ---------------------------------------------------------------- 0b. the REAL targets file: a missing required target fails the test
+# Every other section runs on a small fixture. This one reads the file that actually ships (and gets installed), so
+# dropping a route the plan names, or a whole family on a BFF host, is caught here instead of going unwatched.
+REAL_TARGETS="${HERE}/staging-anon-probe.targets"
+TARGETS_FILE="${REAL_TARGETS}"
+if load_targets; then
+  echo "PASS  the real targets file parses and every host in it is a staging host (${#TG_BASE[@]} targets)"
+else
+  echo "FAIL  the real targets file is not loadable: ${CONFIG_ERR}"; fail=1
+fi
+has_target() { # base path-prefix: is there a target on that host whose path starts with the prefix?
+  local i
+  for ((i = 0; i < ${#TG_BASE[@]}; i++)); do
+    [ "${TG_BASE[i]}" = "$1" ] && [[ "${TG_PATH[i]}" == "$2"* ]] && return 0
+  done
+  return 1
+}
+has_family() { # base family: does that host carry at least one target of the family?
+  local i
+  for ((i = 0; i < ${#TG_BASE[@]}; i++)); do
+    [ "${TG_BASE[i]}" = "$1" ] && [ "${TG_FAM[i]}" = "$2" ] && return 0
+  done
+  return 1
+}
+# Plan P5-D6 names four users-service route groups. All four must stay targeted.
+for p in /v1/holidays/ /v1/active-hours/ /v1/api-keys/users/ /v1/ai-bad-responses; do
+  yes_if "real targets cover users-service ${p} (plan P5-D6)" "$(has_target https://users-service.test.revhero.io "$p" && echo 1 || echo 0)"
+done
+# The five families asked for (users, campaigns, deals, inbox, admin) on each of the three BFF hosts.
+for h in https://api.staging.revhero.ai https://user-fe-backend.test.revhero.io https://api.staging2.revhero.io; do
+  for f in users campaigns deals inbox admin; do
+    yes_if "real targets carry the ${f} family on ${h#https://}" "$(has_family "$h" "$f" && echo 1 || echo 0)"
+  done
+done
+unset TARGETS_FILE
+
 # ---------------------------------------------------------------- 1. everything refused
 new_case; set_route "$R_ADMIN" 403 unauth.json
 check "clean: exit 0" "$(run)" 0
