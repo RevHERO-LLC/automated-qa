@@ -9,8 +9,9 @@ EnvironmentFile=/etc/revhero/swarm-node-watch.env
 Environment=STATE_DIR=/var/lib/swarm-node-watch
 ExecStart=/usr/local/bin/check-swarm-nodes.sh
 # A hung check (a stuck docker call, a dead SSH) is not a failure to systemd (oneshot has no default timeout) and would
-# silently stop the watcher — cap it so a hang becomes a FAILED unit instead of silence. Keep it above
-# (number of workers x REMOTE_TIMEOUT, 30 s) plus a few seconds for the docker calls.
+# silently stop the watcher — cap it so a hang becomes a FAILED unit instead of silence. This is only the OUTER cap: a run
+# it kills posts nothing, so the script bounds its own reads first (SWARM_READ_TIMEOUT, 20 s per docker call; REMOTE_TIMEOUT,
+# 30 s per worker). Keep this above (SWARM_READ_TIMEOUT + number of workers x REMOTE_TIMEOUT + the 15 s Slack post).
 TimeoutStartSec=2min
 StandardOutput=journal
 StandardError=journal

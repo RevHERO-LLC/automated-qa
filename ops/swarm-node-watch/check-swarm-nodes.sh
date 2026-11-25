@@ -25,8 +25,17 @@
 #                          BLIND_RUNS consecutive runs (a daemon restart or one dropped SSH must not page).
 #
 # FAIL LOUD: no SLACK_WEBHOOK => exit 2. Slack undeliverable => exit 1 and the alert state is NOT recorded (it retries
-# next run). A confirmed blind:nodels keeps the unit RED (exit 2) even after its alert was delivered. A hung run is
-# capped by TimeoutStartSec in the unit. A FAILED swarm-node-watch.service in `systemctl --failed` = the watcher is broken.
+# next run). A confirmed blind:nodels keeps the unit RED (exit 2) even after its alert was delivered. A FAILED
+# swarm-node-watch.service in `systemctl --failed` = the watcher is broken.
+#
+# A HUNG swarm read is a blind spot, not silence. `docker node ls` and `docker node inspect` run under their own
+# SWARM_READ_TIMEOUT (20 s), far inside the unit's TimeoutStartSec (2 min): a run killed by the unit cap posts nothing, and
+# nothing pages on a red unit. A timeout is reported exactly like a failed listing (blind:nodels, same BLIND_RUNS debounce).
+#
+# A listing that FAILED or timed out says NOTHING about the nodes, so that run is neither clean nor a recovery: it never posts
+# RECOVERED, never advances the clean-run streak and never drops an alert that is already active. The first failed read only
+# waits (BLIND_RUNS); once confirmed, the alerts that cannot be re-checked without the list (node:*, missing:*, flap:*,
+# blind:waves:*) are carried forward exactly as they were stored, listed as unverified, next to blind:nodels.
 #
 # Dedupe (same shape as overlay-fdb-detector / analytics-alarm-deadman): the alert is keyed on the SET of problem keys.
 # A new or changed set alerts at once; an unchanged set re-alerts at most every REMIND_HOURS, labelled REMINDER; once
@@ -38,7 +47,8 @@
 #
 # Env: SLACK_WEBHOOK (REQUIRED), STATE_DIR (/var/lib/swarm-node-watch), LANE_LABEL (prod), REMIND_HOURS (6),
 #      RECOVER_RUNS (2), BLIND_RUNS (2), WAVE_THRESHOLD (3; 0 = off), WAVE_WINDOW_MINUTES (60), WAVE_GAP_MINUTES (5),
-#      WAVE_CLEAR_BELOW (1), EXPECTED_NODES (comma list, optional), REMOTE_TIMEOUT (30 s per worker), SSH_OPTS,
+#      WAVE_CLEAR_BELOW (1), EXPECTED_NODES (comma list, optional), REMOTE_TIMEOUT (30 s per worker),
+#      SWARM_READ_TIMEOUT (20 s per docker node ls / inspect call), SSH_OPTS,
 #      TEST_ALERT ("true" => one Slack message that validates docker + SSH + Slack, no state touched),
 #      NODEWATCH_NOW_EPOCH / NODEWATCH_LIB_ONLY (tests only).
 # Exit: 0 ran (ok / alert delivered / suppressed) | 1 Slack undeliverable | 2 cannot run (config) or confirmed blind:nodels.
@@ -72,6 +82,7 @@ WAVE_WINDOW_MINUTES="$(int_or_default WAVE_WINDOW_MINUTES 60)"
 WAVE_GAP_MINUTES="$(int_or_default WAVE_GAP_MINUTES 5)"
 WAVE_CLEAR_BELOW="$(int_or_default WAVE_CLEAR_BELOW 1)"
 REMOTE_TIMEOUT="$(int_or_default REMOTE_TIMEOUT 30)"
+SWARM_READ_TIMEOUT="$(int_or_default SWARM_READ_TIMEOUT 20)"
 
 now_epoch() { echo "${NODEWATCH_NOW_EPOCH:-$(date +%s)}"; }
 fmt_ts() { date -u -d "@$1" '+%Y-%m-%d %H:%MZ' 2>/dev/null || echo "?"; }
@@ -175,6 +186,7 @@ declare -A ADDR_CACHE=()
 PENDING_NEW=""; NODES_SUMMARY=""; WAVES_SUMMARY=""; BLIND_NODELS=0
 
 add_problem() { P_KEYS+=("$(sanitize_key "$1")"); P_TEXT+=("$2"); }
+has_problem() { local k; for k in "${P_KEYS[@]+"${P_KEYS[@]}"}"; do [ "$k" = "$1" ] && return 0; done; return 1; }
 active_has() { [[ ",${prev_active}," == *",$(sanitize_key "$1"),"* ]]; }
 pend_count() { # key -> count so far (consecutive runs the blind spot was seen)
   local kv; local -a ps=()
@@ -190,9 +202,9 @@ blind_candidate() { # key text
   if [ "$n" -ge "$BLIND_RUNS" ]; then add_problem "$key" "$2"
   else log "WARN: $2 (run ${n}/${BLIND_RUNS}; not paging yet)"; fi
 }
-node_addr() { # host -> address (cached; empty when unknown)
+node_addr() { # host -> address (cached; empty when unknown or when docker does not answer within SWARM_READ_TIMEOUT)
   local h="$1"
-  if [ -z "${ADDR_CACHE[$h]+x}" ]; then ADDR_CACHE[$h]="$(docker node inspect "$h" --format '{{.Status.Addr}}' 2>/dev/null </dev/null | head -1)"; fi
+  if [ -z "${ADDR_CACHE[$h]+x}" ]; then ADDR_CACHE[$h]="$(timeout "$SWARM_READ_TIMEOUT" docker node inspect "$h" --format '{{.Status.Addr}}' 2>/dev/null </dev/null | head -1)"; fi
   printf '%s' "${ADDR_CACHE[$h]}"
 }
 
@@ -222,12 +234,15 @@ wave_check() { # <worker host> — only called for a Ready/Active worker
 
 # --- observe -----------------------------------------------------------------------------------------------------
 observe() {
-  local nl_out nl_rc line host st av ms prob addr want
+  local nl_out nl_rc nl_why line host st av ms prob addr want
   local -a lines=() want_list=()
-  nl_out="$(docker node ls --format '{{.Hostname}}|{{.Status}}|{{.Availability}}|{{.ManagerStatus}}' 2>&1)"; nl_rc=$?
+  # Bounded: a hung `docker node ls` must surface as a blind spot here, not as a run the unit cap kills in silence (rc 124 = timeout).
+  nl_out="$(timeout "$SWARM_READ_TIMEOUT" docker node ls --format '{{.Hostname}}|{{.Status}}|{{.Availability}}|{{.ManagerStatus}}' 2>&1 </dev/null)"; nl_rc=$?
   if [ "$nl_rc" -ne 0 ] || [ -z "$nl_out" ]; then
     BLIND_NODELS=1
-    blind_candidate "blind:nodels" "cannot read the swarm node list (docker node ls rc=${nl_rc}: $(printf '%s' "$nl_out" | tr '\n' ' ' | cut -c1-160)) — this check is blind; is this host the swarm manager and is dockerd up?"
+    if [ "$nl_rc" -eq 124 ]; then nl_why="docker node ls gave no answer within ${SWARM_READ_TIMEOUT}s"
+    else nl_why="docker node ls rc=${nl_rc}: $(printf '%s' "$nl_out" | tr '\n' ' ' | cut -c1-160)"; fi
+    blind_candidate "blind:nodels" "cannot read the swarm node list (${nl_why}) — this check is blind; is this host the swarm manager, and is dockerd up and answering?"
     return
   fi
   mapfile -t lines <<<"$nl_out"
@@ -264,23 +279,46 @@ compose() { # headline -> full Slack text (headline + one bullet per problem + t
 
 observe
 
+# The node list could not be read (failed or hung): NOTHING was observed about any node, so this run is neither clean nor a
+# recovery (see `hold` below and the header). Once the blind spot is confirmed it is alerted like any other, and the alerts that
+# cannot be re-checked without the list are carried forward exactly as stored, listed as unverified, next to blind:nodels.
+if [ "$BLIND_NODELS" = 1 ] && has_problem "blind:nodels" && [ -n "$prev_active" ]; then
+  while IFS= read -r carried_key; do
+    [ -n "$carried_key" ] && [ "$carried_key" != "blind:nodels" ] || continue
+    add_problem "$carried_key" "• ${carried_key}: was alerting before the node list became unreadable. It cannot be re-checked until ${BT}docker node ls${BT} answers, so it is carried forward as it was (unverified)."
+  done < <(printf '%s\n' "$prev_active" | tr ',' '\n')
+fi
+
 obs_csv=""
 if [ "${#P_KEYS[@]}" -gt 0 ]; then obs_csv="$(printf '%s\n' "${P_KEYS[@]}" | sed '/^$/d' | sort -u | paste -sd, -)"; fi
 log "nodes: ${NODES_SUMMARY:-none read} | problems='${obs_csv}' active='${prev_active}'"
 
 if [ "$TEST_ALERT" = "true" ]; then
-  if [ -n "$obs_csv" ]; then cur="Current problems: ${obs_csv}."$'\n'"$(compose '')"; else cur="No current problems."; fi
+  # An unreadable node list must never read as "no problems": say it is unknown.
+  if [ "$BLIND_NODELS" = 1 ]; then cur="THE NODE LIST COULD NOT BE READ, so the swarm state is UNKNOWN (this check is blind; see the journal)."
+  elif [ -n "$obs_csv" ]; then cur="Current problems: ${obs_csv}."$'\n'"$(compose '')"; else cur="No current problems."; fi
   if slack_post ":white_check_mark: *Swarm node watch* test run (${LABEL}) — Slack path OK. Nodes: ${NODES_SUMMARY:-none read}. Wave check: ${WAVES_SUMMARY:-off or none} (alert at ${WAVE_THRESHOLD} per ${WAVE_WINDOW_MINUTES} min). ${cur} (TEST_ALERT=true)"; then
     log "Slack test alert sent."; exit 0
   fi
   log "ERROR: Slack POST failed (test alert)." >&2; exit 1
 fi
 
-decision="$(decide "$obs_csv" "$prev_active" "$now" "$prev_last" "$prev_streak")"
+if [ "$BLIND_NODELS" = 1 ] && ! has_problem "blind:nodels"; then
+  # A first failed read (not yet confirmed, BLIND_RUNS): nothing was observed, so decide() must not see an empty problem set
+  # (it would count it as a clean run, and could post RECOVERED).
+  decision=hold
+else
+  decision="$(decide "$obs_csv" "$prev_active" "$now" "$prev_last" "$prev_streak")"
+fi
 log "decision=${decision} (ok_streak=${prev_streak}/${RECOVER_RUNS}, last alert $( [ "$prev_last" -gt 0 ] && fmt_ts "$prev_last" || echo never ))"
 
 rc_final=0
 case "$decision" in
+  hold)
+    # the up/down record (active, since, last_alert, ok_streak) stays exactly as stored; only the blind-run counter moves
+    log "the node list could not be read, so no node was observed: alert state left as it was (active='${prev_active}', ok_streak=${prev_streak})"
+    state_put "$prev_active" "$prev_since" "$prev_last" "$prev_streak" "$PENDING_NEW" >/dev/null 2>&1
+    ;;
   none)
     if [ -z "$obs_csv" ]; then state_put "" "" 0 0 "$PENDING_NEW" >/dev/null 2>&1
     else state_put "$prev_active" "$prev_since" "$prev_last" 0 "$PENDING_NEW" >/dev/null 2>&1; fi

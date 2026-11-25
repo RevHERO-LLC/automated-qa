@@ -14,14 +14,20 @@ check() { if [ "$2" = "$3" ]; then echo "PASS  $1"; else echo "FAIL  $1: expecte
 bash -n "${SCRIPT}" && echo "PASS  bash -n check-swarm-nodes.sh" || { echo "FAIL  bash -n"; exit 1; }
 
 # --- mock docker: `node ls` (rc + body from the scenario), `node inspect <host>` (address map) -------------------
+# MOCK_NODELS_HANG=1 / MOCK_NODEINSPECT_HANG=1: the call never answers (a wedged dockerd). `exec sleep` so the script's own
+# `timeout` can kill it; the real docker CLI is one process too.
 cat > "${MOCKBIN}/docker" <<'MOCKDOCKER'
 #!/usr/bin/env bash
 echo "docker $*" >> "${MOCK_LOG}/docker.log"
 if [ "$1 $2" = "node ls" ]; then
+  [ "${MOCK_NODELS_HANG:-0}" = 1 ] && exec sleep 90
   if [ "${MOCK_NODELS_RC:-0}" != 0 ]; then echo "Error response from daemon: This node is not a swarm manager. (mock)" >&2; exit "${MOCK_NODELS_RC}"; fi
   cat "${MOCK_W}/nodes"; exit 0
 fi
-if [ "$1 $2" = "node inspect" ]; then awk -F'|' -v h="$3" '$1==h{print $2}' "${MOCK_W}/addrs"; exit 0; fi
+if [ "$1 $2" = "node inspect" ]; then
+  [ "${MOCK_NODEINSPECT_HANG:-0}" = 1 ] && exec sleep 90
+  awk -F'|' -v h="$3" '$1==h{print $2}' "${MOCK_W}/addrs"; exit 0
+fi
 exit 1
 MOCKDOCKER
 # --- mock ssh: the real script pipes a script on stdin and addresses root@<addr>; the answer comes from the scenario --
@@ -58,7 +64,7 @@ new_case() { # fresh log/world/state dirs, default env, a healthy 3-node cluster
   export MOCK_LOG="${CASE}/log" MOCK_W="${CASE}/w" STATE_DIR="${CASE}/state" NODEWATCH_NOW_EPOCH="${NOW}"
   export SLACK_WEBHOOK="${WEBHOOK}" LANE_LABEL=test
   unset MOCK_NODELS_RC MOCK_SLACK_FAIL TEST_ALERT EXPECTED_NODES WAVE_THRESHOLD WAVE_WINDOW_MINUTES WAVE_GAP_MINUTES \
-        WAVE_CLEAR_BELOW REMIND_HOURS RECOVER_RUNS BLIND_RUNS
+        WAVE_CLEAR_BELOW REMIND_HOURS RECOVER_RUNS BLIND_RUNS MOCK_NODELS_HANG MOCK_NODEINSPECT_HANG SWARM_READ_TIMEOUT
   : > "${MOCK_LOG}/slack.log"; : > "${MOCK_LOG}/ssh.log"
   set_nodes "mgr|Ready|Active|Leader" "web|Ready|Active|" "stg|Ready|Active|"
   printf 'mgr|10.0.0.1\nweb|10.0.0.3\nstg|10.0.0.2\n' > "${MOCK_W}/addrs"
@@ -70,6 +76,13 @@ waves_for() { # <addr> <minutes-ago>...   -> that node's journal reports a failu
 }
 quiet_journals() { waves_for 10.0.0.3; waves_for 10.0.0.2; }
 run() { out="$(bash "${SCRIPT}" 2>&1)"; rc=$?; }
+# run_capped: one run under an emulated unit cap. The real unit has TimeoutStartSec=2min; here it is 30 s, well under the 90 s
+# the mock hangs and well over a normal run (a run takes seconds on a slow, loaded box). rc 124 means the cap killed the run,
+# i.e. the script did not bound its own hang. Output goes through a file, never a pipe: a killed run can leave an orphaned
+# `sleep` that would hold a pipe open until it ends.
+run_capped() { timeout 30 bash "${SCRIPT}" > "${CASE}/capped.out" 2>&1; rc=$?; out="$(cat "${CASE}/capped.out")"; }
+# state_core: the stored up/down record (what is alerting, since when, last alert, clean-run streak) — never the pending counter
+state_core() { grep -E '^(active|since|last_alert|ok_streak)=' "${STATE_DIR}/state" 2>/dev/null; }
 posts() { grep -c '^---- POST' "${MOCK_LOG}/slack.log"; }
 last_post() { awk '/^---- POST/{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}' "${MOCK_LOG}/slack.log"; }
 ssh_calls() { grep -c . "${MOCK_LOG}/ssh.log"; }
@@ -255,6 +268,84 @@ check "garbage WAVE_THRESHOLD falls back to the default (3) and says so" "$(post
 new_case; export RECOVER_RUNS=1; set_nodes "mgr|Ready|Active|Leader" "web|Down|Active|" "stg|Ready|Active|"; run
 set_nodes "mgr|Ready|Active|Leader" "web|Ready|Active|" "stg|Ready|Active|"; run
 check "RECOVER_RUNS=1: recovered after one healthy run" "$(last_post | grep -c RECOVERED)" 1
+
+# 12 --- a swarm read that HANGS must not read as silence.
+# The unit's TimeoutStartSec only kills the run (exit 124, nothing posted, nothing pages on a red unit), so the script must cut its own
+# read first (SWARM_READ_TIMEOUT, 3 s here) and treat it as the blind spot it is. run_capped emulates the unit cap around the run.
+new_case; export MOCK_NODELS_HANG=1 SWARM_READ_TIMEOUT=3; run_capped
+check "hung docker node ls: the script cut the read itself, the unit cap never fired" "$([ "$rc" = 124 ] && echo killed-by-cap || echo finished)" finished
+check "hung docker node ls, 1st run: waits like any failed read (exit 0, no post)" "${rc} $(posts)" "0 0"
+check "hung docker node ls, 1st run: the journal line says the read got no answer" "$(echo "$out" | grep -c 'no answer within 3s')" 1
+run_capped
+check "hung docker node ls, 2nd run: ONE post" "$(posts)" 1
+check "...it says the swarm node list cannot be read, and why" "$(last_post | grep -c 'cannot read the swarm node list (docker node ls gave no answer within 3s)')" 1
+check "...the unit goes RED (exit 2), as for any blind watcher" "$rc" 2
+run_capped; run_capped
+check "hung for a 3rd and 4th run: still ONE post (deduped like every other alert)" "$(posts)" 1
+check "...and not one message ever says RECOVERED or 'every node is Ready'" "$(grep -c -E 'RECOVERED|every node is Ready' "${MOCK_LOG}/slack.log")" 0
+unset MOCK_NODELS_HANG; run; run
+check "the swarm answers again: RECOVERED after two clean runs" "$(last_post | grep -c RECOVERED)" 1
+new_case; export MOCK_NODELS_HANG=1 SWARM_READ_TIMEOUT=3 BLIND_RUNS=1; run_capped
+check "BLIND_RUNS=1: a hung listing pages on the first run (same debounce knob as every blind spot)" "$(posts)" 1
+new_case; export MOCK_NODEINSPECT_HANG=1 SWARM_READ_TIMEOUT=3; run_capped
+check "hung docker node inspect: cut by the script too, the unit cap never fired" "$([ "$rc" = 124 ] && echo killed-by-cap || echo finished)" finished
+check "hung docker node inspect, 1st run: waits (no post)" "$(posts)" 0
+run_capped
+check "hung docker node inspect, 2nd run: a 'cannot read the docker journal' alert, not silence" "$(last_post | grep -c 'cannot read the docker journal on web')" 1
+
+# 13 --- a FAILED listing is never a clean run: no RECOVERED, and the stored up/down state is left exactly as it was
+new_case; set_nodes "mgr|Ready|Active|Leader" "web|Down|Active|" "stg|Ready|Active|"; run
+set_nodes "mgr|Ready|Active|Leader" "web|Ready|Active|" "stg|Ready|Active|"; run
+snap="$(state_core)"
+check "setup: alert posted, then one clean run counted (ok_streak=1)" "$(posts) $(echo "${snap}" | grep -c '^ok_streak=1$')" "1 1"
+export MOCK_NODELS_RC=1; run
+check "alert, one clean run, then ONE failed listing: no RECOVERED" "$(grep -c RECOVERED "${MOCK_LOG}/slack.log")" 0
+check "...no post at all, exit 0 (a first miss only waits)" "$(posts) ${rc}" "1 0"
+check "...the stored state (active, since, last_alert, ok_streak) is exactly as it was" "$(state_core)" "${snap}"
+check "...and the run says the nodes were not observed and the alert state was left alone" "$(echo "$out" | grep -c 'alert state left as it was')" 1
+unset MOCK_NODELS_RC; run
+check "the list answers again, all healthy: RECOVERED now, ONCE (two clean observations)" "$(grep -c RECOVERED "${MOCK_LOG}/slack.log")" 1
+new_case; set_nodes "mgr|Ready|Active|Leader" "web|Down|Active|" "stg|Ready|Active|"; run
+set_nodes "mgr|Ready|Active|Leader" "web|Ready|Active|" "stg|Ready|Active|"; run
+snap="$(state_core)"; export MOCK_NODELS_HANG=1 SWARM_READ_TIMEOUT=3; run_capped
+check "alert, one clean run, then ONE HUNG listing: finished by itself, no RECOVERED, no post" "$([ "$rc" = 124 ] && echo killed-by-cap || echo finished) $(grep -c RECOVERED "${MOCK_LOG}/slack.log") $(posts)" "finished 0 1"
+check "...the stored state is exactly as it was" "$(state_core)" "${snap}"
+# an alert with NO clean run yet, then the list fails: it must neither clear nor lose the alert, and a confirmed blind spot carries it
+new_case; set_nodes "mgr|Ready|Active|Leader" "web|Down|Active|" "stg|Ready|Active|"; run                      # alert at NOW
+snap="$(state_core)"; export MOCK_NODELS_RC=1; NODEWATCH_NOW_EPOCH=$((NOW + 120)) run
+check "web Down alerting, ONE failed listing: no post, state unchanged" "$(posts) ${rc} $([ "$(state_core)" = "${snap}" ] && echo same || echo changed)" "1 0 same"
+NODEWATCH_NOW_EPOCH=$((NOW + 240)) run
+check "...a 2nd failed listing: ONE more post, the 'cannot read' alert, exit 2" "$(posts) $(last_post | grep -c 'cannot read the swarm node list') ${rc}" "2 1 2"
+check "...it still lists the web problem as unverified instead of forgetting it" "$(last_post | grep -c 'node:web=Down/Active')" 1
+check "...the stored set keeps the web alert next to the blind one" "$(state_core | grep '^active=')" "active=blind:nodels,node:web=Down/Active"
+check "...'since' is still the original alert time (not reset by the blind alert)" "$(state_core | grep '^since=')" "$(echo "${snap}" | grep '^since=')"
+check "...and last_alert moved to the blind alert" "$(state_core | grep '^last_alert=')" "last_alert=$((NOW + 240))"
+NODEWATCH_NOW_EPOCH=$((NOW + 360)) run
+check "...a 3rd failed listing: deduped (still 2 posts)" "$(posts)" 2
+NODEWATCH_NOW_EPOCH=$((NOW + 240 + 6*3600 + 60)) run
+check "...6 h after the blind alert: a REMINDER, like any unchanged alert" "$(posts) $(last_post | grep -c REMINDER)" "3 1"
+check "...and no RECOVERED at any point while the list was unreadable" "$(grep -c RECOVERED "${MOCK_LOG}/slack.log")" 0
+unset MOCK_NODELS_RC; set_nodes "mgr|Ready|Active|Leader" "web|Ready|Active|" "stg|Ready|Active|"; run
+check "the list answers again, web healthy: one clean run is not enough yet" "$(posts)" 3
+run
+check "...the second clean run: ONE RECOVERED" "$(last_post | grep -c RECOVERED) $(posts)" "1 4"
+# the same, but web is STILL down when the list answers again
+new_case; set_nodes "mgr|Ready|Active|Leader" "web|Down|Active|" "stg|Ready|Active|"; run
+export MOCK_NODELS_RC=1; run; run
+unset MOCK_NODELS_RC; run
+check "list answers again, web still Down: a fresh alert for web (the set changed), no RECOVERED" "$(posts) $(last_post | grep -c 'Status=Down') $(grep -c RECOVERED "${MOCK_LOG}/slack.log")" "3 1 0"
+
+# 14 --- a failed listing from a healthy start invents nothing; consecutive means consecutive
+new_case; export MOCK_NODELS_RC=1; run; unset MOCK_NODELS_RC; run; run
+check "healthy, one failed listing, healthy: silent all along, nothing stored as alerting" "$(posts) $(state_core | grep -c '^active=$')" "0 1"
+new_case; export MOCK_NODELS_RC=1; run; unset MOCK_NODELS_RC; run; export MOCK_NODELS_RC=1; run
+check "fail, ok, fail: NOT two consecutive failures, so no 'cannot read' alert" "$(posts)" 0
+
+# 15 --- the install-time TEST_ALERT must not call an unreadable swarm "no problems" either
+new_case; export TEST_ALERT=true MOCK_NODELS_RC=1; run
+check "TEST_ALERT with an unreadable node list: one message that says the swarm state is UNKNOWN" "$(posts) $(last_post | grep -c 'swarm state is UNKNOWN')" "1 1"
+check "...and never says 'No current problems'" "$(last_post | grep -c 'No current problems')" 0
+check "...and leaves no dedupe state" "$(test -f "${STATE_DIR}/state" && echo saved || echo none)" none
 
 echo "----"
 [ "$fail" -eq 0 ] && echo "ALL PASS" || echo "FAILURES"

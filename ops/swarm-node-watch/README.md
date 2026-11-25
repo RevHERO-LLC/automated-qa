@@ -26,7 +26,7 @@ reads that worker's dockerd journal over SSH (one bounded `journalctl --since -6
 | `node:<host>=<Status>/<Availability>[/<Mgr>]` | a node that is not `Ready`+`Active` (Down, Unknown, Disconnected, Drain, Pause), or a manager that is not Leader/Reachable | at once |
 | `missing:<host>` | a node named in `EXPECTED_NODES` that `docker node ls` no longer lists | at once |
 | `flap:<host>` | a worker with >= `WAVE_THRESHOLD` (3) heartbeat-failure **waves** in the last `WAVE_WINDOW_MINUTES` (60). A wave = failing minutes <= `WAVE_GAP_MINUTES` (5) apart | at once; stays active while any wave is left in the window, clears only after a clean window |
-| `blind:nodels`, `blind:waves:<host>` | the check could not do its job: `docker node ls` failed (is this the manager?), or a Ready worker's journal could not be read | after `BLIND_RUNS` (2) consecutive runs |
+| `blind:nodels`, `blind:waves:<host>` | the check could not do its job: `docker node ls` failed or gave no answer within `SWARM_READ_TIMEOUT` (is this the manager? is dockerd wedged?), or a Ready worker's journal could not be read | after `BLIND_RUNS` (2) consecutive runs |
 
 A worker that is not Ready is not SSHed: its state is already the alert. The manager is never SSHed (it has no heartbeat to
 itself). Each run logs the per-worker wave count (`waves(60m) revhero-web=2`), so `journalctl -u swarm-node-watch` is a
@@ -37,10 +37,20 @@ keys. A new or changed set alerts at once; an unchanged set re-alerts at most ev
 After the set has been empty for `RECOVER_RUNS` (2) consecutive runs, ONE RECOVERED message is posted and the state resets.
 The two-run recovery is the flap guard: down, up, down inside two runs is one alert, not three.
 
+**A failed or hung listing is never "all up".** When `docker node ls` fails or gives no answer, nothing was observed about any
+node, so that run is neither a clean run nor a recovery: it never posts RECOVERED, never advances the clean-run count and never
+drops an alert that is already active. The first failed read only waits (`BLIND_RUNS`, like every blind spot); once it is
+confirmed, `blind:nodels` is alerted and deduped like any other key, and the alerts that cannot be re-checked without the list
+(`node:*`, `missing:*`, `flap:*`, `blind:waves:*`) are carried forward exactly as they were stored and listed in that message
+as unverified. When the list answers again the normal rules apply (a problem that is still there alerts again because the set
+changed; a clean list recovers after `RECOVER_RUNS` clean runs).
+
 **Fail loud:** no `SLACK_WEBHOOK` (or the `REPLACE_ME` placeholder) => exit 2. Slack undeliverable => exit 1 and the alert
 state is not recorded (it retries next run). A confirmed `blind:nodels` keeps the unit red (exit 2) even after its alert was
-delivered. A hung run is capped by `TimeoutStartSec=2min`. A FAILED `swarm-node-watch.service` in `systemctl --failed` means the
-watcher itself is broken, which is a different thing from a node dropping (that one pages Slack).
+delivered. A hung swarm read (`docker node ls`, `docker node inspect`) is cut by the script's own `SWARM_READ_TIMEOUT` (20 s)
+and reported as a blind spot. `TimeoutStartSec=2min` in the unit is only the outer cap: a run it kills posts nothing, and
+nothing pages on a red unit, so the script must never depend on it. A FAILED `swarm-node-watch.service` in
+`systemctl --failed` means the watcher itself is broken, which is a different thing from a node dropping (that one pages Slack).
 
 ## Install (VPS2) - an end-of-mission checklist step, NOT done by merging
 
@@ -77,6 +87,7 @@ that is unwanted: `systemctl stop swarm-node-watch.timer`, then start it again.
 | `WAVE_GAP_MINUTES` | `5` | failing minutes this close together are one wave |
 | `WAVE_CLEAR_BELOW` | `1` | an alerted worker clears only with fewer waves than this in the window |
 | `REMOTE_TIMEOUT` | `30` | seconds per worker for the SSH + journal read |
+| `SWARM_READ_TIMEOUT` | `20` | seconds for each `docker node ls` / `docker node inspect` call; a call that does not answer is a blind spot. Keep it well under the unit's `TimeoutStartSec` (2 min), together with the workers x `REMOTE_TIMEOUT` and the Slack post |
 | `SSH_OPTS` | BatchMode, ConnectTimeout 8, accept-new | ssh options |
 | `STATE_DIR` | `/var/lib/swarm-node-watch` | dedupe state (set by the unit) |
 
@@ -99,7 +110,12 @@ two-run flap guard; a second node changing the set; `EXPECTED_NODES`; waves at, 
 minutes merging, `WAVE_THRESHOLD=0`, and the hysteresis; both signals in one message; every blind spot (node list, SSH, a
 journal answer without the `WAVES_OK` sentinel, a remote `journalctl` failure) alerting instead of reading as zero; no
 webhook, the placeholder webhook and Slack down (exit codes, state not recorded, retried); the webhook never printed; and the
-`TEST_ALERT` path.
+`TEST_ALERT` path. It also covers the two ways the swarm read itself can fail: a `docker node ls` or `docker node inspect` that
+HANGS is cut by `SWARM_READ_TIMEOUT` inside an emulated unit cap (one alert after `BLIND_RUNS`, deduped, a REMINDER later, then
+RECOVERED), and a FAILED or hung listing between clean runs never posts RECOVERED: the first failed read leaves the stored
+alert state (`active`, `since`, `last_alert`, `ok_streak`) exactly as it was, and a confirmed blind spot carries the active
+alerts forward next to `blind:nodels` (original `since` kept), through REMINDER, recovery, and a problem that is still there
+when the list answers again. The install-time `TEST_ALERT` reports an unreadable list as UNKNOWN, never as "no problems".
 
 ## Known limits
 
