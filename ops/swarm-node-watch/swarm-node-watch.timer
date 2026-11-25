@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the swarm node-drop alert every 2 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+Persistent=true
+RandomizedDelaySec=10s
+
+[Install]
+WantedBy=timers.target

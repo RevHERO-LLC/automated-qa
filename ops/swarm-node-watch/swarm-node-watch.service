@@ -1,0 +1,17 @@
+[Unit]
+Description=Swarm node-drop alert — Slack when a node is not Ready/Active or a worker keeps losing its heartbeat to the manager
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/swarm-node-watch.env
+Environment=STATE_DIR=/var/lib/swarm-node-watch
+ExecStart=/usr/local/bin/check-swarm-nodes.sh
+# A hung check (a stuck docker call, a dead SSH) is not a failure to systemd (oneshot has no default timeout) and would
+# silently stop the watcher — cap it so a hang becomes a FAILED unit instead of silence. Keep it above
+# (number of workers x REMOTE_TIMEOUT, 30 s) plus a few seconds for the docker calls.
+TimeoutStartSec=2min
+StandardOutput=journal
+StandardError=journal
+User=root
