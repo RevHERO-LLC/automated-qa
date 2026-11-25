@@ -84,6 +84,19 @@ JOBS=(
   "siteforge-cleanup|revhero-campaign-service-ydky5d|siteforge-cleanup|60|3h"
   "dealmover-sweeper|revhero-deal-mover-vmzya0|Running sweeper|30|70m"
   "swarm-agent-reconcile|app-compress-bluetooth-sensor-pksr4y|reconcile cycle complete|5|20m"
+  # swarm-dealmover sweeper (prod API service, image :prod). Its Dokploy trigger fires every 30 minutes, and the API logs
+  # "Running sweeper for <ts>" at the start of every authenticated call, whether or not anything is due. The trigger was dead
+  # for months (an application-type schedule in an image with no bash or curl), so this row is DEAD until the replacement
+  # schedule is enabled: merge this row after that (RevHERO docs/missions/runbook-2026-11-25/r16-swarm-sweeper.md).
+  # Marker read from the source at origin/main of RevHero-swarm-dealmover; confirm it on live prod logs once the schedule runs.
+  "swarm-dealmover-sweep|app-connect-optical-bandwidth-jvrjeo|Running sweeper|30|70m"
+  # Recurring promo credit gifts (prod users-service). The sweep is the systemd timer revhero-promo-sweep-prod on VPS2 (09:20 UTC
+  # daily) POSTing /v1/internal/promo-gifts/process-recurring: it CREDITS customer balances, so this row only OBSERVES, it never
+  # starts the unit or calls the route. The unit's own state is no signal: systemd marks it Finished whenever curl exits 0,
+  # and that includes a refused POST (the staging twin answered a 401 body on 34 of 35 days). The handler logs the line below
+  # only when the sweep ran to the end, including a day with nothing due (processed=0).
+  # Marker read from the source at origin/main of RevHero-users-service; confirm it on live prod logs before relying on it.
+  "promo-gift-sweep|revhero-users-service-x305hf|Recurring credit-gift sweep complete|1440|26h"
 )
 
 # uptime_minutes <service> — minutes since the RUNNING task started.
