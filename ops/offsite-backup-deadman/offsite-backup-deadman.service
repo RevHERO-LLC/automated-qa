@@ -1,0 +1,16 @@
+[Unit]
+Description=Dead-man check for the VPS4 offsite Postgres backup — Slack when the newest S3 backup is >26 h old, the prefix is empty, or S3 is unreadable
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/revhero/offsite-backup-deadman.env
+Environment=STATE_DIR=/var/lib/offsite-backup-deadman
+ExecStart=/usr/local/bin/check-offsite-backup.sh
+# A hung check is not a failure to systemd (oneshot has no default timeout) and would silently stop the
+# dead-man — cap it so a hang becomes a FAILED unit instead of silence.
+TimeoutStartSec=2min
+StandardOutput=journal
+StandardError=journal
+User=root
