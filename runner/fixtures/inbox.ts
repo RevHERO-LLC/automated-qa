@@ -50,6 +50,35 @@ export async function waitForInboxList(page: Page, opts: { timeout?: number } = 
   return (await rows.count()) > 0 ? "rows" : "empty";
 }
 
+/**
+ * Closes a dialog that covers the page, if one is open: the "Welcome to RevHero" modal the QA account gets after login is a
+ * fixed `bg-black/50 backdrop-blur-sm` overlay that intercepts every click under it. The first live run of the re-pointed
+ * specs (staging, scheduled-20261128T112553) failed FE-EMAIL-007 and FE-EMAIL-OUT-007 on exactly that
+ * ("<div ...> intercepts pointer events" while clicking New Message). A no-op when no dialog is open. The button pattern
+ * closed that modal on staging on 2026-11-28; Escape is the fallback.
+ */
+export async function dismissBlockingDialog(page: Page, timeout = 5_000): Promise<void> {
+  const dialog = page.getByRole("dialog").first();
+  if (!(await dialog.isVisible().catch(() => false))) return;
+  const close = dialog.getByRole("button", { name: /close|skip|got it|later|dismiss|continue|not now/i }).first();
+  if (await close.isVisible().catch(() => false)) await close.click({ timeout });
+  else await page.keyboard.press("Escape");
+  await dialog.waitFor({ state: "hidden", timeout }).catch(() => {});
+}
+
+/** Clicks `target`, first closing any dialog that covers it; retries when a modal that opened late intercepts the click. */
+async function clickPastBlockingDialogs(page: Page, target: Locator, timeout: number): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    await dismissBlockingDialog(page);
+    try {
+      await target.click({ timeout: attempt < 3 ? Math.min(timeout, 10_000) : timeout });
+      return;
+    } catch (err) {
+      if (attempt >= 3) throw err;
+    }
+  }
+}
+
 export type NewEmailSheetState = "form" | "blocked";
 
 /**
@@ -69,7 +98,7 @@ export async function openNewEmailSheet(
   opts: { timeout?: number } = {}
 ): Promise<{ sheet: Locator; state: NewEmailSheetState }> {
   const timeout = opts.timeout ?? DEFAULT_TIMEOUT_MS;
-  await page.getByRole("button", { name: /^new message$/i }).first().click({ timeout });
+  await clickPastBlockingDialogs(page, page.getByRole("button", { name: /^new message$/i }).first(), timeout);
   await page.getByRole("menuitem", { name: /new email/i }).click({ timeout });
 
   const sheet = page.getByRole("dialog", { name: /new email/i });
