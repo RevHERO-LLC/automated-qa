@@ -105,7 +105,9 @@ describe("Email System (FE-EMAIL)", () => {
       await page.goto("/inbox?tab=email", { waitUntil: "domcontentloaded" });
       const { sheet, state } = await openNewEmailSheet(page);
       if (state === "form") {
-        await expectVisible(sheet.getByPlaceholder("Enter email").first(), { timeout: 20_000 }); // To
+        // To: the sheet's recipient field is a chip control whose entry point is a button named "Add a To recipient", not a
+        // text input with a placeholder (read live on staging 2026-11-28; the first live run failed waiting for "Enter email").
+        await expectVisible(sheet.getByRole("button", { name: /add a to recipient/i }).first(), { timeout: 20_000 });
         await expectVisible(sheet.getByPlaceholder("Enter subject"), { timeout: 20_000 });
         await expectVisible(sheet.locator("[contenteditable='true']").first(), { timeout: 20_000 }); // the body editor (tiptap)
         await expectVisible(sheet.getByRole("button", { name: "Send", exact: true }), { timeout: 20_000 });
