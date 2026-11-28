@@ -20,7 +20,7 @@ describe("Twilio SMS path (FE-SMS-TW)", () => {
   test("FE-SMS-TW-003 — Phone-number purchase succeeds when approved", async () => {
     expect(true).toBe(true);
   });
-  test("FE-SMS-TW-004 — Send SMS from /phone-system/sms (smoke)", async () => {
+  test("FE-SMS-TW-004 — Send SMS from the inbox's New Message > New SMS (smoke)", async () => {
     expect(true).toBe(true);
   });
   test("FE-SMS-TW-005 — Send SMS with merge tag rendered correctly", async () => {

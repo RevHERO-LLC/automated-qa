@@ -2533,7 +2533,7 @@
     },
     {
       "id": "FE-CROSS-003",
-      "description": "`/help`, `/dashboard`, `/purchase-lists`, `/linkedin-system`, `/admin` accessible on staging (proxy.ts hostname check).",
+      "description": "`/purchase-lists`, `/admin` and `/phone-system/voicemails` (the routes proxy.ts hides on prod hosts) are reachable on staging (proxy.ts hostname check).",
       "area": "Cross-cutting",
       "role": "ADMIN",
       "type": "regression",
@@ -3374,7 +3374,7 @@
     },
     {
       "id": "FE-EMAIL-001",
-      "description": "`/email-system/email` lists messages or empty state.",
+      "description": "The inbox Email tab (`/inbox?tab=email`) lists conversations, or its \"No Messages\" empty state.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3464,7 +3464,7 @@
     },
     {
       "id": "FE-EMAIL-007",
-      "description": "`/email-system/email/add` page renders compose form.",
+      "description": "Renders the compose form (To, Subject, body, Send) from the inbox's New Message > New Email, or says why it cannot (no connected mailbox).",
       "area": "Email System",
       "role": "ADMIN",
       "type": "page-load",
@@ -3509,7 +3509,7 @@
     },
     {
       "id": "FE-EMAIL-010",
-      "description": "`/email-system/email/[id]` shows email detail.",
+      "description": "Legacy `/email-system/email/<id>` redirects to `/inbox/open?source=email_in&id=<id>`, which opens that email's conversation (an unknown id shows the \"couldn't find that conversation\" card, never an error).",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3754,7 +3754,7 @@
     },
     {
       "id": "FE-EMAIL-OUT-001",
-      "description": "Connect Gmail mailbox via OAuth from `/email-system/email/add` → BFF `PUT /v1/user/oauth/google/url` returns provider URL → consent flow → mailbox row created in email-ingress with `IsConnected=true`, `RefreshToken` populated.",
+      "description": "Connect Gmail mailbox via OAuth from Settings > Email accounts (`/settings/general?tab=email-accounts`, where the inbox's New Message sheet links when a seat has no mailbox) → BFF `PUT /v1/user/oauth/google/url` returns provider URL → consent flow → mailbox row created in email-ingress with `IsConnected=true`, `RefreshToken` populated.",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -3836,7 +3836,7 @@
     },
     {
       "id": "FE-EMAIL-OUT-007",
-      "description": "Send a manual email from `/email-system/email/add` composer with merge tags `{{first_name}}` / `{{company_name}}` to a known deal → recipient receives the rendered text (no raw `{{...}}`).",
+      "description": "Send a manual email from the inbox's New Message > New Email composer with merge tags `{{first_name}}` / `{{company_name}}` to a known deal → recipient receives the rendered text (no raw `{{...}}`).",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -4506,7 +4506,7 @@
     },
     {
       "id": "FE-PERF-003",
-      "description": "`/email-system/email` loads <5s.",
+      "description": "The inbox Email tab (`/inbox?tab=email`) loads <5s.",
       "area": "Performance / a11y",
       "role": "ADMIN",
       "type": "performance",
@@ -4521,7 +4521,7 @@
     },
     {
       "id": "FE-PERF-004",
-      "description": "`/phone-system/sms` loads <5s.",
+      "description": "The inbox SMS tab (`/inbox?tab=sms`) loads <5s.",
       "area": "Performance / a11y",
       "role": "ADMIN",
       "type": "performance",
@@ -4716,7 +4716,7 @@
     },
     {
       "id": "FE-PHONE-002",
-      "description": "`/phone-system/sms` renders proper empty state when no phone numbers (FE-BUG-04 fix — no permanent skeleton).",
+      "description": "The inbox SMS tab (`/inbox?tab=sms`) settles into its list or its \"No Messages\" empty state, never a permanent skeleton (FE-BUG-04 fix).",
       "area": "Phone / SMS System",
       "role": "ADMIN",
       "type": "functional",
@@ -6798,7 +6798,7 @@
     },
     {
       "id": "FE-SMS-TW-004",
-      "description": "Send SMS from `/phone-system/sms` to a test recipient → recipient receives within ~10 s; `messages` row has `direction=outbound`, status=delivered.",
+      "description": "Send SMS from the inbox (New Message > New SMS) to a test recipient → recipient receives within ~10 s; `messages` row has `direction=outbound`, status=delivered.",
       "area": "SMS — Twilio path",
       "role": "ADMIN",
       "type": "functional",

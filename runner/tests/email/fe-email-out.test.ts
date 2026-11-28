@@ -5,6 +5,7 @@
 import { describe, test, expect, afterAll } from "vitest";
 import { loginAs, closeBrowser } from "../../fixtures/auth.js";
 import { authedPost, authedGet, bffClient, bearerFromContext } from "../../fixtures/api.js";
+import { openNewEmailSheet } from "../../fixtures/inbox.js";
 
 describe("Outbound Email (FE-EMAIL-OUT)", () => {
   afterAll(async () => {
@@ -66,12 +67,27 @@ describe("Outbound Email (FE-EMAIL-OUT)", () => {
     expect(true).toBe(true);
   });
 
-  test("FE-EMAIL-OUT-007 — Send manual email with merge tags (composer renders)", async () => {
+  test("FE-EMAIL-OUT-007 — Send manual email with merge tags (inbox New Email composer renders; Subject takes the tags)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
-      const subject = page.locator('input[name*="subject" i], input[placeholder*="subject" i]').first();
-      expect((await subject.count()) >= 0).toBe(true);
+      // The composer page /email-system/email/add was retired with the unified-inbox release (prod 2026-11-27). The
+      // composer is now the inbox's New Message > New Email sheet, the same email-composer.tsx in its "sheet" layout
+      // (see FE-EMAIL-007). As before, only the composer step is exercised: nothing is sent, so the tags' rendering at
+      // send time is not checked here. The old check, `count() >= 0`, could not fail; this one needs the Subject input
+      // to exist and to keep the tag text. A seat with no connected mailbox gets the FE's explanation card instead.
+      await page.goto("/inbox?tab=email", { waitUntil: "domcontentloaded" });
+      const { sheet, state } = await openNewEmailSheet(page);
+      if (state === "form") {
+        const subject = sheet.getByPlaceholder("Enter subject");
+        const tagged = "Hello {{first_name}} at {{company_name}}";
+        await subject.fill(tagged);
+        expect(await subject.inputValue()).toBe(tagged);
+      } else {
+        const fix = sheet.getByRole("link", { name: /connect a mailbox|reconnect mailbox/i });
+        expect(await fix.getAttribute("href"), "the no-mailbox card should link to Settings > Email accounts").toContain(
+          "/settings/general?tab=email-accounts"
+        );
+      }
     } finally {
       await context.close();
     }
