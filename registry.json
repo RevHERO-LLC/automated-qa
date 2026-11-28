@@ -3404,7 +3404,7 @@
     },
     {
       "id": "FE-EMAIL-003",
-      "description": "Connect Mailbox button opens OAuth flow.",
+      "description": "Connecting a mailbox (Settings > Email accounts, the \"connect\" link) offers the two mail providers and starts the sign-in: choosing Google asks the BFF for the sign-in address and sends the browser to Google.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3419,7 +3419,7 @@
     },
     {
       "id": "FE-EMAIL-004",
-      "description": "Email filters (All / All Emails / Select an option) work.",
+      "description": "The inbox Email tab's filters (Status, Email type, Campaign, Read state) apply to the list: each choice goes to the address and to the BFF list call, and the list settles on its rows or \"No Messages\", never an error.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3434,7 +3434,7 @@
     },
     {
       "id": "FE-EMAIL-005",
-      "description": "Search Emails input filters list.",
+      "description": "The inbox search box (Email tab) filters the list: a search nothing matches ends on \"No Messages\" (0-0 of 0), the BFF list call carries it as `q`, and clearing it brings the list back.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3449,7 +3449,7 @@
     },
     {
       "id": "FE-EMAIL-006",
-      "description": "Click `+` button → opens compose / add modal.",
+      "description": "The inbox's New Message (+) button opens a menu with New Email and New SMS, and New Email opens the compose sheet.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3479,7 +3479,7 @@
     },
     {
       "id": "FE-EMAIL-008",
-      "description": "Compose form requires recipient + subject + body.",
+      "description": "The send endpoint behind the New Email form (BFF `POST /v1/emails/send`) refuses a request with no recipient or no body: a 400, nothing is sent.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3494,7 +3494,7 @@
     },
     {
       "id": "FE-EMAIL-009",
-      "description": "Send email triggers BFF call and shows success toast.",
+      "description": "Send in the inbox's New Message > New Email sheet calls the BFF (`POST /emails/send`) with the typed recipient, subject and body and shows the \"Email sent\" toast (the BFF's answer is stubbed, so nothing is sent).",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3524,7 +3524,7 @@
     },
     {
       "id": "FE-EMAIL-011",
-      "description": "Email categories sidebar (Inbox / Star / Sent / Archive) navigates correctly.",
+      "description": "The inbox folder tabs (Inbox / Starred / Sent / Archived) switch the Email tab's list: each is selected, shows in the address (`folder=`) and loads its own conversations.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3539,7 +3539,7 @@
     },
     {
       "id": "FE-EMAIL-012",
-      "description": "Pagination at top right (X of Y) updates with results.",
+      "description": "The inbox list's range (\"1-25 of 83\", top right of the list) matches the rows shown and moves with the page (Next page reads 26-50); a single page has no paging buttons.",
       "area": "Email System",
       "role": "ADMIN",
       "type": "functional",
@@ -3875,7 +3875,7 @@
     },
     {
       "id": "FE-EMAIL-OUT-010",
-      "description": "Send empty subject → form validation rejects.",
+      "description": "Test Email (the campaign builder's button, `POST /v1/emails/test-send`) with an empty subject is refused with a 400, and nothing is sent.",
       "area": "Email — outbound",
       "role": "ADMIN",
       "type": "functional",
@@ -4100,7 +4100,7 @@
     },
     {
       "id": "FE-LAY-002",
-      "description": "Sidebar shows: Dashboard / Campaign Builder / Phone / Email / LinkedIn / Buy Leads / Help / Settings (Dashboard, LinkedIn, Buy Leads, Help dev-only).",
+      "description": "Sidebar shows Home, Inbox, Analytics, Campaigns, Help and Settings, and no Phone / Email / LinkedIn entries (the one Inbox entry replaced them; Bookings, Knowledge, Judy, Swarm and Buy Leads appear where their feature flags are on).",
       "area": "Layout / Shell",
       "role": "ADMIN",
       "type": "functional",
@@ -4731,7 +4731,7 @@
     },
     {
       "id": "FE-PHONE-003",
-      "description": "Empty state shows \"Go to Phone System Settings\" CTA.",
+      "description": "Empty state shows its CTA: with no phone number on the seat, the inbox's New Message > New SMS says \"No phone number yet\" and links to Settings > Phone & SMS (`/settings/general?tab=phone-sms`).",
       "area": "Phone / SMS System",
       "role": "ADMIN",
       "type": "page-load",
