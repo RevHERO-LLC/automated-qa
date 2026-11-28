@@ -21,8 +21,10 @@ const PERF_FAIL_MS = 15_000;
 const PERF_PAGES: Array<[string, string]> = [
   ["FE-PERF-001", "/automation-campaign"],
   ["FE-PERF-002", "/dashboard"],
-  ["FE-PERF-003", "/email-system/email"],
-  ["FE-PERF-004", "/phone-system/sms"],
+  // The Email and Phone pages were retired with the unified-inbox release (prod 2026-11-27): their old URLs 307 into
+  // the inbox, so timing them measured a redirect plus the inbox. Time the inbox's Email and SMS tabs directly.
+  ["FE-PERF-003", "/inbox?tab=email"],
+  ["FE-PERF-004", "/inbox?tab=sms"],
   ["FE-PERF-005", "/notifications"],
   ["FE-PERF-006", "/settings/general"],
   ["FE-PERF-007", "/admin/dashboard"]

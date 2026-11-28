@@ -1,6 +1,7 @@
 // FE-PHONE-001..009 — Phone system FE (P1).
 import { describe, test, expect, afterAll } from "vitest";
 import { loginAs, closeBrowser } from "../../fixtures/auth.js";
+import { conversationList, waitForInboxList } from "../../fixtures/inbox.js";
 
 describe("Phone System (FE-PHONE)", () => {
   afterAll(async () => {
@@ -24,13 +25,19 @@ describe("Phone System (FE-PHONE)", () => {
     }
   });
 
-  test("FE-PHONE-002 — /phone-system/sms renders empty state (FE-BUG-04 fix — no permanent skeleton)", async () => {
+  test("FE-PHONE-002 — /inbox?tab=sms (the inbox SMS tab) settles into its list or empty state (FE-BUG-04 fix — no permanent skeleton)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/sms", { waitUntil: "domcontentloaded" });
-      // After waiting for network, there should NOT be a skeleton loader still on screen.
-      await page.waitForTimeout(3_000);
-      const skeletons = page.locator(".skeleton, [aria-busy='true'][data-skeleton], .loading-skeleton");
+      // The Phone SMS page was retired with the unified-inbox release (prod 2026-11-27; FE-PHONE-001 covers the
+      // redirect). FE-BUG-04 was that page sticking on a skeleton. Its successor is the SMS tab's conversation list,
+      // which shows skeleton rows while it loads (ConversationList.tsx: <ul aria-busy="true"> of data-slot="skeleton"
+      // rows) and must then give way to the rows or the "No Messages" empty state. waitForInboxList() throws if it
+      // never does, and on the list's own error state. (A seat with no phone number is told so by New SMS, "No phone
+      // number yet" with a link to Settings > Phone & SMS, not by this list.)
+      await page.goto("/inbox?tab=sms", { waitUntil: "domcontentloaded" });
+      await waitForInboxList(page);
+      // Nothing in the list may still be a skeleton once it has settled.
+      const skeletons = conversationList(page).locator("[data-slot='skeleton']");
       const skeletonCount = await skeletons.count();
       const visibleSkeletons = [];
       for (let i = 0; i < skeletonCount; i++) {

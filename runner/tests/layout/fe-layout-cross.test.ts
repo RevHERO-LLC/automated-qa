@@ -107,7 +107,12 @@ describe("Cross-cutting (FE-CROSS)", () => {
   test("FE-CROSS-003 — Dev-only routes accessible on staging (proxy.ts hostname check)", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      const routes = ["/help", "/dashboard", "/purchase-lists"];
+      // The routes proxy.ts hides on prod hosts (PROD_RESTRICTED_PATHS) are now /purchase-lists, /admin and
+      // /phone-system/voicemails; the FE's own lib/releaseFlags.test.ts pins exactly those three. /help (U24 GAP-1),
+      // /dashboard (a redirect to /analytics since U8-D4) and /linkedin-system (opened by the LinkedIn launch; its only
+      // page, /linkedin-system/messages, is now a 307 stub into the inbox's LinkedIn tab) are no longer restricted, so
+      // a list that held them could pass with a broken hostname check. /admin is role-gated and covered by FE-ADM-*.
+      const routes = ["/purchase-lists", "/phone-system/voicemails"];
       const reachable: string[] = [];
       for (const r of routes) {
         await page.goto(r, { waitUntil: "domcontentloaded", timeout: 15_000 });
