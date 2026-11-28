@@ -1,7 +1,8 @@
 // FE-PHONE-001..009 — Phone system FE (P1).
 import { describe, test, expect, afterAll } from "vitest";
 import { loginAs, closeBrowser } from "../../fixtures/auth.js";
-import { conversationList, waitForInboxList } from "../../fixtures/inbox.js";
+import { expectVisible } from "../../fixtures/dom.js";
+import { conversationList, fulfillBffJson, openNewMessageMenu, waitForInboxList } from "../../fixtures/inbox.js";
 
 describe("Phone System (FE-PHONE)", () => {
   afterAll(async () => {
@@ -49,16 +50,45 @@ describe("Phone System (FE-PHONE)", () => {
     }
   });
 
-  test("FE-PHONE-003 — Empty state shows 'Go to Phone System Settings' CTA (best-effort)", async () => {
+  test("FE-PHONE-003 — With no phone number, New Message > New SMS says so and links to Settings > Phone & SMS", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
-      await page.goto("/phone-system/sms", { waitUntil: "domcontentloaded" });
-      const html = await page.content();
-      expect(html.toLowerCase()).not.toMatch(/internal server error/);
+      // The retired SMS page's empty state ("Go to Phone System Settings") is the inbox's answer to a seat that cannot text yet:
+      // New Message > New SMS is still pickable, the menu item carries the reason on a second line, and the sheet shows a card
+      // instead of a form, with the link that fixes it (lib/newMessage.ts smsBlock: "No phone number yet" and "Set up a phone
+      // number" -> /settings/general?tab=phone-sms; NewMessageSheet.tsx Blocked; Settings > Phone & SMS is that tab,
+      // features/settings/types.ts). The old check only looked for "internal server error" on the retired URL (and the QA
+      // admin is seeded with a number, README, so the empty state would not show anyway), so it could not fail.
+      // The condition is made rather than waited for: the phone list the sheet reads (GET /sms/phone-numbers, answered as
+      // { data: { phone_numbers } }, hooks/usePhone.ts useUserPhone) is answered empty for this page only. That call never
+      // reaches the service, and nothing is changed.
+      await page.route(/\/sms\/phone-numbers(\?.*)?$/, (route) =>
+        ["GET", "OPTIONS"].includes(route.request().method())
+          ? fulfillBffJson(route, 200, { message: "Phone numbers retrieved successfully", data: { phone_numbers: [] } })
+          : route.continue()
+      );
+      await page.goto("/inbox?tab=sms", { waitUntil: "domcontentloaded" });
+      await waitForInboxList(page);
+
+      const menu = await openNewMessageMenu(page);
+      const newSms = menu.getByRole("menuitem", { name: /new sms/i });
+      await expectVisible(newSms.getByText("No phone number yet", { exact: true }), { timeout: 30_000 });
+      await newSms.click({ timeout: 15_000 });
+      const sheet = page.getByRole("dialog", { name: /new sms/i });
+      await expectVisible(sheet, { timeout: 30_000 });
+      await expectVisible(sheet.getByText("No phone number yet", { exact: true }), { timeout: 30_000 });
+      expect(await sheet.getByLabel("Phone number").count(), "the sheet should show a card, not a form it cannot send").toBe(0);
+      const fix = sheet.getByRole("link", { name: "Set up a phone number", exact: true });
+      await expectVisible(fix, { timeout: 15_000 });
+      expect(await fix.getAttribute("href"), "the card should link to Settings > Phone & SMS").toBe("/settings/general?tab=phone-sms");
+
+      await fix.click({ timeout: 15_000 });
+      await page.waitForURL((url) => url.pathname === "/settings/general" && url.searchParams.get("tab") === "phone-sms", { timeout: 30_000 });
+      await expectVisible(page.locator('button[aria-current="page"]', { hasText: "Phone & SMS" }), { timeout: 30_000 });
     } finally {
       await context.close();
     }
-  });
+  }, 120_000);
 
   test("FE-PHONE-004 — /phone-system/voicemails lists voicemails or empty state", async () => {
     const { page, context } = await loginAs("ADMIN");

@@ -1,6 +1,7 @@
 // FE-LAY-001..008 + FE-CROSS-001..010 — Layout + cross-cutting regressions (P1).
 import { describe, test, expect, afterAll } from "vitest";
 import { loginAs, closeBrowser } from "../../fixtures/auth.js";
+import { expectVisible } from "../../fixtures/dom.js";
 
 describe("Layout / Shell (FE-LAY)", () => {
   afterAll(async () => {
@@ -27,19 +28,46 @@ describe("Layout / Shell (FE-LAY)", () => {
     }
   });
 
-  test("FE-LAY-002 — Sidebar shows Dashboard / Campaign / Phone / Email / Settings (smoke)", async () => {
+  test("FE-LAY-002 — Sidebar shows Home / Inbox / Analytics / Campaigns / Help / Settings, with no Phone / Email / LinkedIn entries", async () => {
     const { page, context } = await loginAs("ADMIN");
     try {
+      // The sidebar this entry was written for (Dashboard / Campaign Builder / Phone / Email / LinkedIn / Buy Leads / Help /
+      // Settings) is gone. components/shared/Sidebar.tsx NAV + BOTTOMNAV are now: Home /home, Inbox /inbox, Bookings /bookings,
+      // Analytics /analytics, Campaigns /automation-campaign, Knowledge /knowledge, Judy /judy, Swarm /swarm, Buy Leads
+      // /purchase-lists (dev-only), then Help /help and Settings /settings/general at the bottom. The one Inbox entry
+      // "replaced the separate Phone / Email / LinkedIn entries, whose pages are retired ... Nothing here may point at a retired
+      // URL" (the FE's own comment, Sidebar.tsx). Bookings, Knowledge, Judy, Swarm and Buy Leads sit behind feature flags
+      // (lib/visibility.ts), so they are not required here; the six that are always there are, and so is the absence of the
+      // retired three. The old check counted any text on the page that held "campaign", "phone", "email" or "settings", so
+      // it passed on page content and could never notice the sidebar changing.
+      // The sidebar is found as the innermost block that holds the menu's groups (#sidebar-group-sell, the id the group
+      // arrows point at with aria-controls) and the Settings link.
       await page.goto("/automation-campaign", { waitUntil: "domcontentloaded" });
-      // Wait for the sidebar to hydrate before counting — networkidle + an immediate
-      // count() raced React hydration (got 0/4), the same flake FE-LAY-003 fixed.
-      await page.getByText(/campaign|settings/i).first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => {});
-      const labels = ["campaign", "phone", "email", "settings"];
-      let found = 0;
-      for (const l of labels) {
-        if ((await page.getByText(new RegExp(l, "i")).count()) > 0) found++;
+      const sidebar = page
+        .locator("div")
+        .filter({ has: page.locator("#sidebar-group-sell") })
+        .filter({ has: page.locator('a[href="/settings/general"]') })
+        .last();
+      await sidebar.waitFor({ state: "visible", timeout: 30_000 });
+      // A link's text also carries its badge ("Inbox" + "3 need reply"), so match the start of the name only.
+      const entries: Array<[string, RegExp]> = [
+        ["/home", /^home/i],
+        ["/inbox", /^inbox/i],
+        ["/analytics", /^analytics/i],
+        ["/automation-campaign", /^campaigns/i],
+        ["/help", /^help/i],
+        ["/settings/general", /^settings/i]
+      ];
+      for (const [href, name] of entries) {
+        await expectVisible(sidebar.locator(`a[href="${href}"]`).filter({ hasText: name }).first(), { timeout: 15_000 });
       }
-      expect(found, `expected most nav labels visible (got ${found}/${labels.length})`).toBeGreaterThanOrEqual(2);
+      const links = await sidebar
+        .locator("a[href]")
+        .evaluateAll((els) => els.map((el) => ({ href: el.getAttribute("href") ?? "", text: (el.textContent ?? "").trim() })));
+      const retired = links.filter(
+        (link) => /^\/(email-system|phone-system|linkedin-system)(\/|$)/.test(link.href) || /^(phone|email|linkedin)\b/i.test(link.text)
+      );
+      expect(retired, `the sidebar should have no Phone / Email / LinkedIn entry: ${JSON.stringify(retired)}`).toEqual([]);
     } finally {
       await context.close();
     }

@@ -101,15 +101,26 @@ describe("Outbound Email (FE-EMAIL-OUT)", () => {
     expect(true).toBe(true);
   });
 
-  test("FE-EMAIL-OUT-010 — Empty subject → form validation rejects", async () => {
-    const { page, context } = await loginAs("ADMIN");
+  test("FE-EMAIL-OUT-010 — Test Email with an empty subject is refused", async () => {
+    const { context } = await loginAs("ADMIN");
     try {
-      await page.goto("/email-system/email/add", { waitUntil: "domcontentloaded" });
-      const send = page.getByRole("button", { name: /send/i }).first();
-      if ((await send.count()) > 0) {
-        await send.click({ trial: true }).catch(() => {});
-      }
-      expect(true).toBe(true);
+      // This entry was written against the compose page (/email-system/email/add), which went with the unified-inbox release,
+      // and its old check (a "trial" click, then `expect(true)`) asserted nothing. The compose form never rejected an empty
+      // subject, then or now: EmailComposer (features/email-system/components/email-composer.tsx, shared by the old page and
+      // the New Email sheet) does not gate Send on any field, and POST /v1/emails/send leaves `subject` unbound
+      // (revhero_email_ingress_client.SendEmailRequestDTO), so a send with an empty subject goes out. The one send path that
+      // does refuse an empty subject is Test Email, the campaign builder's "Test Email" button (CreateEmail.tsx ->
+      // sendTestEmail -> POST /v1/emails/test-send): user-fe-backend email.handler.go TestSendEmailRequest has
+      // `subject` and `html_body` as `binding:"required"`, so a request without a subject is answered 400 ("Invalid request
+      // payload") before anything else, including the 5-an-hour limit (that sits inside SendTestEmail, after the binding),
+      // so this probe does not use up the QA admin's test sends. Nothing is sent. That is what this entry now pins.
+      const token = await bearerFromContext(context);
+      if (!token) throw new Error("no auth token after loginAs");
+      const res = await authedPost("/v1/emails/test-send", { subject: "", html_body: "<p>QA validation probe</p>" }, token);
+      expect(
+        res.status,
+        `POST /v1/emails/test-send with an empty subject should be refused with a 400 (got ${res.status}: ${JSON.stringify(res.data).slice(0, 200)})`
+      ).toBe(400);
     } finally {
       await context.close();
     }
